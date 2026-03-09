@@ -1,0 +1,75 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.140' apply false
+    id 'idea'
+}
+
+tasks.named('wrapper', Wrapper).configure {
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+allprojects {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven { url = "https://maven.quiltmc.org/repository/release/" }
+        maven { url = "https://jitpack.io" }
+        maven { url = "https://dvs1.progwml6.com/files/maven/" }
+        maven { url = "https://maven.blamejared.com/" }
+        maven { url = "https://modmaven.dev" }
+        maven { url = "https://maven.parchmentmc.org" }
+        maven { url = "https://maven.shedaniel.me" }
+        maven { url = "https://repo.kenzie.mx/releases" }
+        maven { url = "https://maven.tterrag.com/" }
+        maven { url = "https://oss.sonatype.org/content/repositories/snapshots/" }
+        maven { url = 'https://thedarkcolour.github.io/KotlinForForge/' }
+        maven { url = "https://maven.firstdark.dev/snapshots" }
+        maven {
+            name = "Azure-SLP"
+            url = "https://pkgs.dev.azure.com/Kotori316/minecraft/_packaging/mods/maven/v1"
+            content {
+                includeGroup("com.kotori316")
+                includeGroup("org.typelevel")
+            }
+        }
+        maven {
+            name = "MavenTestGCP Fallback"
+            url = "https://storage.googleapis.com/kotori316-maven-test-storage/maven/"
+        }
+        maven {
+            name = "kotori316"
+            url = uri("https://maven.kotori316.com")
+            content {
+                includeModule("com.kotori316", "ScalableCatsForce".toLowerCase())
+                includeModule("org.typelevel", "cats-core_3")
+                includeModule("org.typelevel", "cats-kernel_3")
+                includeModule("org.typelevel", "cats-free_3")
+            }
+        }
+        maven {
+            url = "https://cursemaven.com"
+            content {
+                includeGroup "curse.maven"
+            }
+        }
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "Modrinth"
+                    url = "https://api.modrinth.com/maven"
+                }
+            }
+            filter {
+                includeGroup "maven.modrinth"
+            }
+        }
+    }
+}
+
+subprojects {
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
+}
+
