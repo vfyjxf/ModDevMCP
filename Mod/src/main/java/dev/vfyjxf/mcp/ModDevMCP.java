@@ -5,7 +5,9 @@ import dev.vfyjxf.mcp.runtime.RuntimeRegistries;
 import dev.vfyjxf.mcp.runtime.event.RuntimeEventPublisher;
 import dev.vfyjxf.mcp.runtime.input.MinecraftInputController;
 import dev.vfyjxf.mcp.runtime.inventory.VanillaInventoryDriver;
+import dev.vfyjxf.mcp.runtime.hotswap.HotswapService;
 import dev.vfyjxf.mcp.runtime.tool.EventToolProvider;
+import dev.vfyjxf.mcp.runtime.tool.HotswapToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.InputToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.InventoryToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.UiToolProvider;
@@ -15,6 +17,8 @@ import dev.vfyjxf.mcp.runtime.ui.FallbackRegionUiDriver;
 import dev.vfyjxf.mcp.runtime.ui.VanillaContainerUiDriver;
 import dev.vfyjxf.mcp.runtime.ui.VanillaScreenUiDriver;
 import dev.vfyjxf.mcp.server.ModDevMcpServer;
+
+import java.nio.file.Path;
 
 public class ModDevMCP {
 
@@ -44,6 +48,11 @@ public class ModDevMCP {
         server.registerProvider(new InputToolProvider(registries));
         server.registerProvider(new InventoryToolProvider(registries));
         server.registerProvider(new EventToolProvider(registries));
+
+        Path projectRoot = Path.of(System.getProperty("moddevmcp.project.root", System.getProperty("user.dir")));
+        HotswapService hotswapService = new HotswapService(projectRoot);
+        hotswapService.snapshotTimestamps();
+        server.registerProvider(new HotswapToolProvider(hotswapService));
     }
 
     public ModDevMcpServer server() {

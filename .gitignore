@@ -24,3 +24,5 @@ runs/
 
 docs/plans/*.tmp
 .worktrees/
+/.claude
+/.gradle-user-home

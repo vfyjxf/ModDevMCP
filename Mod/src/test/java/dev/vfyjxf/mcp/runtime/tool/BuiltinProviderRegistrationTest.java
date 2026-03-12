@@ -19,6 +19,8 @@ class BuiltinProviderRegistrationTest {
 
         assertTrue(server.registry().findTool("moddev.ui_snapshot").isPresent());
         assertTrue(server.registry().findTool("moddev.inventory_snapshot").isPresent());
+        assertTrue(server.registry().findTool("moddev.compile").isPresent());
+        assertTrue(server.registry().findTool("moddev.hotswap").isPresent());
     }
 
     @Test
