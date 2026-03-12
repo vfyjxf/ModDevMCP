@@ -2,8 +2,13 @@ package dev.vfyjxf.mcp.runtime.ui;
 
 import dev.vfyjxf.mcp.api.model.OperationResult;
 import dev.vfyjxf.mcp.api.runtime.DriverDescriptor;
+import dev.vfyjxf.mcp.api.runtime.UiInspectResult;
 import dev.vfyjxf.mcp.api.runtime.UiContext;
 import dev.vfyjxf.mcp.api.runtime.UiDriver;
+import dev.vfyjxf.mcp.api.runtime.UiLocator;
+import dev.vfyjxf.mcp.api.runtime.UiResolveRequest;
+import dev.vfyjxf.mcp.api.runtime.UiResolveResult;
+import dev.vfyjxf.mcp.api.runtime.UiTargetReference;
 import dev.vfyjxf.mcp.api.ui.UiInteractionDefaults;
 import dev.vfyjxf.mcp.api.ui.Bounds;
 import dev.vfyjxf.mcp.api.ui.CaptureRequest;
@@ -18,6 +23,7 @@ import dev.vfyjxf.mcp.api.ui.UiTargetState;
 import dev.vfyjxf.mcp.runtime.UiInteractionStateResolverRegistry;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
@@ -112,6 +118,79 @@ public class VanillaScreenUiDriver implements UiDriver {
                 .toList();
     }
 
+    @Override
+    public UiResolveResult resolve(UiContext context, UiResolveRequest request) {
+        if (request.reference() == null) {
+            return UiDriver.super.resolve(context, request);
+        }
+        var reference = request.reference();
+        if (reference.ref() != null || (reference.pointX() != null && reference.pointY() != null)) {
+            return UiDriver.super.resolve(context, request);
+        }
+        var locator = reference.locator();
+        if (locator == null) {
+            return UiDriver.super.resolve(context, request);
+        }
+        var matches = snapshot(context, SnapshotOptions.DEFAULT).targets().stream()
+                .filter(target -> !"screen".equals(target.role()))
+                .filter(target -> matchesLocator(target, locator))
+                .filter(target -> request.includeHidden() || target.state().visible())
+                .filter(target -> request.includeDisabled() || target.state().enabled())
+                .toList();
+        if (matches.isEmpty()) {
+            return new UiResolveResult("not_found", List.of(), null, "target_not_found", Map.of());
+        }
+        if (locator.index() != null) {
+            if (locator.index() < 0 || locator.index() >= matches.size()) {
+                return new UiResolveResult("not_found", List.of(), null, "target_not_found", Map.of(
+                        "index", locator.index()
+                ));
+            }
+            var indexed = matches.get(locator.index());
+            return new UiResolveResult("resolved", List.of(indexed), indexed, null, Map.of());
+        }
+        if (!request.allowMultiple() && matches.size() > 1) {
+            return new UiResolveResult("ambiguous", matches, null, "target_ambiguous", Map.of(
+                    "matchCount", matches.size()
+            ));
+        }
+        return new UiResolveResult("resolved", matches, matches.getFirst(), null, Map.of());
+    }
+
+    @Override
+    public UiInspectResult inspect(UiContext context, SnapshotOptions options) {
+        var snapshot = snapshot(context, options);
+        var interactionState = interactionState(context);
+        var visibleTargets = snapshot.targets().stream()
+                .filter(target -> !"screen".equals(target.role()))
+                .toList();
+        var actionableCount = (int) visibleTargets.stream()
+                .filter(target -> target.state().visible())
+                .filter(target -> target.state().enabled())
+                .filter(target -> !target.actions().isEmpty())
+                .count();
+        var interaction = new LinkedHashMap<String, Object>();
+        putIfPresent(interaction, "focusedTargetId", interactionState.focusedTarget() == null ? snapshot.focusedTargetId() : interactionState.focusedTarget().targetId());
+        putIfPresent(interaction, "hoveredTargetId", interactionState.hoveredTarget() == null ? snapshot.hoveredTargetId() : interactionState.hoveredTarget().targetId());
+        putIfPresent(interaction, "activeTargetId", interactionState.activeTarget() == null ? snapshot.activeTargetId() : interactionState.activeTarget().targetId());
+        putIfPresent(interaction, "selectedTargetId", interactionState.selectedTarget() == null ? snapshot.selectedTargetId() : interactionState.selectedTarget().targetId());
+        interaction.put("cursorX", interactionState.cursorX());
+        interaction.put("cursorY", interactionState.cursorY());
+        interaction.put("selectionSource", interactionState.selectionSource());
+        return new UiInspectResult(
+                snapshot.screenClass(),
+                snapshot.screenId(),
+                snapshot.driverId(),
+                Map.of(
+                        "targetCount", visibleTargets.size(),
+                        "actionableCount", actionableCount
+                ),
+                visibleTargets,
+                interaction,
+                null
+        );
+    }
+
     protected boolean matchesTarget(TargetSelector selector, UiTarget target) {
         return matchesScope(selector, target)
                 && (selector.role() == null || selector.role().equals(target.role()))
@@ -138,6 +217,28 @@ public class VanillaScreenUiDriver implements UiDriver {
                 && a.x() + a.width() > b.x()
                 && a.y() < b.y() + b.height()
                 && a.y() + a.height() > b.y();
+    }
+
+    protected boolean matchesLocator(UiTarget target, UiLocator locator) {
+        if (locator.role() != null && !locator.role().equals(target.role())) {
+            return false;
+        }
+        if (locator.text() != null && !locator.text().equals(target.text())) {
+            return false;
+        }
+        if (locator.containsText() != null && (target.text() == null || !target.text().contains(locator.containsText()))) {
+            return false;
+        }
+        if (locator.id() != null && !locator.id().equals(target.targetId())) {
+            return false;
+        }
+        if (locator.scopeRef() != null && !locator.scopeRef().isBlank() && !"screen-root".equals(locator.scopeRef())) {
+            var scopeRef = target.extensions().get("scopeRef");
+            if (!locator.scopeRef().equals(scopeRef)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -363,6 +464,12 @@ public class VanillaScreenUiDriver implements UiDriver {
         return target.bounds().width() * target.bounds().height();
     }
 
+    private void putIfPresent(Map<String, Object> target, String key, Object value) {
+        if (value != null) {
+            target.put(key, value);
+        }
+    }
+
     @FunctionalInterface
     interface UiTargetExtractor {
         List<UiTarget> extract(UiContext context);
@@ -483,35 +590,7 @@ public class VanillaScreenUiDriver implements UiDriver {
             if (screen == null) {
                 return List.of();
             }
-            var targets = new ArrayList<UiTarget>();
-            var index = 0;
-            for (var child : children(screen)) {
-                if (isAbstractWidget(child)) {
-                    targets.add(new UiTarget(
-                            targetId(child, index),
-                            "vanilla-screen",
-                            context.screenClass(),
-                            context.modId(),
-                            "button",
-                            widgetText(child),
-                            new Bounds(widgetX(child), widgetY(child), widgetWidth(child), widgetHeight(child)),
-                            new UiTargetState(
-                                    widgetVisible(child),
-                                    widgetActive(child),
-                                    widgetFocused(child),
-                                    false,
-                                    false,
-                                    false
-                            ),
-                            List.of("click", "hover", "focus"),
-                            Map.of(
-                                    "widgetClass", child.getClass().getName()
-                            )
-                    ));
-                    index++;
-                }
-            }
-            return List.copyOf(targets);
+            return VanillaWidgetIntrospection.extractTargets(screen, context, "vanilla-screen");
         }
 
         private Object liveScreen(String expectedScreenClass) {
@@ -527,99 +606,6 @@ public class VanillaScreenUiDriver implements UiDriver {
                 return screen;
             } catch (ReflectiveOperationException | LinkageError exception) {
                 return null;
-            }
-        }
-
-        private List<?> children(Object screen) {
-            try {
-                var childrenMethod = screen.getClass().getMethod("children");
-                var children = childrenMethod.invoke(screen);
-                return children instanceof List<?> list ? list : List.of();
-            } catch (ReflectiveOperationException exception) {
-                return List.of();
-            }
-        }
-
-        private boolean isAbstractWidget(Object child) {
-            try {
-                var widgetClass = Class.forName("net.minecraft.client.gui.components.AbstractWidget");
-                return widgetClass.isInstance(child);
-            } catch (ClassNotFoundException | LinkageError exception) {
-                return false;
-            }
-        }
-
-        private String targetId(Object widget, int index) {
-            var text = widgetText(widget);
-            var normalized = text == null ? "" : text.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
-            if (!normalized.isBlank()) {
-                return "button-" + normalized;
-            }
-            return "button-" + index;
-        }
-
-        private String widgetText(Object widget) {
-            try {
-                var getMessage = widget.getClass().getMethod("getMessage");
-                var component = getMessage.invoke(widget);
-                if (component == null) {
-                    return "";
-                }
-                var getString = component.getClass().getMethod("getString");
-                return String.valueOf(getString.invoke(component));
-            } catch (ReflectiveOperationException exception) {
-                return "";
-            }
-        }
-
-        private int widgetX(Object widget) {
-            return intMethod(widget, "getX");
-        }
-
-        private int widgetY(Object widget) {
-            return intMethod(widget, "getY");
-        }
-
-        private int widgetWidth(Object widget) {
-            return intMethod(widget, "getWidth");
-        }
-
-        private int widgetHeight(Object widget) {
-            return intMethod(widget, "getHeight");
-        }
-
-        private boolean widgetVisible(Object widget) {
-            return booleanField(widget, "visible", true);
-        }
-
-        private boolean widgetActive(Object widget) {
-            return booleanField(widget, "active", true);
-        }
-
-        private boolean widgetFocused(Object widget) {
-            try {
-                var isFocused = widget.getClass().getMethod("isFocused");
-                return Boolean.TRUE.equals(isFocused.invoke(widget));
-            } catch (ReflectiveOperationException exception) {
-                return false;
-            }
-        }
-
-        private int intMethod(Object target, String methodName) {
-            try {
-                var method = target.getClass().getMethod(methodName);
-                return ((Number) method.invoke(target)).intValue();
-            } catch (ReflectiveOperationException exception) {
-                return 0;
-            }
-        }
-
-        private boolean booleanField(Object target, String fieldName, boolean defaultValue) {
-            try {
-                var field = target.getClass().getField(fieldName);
-                return field.getBoolean(target);
-            } catch (ReflectiveOperationException exception) {
-                return defaultValue;
             }
         }
     }

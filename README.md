@@ -109,7 +109,13 @@ Prompt templates:
 - interaction state and target details
 - live screen probe via `moddev.ui_get_live_screen`
 - explicit high-level UI entry via `moddev.ui_run_intent` for `inventory`, `chat`, and `pause_menu`
-- Playwright-style thin UI automation via:
+- high-level Playwright-style debug flow via:
+  - `moddev.ui_inspect`
+  - `moddev.ui_act`
+  - `moddev.ui_wait`
+  - `moddev.ui_screenshot`
+  - `moddev.ui_trace_recent`
+- low-level session/ref automation via:
   - `moddev.ui_session_open`
   - `moddev.ui_session_refresh`
   - `moddev.ui_click_ref`
@@ -118,7 +124,6 @@ Prompt templates:
   - `moddev.ui_press_key`
   - `moddev.ui_type_text`
   - `moddev.ui_wait_for`
-  - `moddev.ui_screenshot`
   - `moddev.ui_batch`
   - `moddev.ui_trace_get`
 - inventory snapshot/action
@@ -131,6 +136,7 @@ Automation usage notes:
 
 - `docs/guides/2026-03-12-playwright-style-ui-automation-guide.md`
 - `docs/plans/2026-03-12-playwright-style-ui-automation/impl.md`
+- `docs/plans/2026-03-12-ui-driver-playwright-debug-api/impl.md`
 
 ## Repository Development Entry Points
 

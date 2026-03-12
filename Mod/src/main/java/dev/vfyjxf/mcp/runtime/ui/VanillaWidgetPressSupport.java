@@ -15,8 +15,8 @@ final class VanillaWidgetPressSupport {
         if (screen == null || target == null || !"button".equals(target.role())) {
             return false;
         }
-        for (Object child : children(screen)) {
-            if (!matchesTarget(child, target)) {
+        for (Object child : VanillaWidgetIntrospection.collectWidgets(screen)) {
+            if (!VanillaWidgetIntrospection.matchesTarget(child, target)) {
                 continue;
             }
             if (invokeNoArg(child, "onPress")) {
@@ -24,43 +24,6 @@ final class VanillaWidgetPressSupport {
             }
         }
         return false;
-    }
-
-    private static boolean matchesTarget(Object child, UiTarget target) {
-        if (child == null) {
-            return false;
-        }
-        return intMethod(child, "getX", Integer.MIN_VALUE) == target.bounds().x()
-                && intMethod(child, "getY", Integer.MIN_VALUE) == target.bounds().y()
-                && intMethod(child, "getWidth", Integer.MIN_VALUE) == target.bounds().width()
-                && intMethod(child, "getHeight", Integer.MIN_VALUE) == target.bounds().height()
-                && messageMatches(child, target.text());
-    }
-
-    private static boolean messageMatches(Object child, String expectedText) {
-        if (expectedText == null || expectedText.isBlank()) {
-            return true;
-        }
-        var message = invoke(child, "getMessage");
-        if (message == null) {
-            return false;
-        }
-        var extracted = stringValue(message);
-        return Objects.equals(expectedText, extracted);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static List<Object> children(Object screen) {
-        var children = invoke(screen, "children");
-        if (children instanceof List<?> list) {
-            return (List<Object>) list;
-        }
-        return List.of();
-    }
-
-    private static int intMethod(Object target, String methodName, int defaultValue) {
-        var value = invoke(target, methodName);
-        return value instanceof Number number ? number.intValue() : defaultValue;
     }
 
     private static boolean invokeNoArg(Object target, String methodName) {
@@ -79,16 +42,6 @@ final class VanillaWidgetPressSupport {
             return method.invoke(target);
         } catch (ReflectiveOperationException ignored) {
             return null;
-        }
-    }
-
-    private static String stringValue(Object value) {
-        try {
-            Method getString = value.getClass().getMethod("getString");
-            var raw = getString.invoke(value);
-            return raw == null ? null : String.valueOf(raw);
-        } catch (ReflectiveOperationException ignored) {
-            return String.valueOf(value);
         }
     }
 }

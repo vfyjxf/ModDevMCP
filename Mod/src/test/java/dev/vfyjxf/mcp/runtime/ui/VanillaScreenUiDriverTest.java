@@ -1,6 +1,9 @@
 package dev.vfyjxf.mcp.runtime.ui;
 
+import dev.vfyjxf.mcp.api.runtime.UiLocator;
 import dev.vfyjxf.mcp.api.runtime.UiContext;
+import dev.vfyjxf.mcp.api.runtime.UiResolveRequest;
+import dev.vfyjxf.mcp.api.runtime.UiTargetReference;
 import dev.vfyjxf.mcp.api.ui.UiActionRequest;
 import dev.vfyjxf.mcp.api.ui.Bounds;
 import dev.vfyjxf.mcp.api.ui.SnapshotOptions;
@@ -157,6 +160,57 @@ class VanillaScreenUiDriverTest {
         assertEquals(213, executor.lastX.get());
         assertEquals(127, executor.lastY.get());
         assertEquals(250, executor.lastHoverDelayMs.get());
+    }
+
+    @Test
+    void resolveSupportsContainsTextWithIndexOverWidgetTargets() {
+        var driver = new VanillaScreenUiDriver(
+                new UiSessionStateRegistry(),
+                BuiltinUiInteractionResolvers.newRegistry(),
+                context -> List.of(
+                        buttonTarget(context, "button-create-world", "Create New World", 113, 93, 200, 20),
+                        buttonTarget(context, "button-create-experimental-world", "Create Experimental World", 113, 117, 200, 20),
+                        buttonTarget(context, "button-cancel", "Cancel", 113, 141, 200, 20)
+                )
+        );
+
+        var result = driver.resolve(new TestUiContext(
+                "net.minecraft.client.gui.screens.worldselection.CreateWorldScreen",
+                "minecraft",
+                0,
+                0
+        ), new UiResolveRequest(
+                UiTargetReference.locator(new UiLocator("button", null, "Create", null, 1, null)),
+                false,
+                false,
+                false
+        ));
+
+        assertEquals("resolved", result.status());
+        assertEquals("button-create-experimental-world", result.primary().targetId());
+    }
+
+    @Test
+    void inspectSummaryExcludesScreenRootNoise() {
+        var driver = new VanillaScreenUiDriver(
+                new UiSessionStateRegistry(),
+                BuiltinUiInteractionResolvers.newRegistry(),
+                context -> List.of(
+                        buttonTarget(context, "button-singleplayer", "Singleplayer", 113, 93, 200, 20),
+                        buttonTarget(context, "button-multiplayer", "Multiplayer", 113, 117, 200, 20)
+                )
+        );
+
+        var result = driver.inspect(new TestUiContext(
+                "net.minecraft.client.gui.screens.TitleScreen",
+                "minecraft",
+                150,
+                120
+        ), SnapshotOptions.DEFAULT);
+
+        assertEquals(2, result.summary().get("targetCount"));
+        assertEquals(2, result.summary().get("actionableCount"));
+        assertEquals("button-multiplayer", result.interaction().get("hoveredTargetId"));
     }
 
     private UiTarget buttonTarget(UiContext context, String targetId, String text, int x, int y, int width, int height) {

@@ -6,11 +6,14 @@ import dev.vfyjxf.mcp.api.runtime.ClientScreenMetrics;
 import dev.vfyjxf.mcp.api.runtime.ClientScreenProbe;
 import dev.vfyjxf.mcp.api.runtime.DriverDescriptor;
 import dev.vfyjxf.mcp.api.runtime.InputController;
-import dev.vfyjxf.mcp.api.runtime.UiCaptureImage;
 import dev.vfyjxf.mcp.api.runtime.UiContext;
+import dev.vfyjxf.mcp.api.runtime.UiCaptureImage;
 import dev.vfyjxf.mcp.api.runtime.UiDriver;
+import dev.vfyjxf.mcp.api.runtime.UiInspectResult;
 import dev.vfyjxf.mcp.api.runtime.UiFramebufferCaptureProvider;
 import dev.vfyjxf.mcp.api.runtime.UiInteractionStateResolver;
+import dev.vfyjxf.mcp.api.runtime.UiWaitRequest;
+import dev.vfyjxf.mcp.api.runtime.UiWaitResult;
 import dev.vfyjxf.mcp.api.runtime.UiOffscreenCaptureProvider;
 import dev.vfyjxf.mcp.api.ui.Bounds;
 import dev.vfyjxf.mcp.api.ui.UiInteractionDefaults;
@@ -57,6 +60,94 @@ class UiToolInvocationTest {
         var payload = (Map<String, Object>) result.value();
         assertEquals("fallback-region", payload.get("driverId"));
         assertTrue(((List<?>) payload.get("targets")).size() >= 1);
+    }
+
+    @Test
+    void uiInspectReturnsConciseInspectPayload() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new InspectActionUiDriver("custom.InspectScreen"));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.InspectScreen", 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_inspect").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of());
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("custom.InspectScreen", payload.get("screen"));
+        assertEquals("inspect-action-driver", payload.get("driverId"));
+        assertTrue(payload.containsKey("summary"));
+        assertTrue(payload.containsKey("targets"));
+        assertTrue(payload.containsKey("interaction"));
+        assertFalse(payload.containsKey("snapshotRef"));
+        assertFalse(payload.containsKey("focusedTargetId"));
+    }
+
+    @Test
+    void uiActResolvesLocatorAndPerformsAction() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        var driver = new InspectActionUiDriver("custom.InspectScreen");
+        registries.uiDrivers().register(driver);
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.InspectScreen", 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_act").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "action", "click",
+                "locator", Map.of("role", "button", "text", "Launch")
+        ));
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("inspect-action-driver", payload.get("driverId"));
+        assertEquals("click", payload.get("action"));
+        assertEquals("launch-button", ((Map<?, ?>) payload.get("resolvedTarget")).get("targetId"));
+        assertEquals("launch-button", driver.lastActionTargetId.get());
+    }
+
+    @Test
+    void uiActAcceptsRefShortcut() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        var driver = new InspectActionUiDriver("custom.InspectScreen");
+        registries.uiDrivers().register(driver);
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.InspectScreen", 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_act").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "action", "click",
+                "ref", "launch-button"
+        ));
+
+        assertTrue(result.success());
+        assertEquals("launch-button", driver.lastActionTargetId.get());
+    }
+
+    @Test
+    void uiActReturnsStableActionabilityErrorForDisabledTarget() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new InspectActionUiDriver("custom.InspectScreen"));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.InspectScreen", 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_act").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "action", "click",
+                "locator", Map.of("role", "button", "text", "Disabled")
+        ));
+
+        assertFalse(result.success());
+        assertEquals("target_disabled", result.error());
     }
 
     @Test
@@ -539,6 +630,36 @@ class UiToolInvocationTest {
 
         assertFalse(result.success());
         assertEquals("session_not_found", result.error());
+    }
+
+    @Test
+    void uiScreenshotSupportsHighLevelLiveScreenFlowWithConcisePayload() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        var mod = new ModDevMCP(server, registries);
+        registries.uiDrivers().register(new InspectActionUiDriver("custom.InspectScreen"));
+        mod.api().registerUiOffscreenCaptureProvider(new TestOffscreenCaptureProvider("offscreen-test", 500));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.InspectScreen", 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_screenshot").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "locator", Map.of("role", "button", "text", "Launch"),
+                "source", "auto"
+        ));
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("inspect-action-driver", payload.get("driverId"));
+        assertEquals("launch-button", ((Map<?, ?>) payload.get("resolvedTarget")).get("targetId"));
+        assertEquals("offscreen", ((Map<?, ?>) payload.get("imageMeta")).get("source"));
+        assertTrue(payload.containsKey("snapshotRef"));
+        assertTrue(payload.containsKey("imageRef"));
+        assertFalse(payload.containsKey("capturedSnapshot"));
+        assertFalse(payload.containsKey("capturedTargets"));
+        assertFalse(payload.containsKey("excludedTargets"));
     }
 
     @Test
@@ -1160,6 +1281,32 @@ class UiToolInvocationTest {
         assertEquals("vanilla-container", payload.get("driverId"));
         assertEquals(true, payload.get("matched"));
         assertEquals(1, ((List<?>) payload.get("targets")).size());
+    }
+
+    @Test
+    void uiWaitUsesDriverWaitForAndReturnsStableErrorCode() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new DriverWaitUiDriver("custom.WaitApiScreen"));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.WaitApiScreen", 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_wait").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "condition", "targetAppeared",
+                "locator", Map.of("role", "button", "text", "Wait Target"),
+                "timeoutMs", 75,
+                "pollIntervalMs", 10
+        ));
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("driver-wait", payload.get("driverId"));
+        assertEquals(false, payload.get("matched"));
+        assertEquals("timeout", payload.get("errorCode"));
+        assertEquals("wait-target", ((Map<?, ?>) payload.get("matchedTarget")).get("targetId"));
     }
 
     @Test
@@ -2011,6 +2158,109 @@ class UiToolInvocationTest {
         }
     }
 
+    private static final class InspectActionUiDriver implements UiDriver {
+
+        private final String screenClass;
+        private final AtomicReference<String> lastActionTargetId = new AtomicReference<>(null);
+
+        private InspectActionUiDriver(String screenClass) {
+            this.screenClass = screenClass;
+        }
+
+        @Override
+        public DriverDescriptor descriptor() {
+            return new DriverDescriptor("inspect-action-driver", "test", 10_000, Set.of("snapshot", "query", "action"));
+        }
+
+        @Override
+        public boolean matches(UiContext context) {
+            return screenClass.equals(context.screenClass());
+        }
+
+        @Override
+        public UiSnapshot snapshot(UiContext context, SnapshotOptions options) {
+            return new UiSnapshot(
+                    "inspect-screen-1",
+                    context.screenClass(),
+                    descriptor().id(),
+                    targets(context),
+                    List.of(),
+                    "launch-button",
+                    null,
+                    "disabled-button",
+                    null,
+                    Map.of()
+            );
+        }
+
+        @Override
+        public List<UiTarget> query(UiContext context, dev.vfyjxf.mcp.api.ui.TargetSelector selector) {
+            return targets(context).stream()
+                    .filter(target -> selector.id() == null || selector.id().equals(target.targetId()))
+                    .filter(target -> selector.role() == null || selector.role().equals(target.role()))
+                    .filter(target -> selector.text() == null || selector.text().equals(target.text()))
+                    .toList();
+        }
+
+        @Override
+        public OperationResult<Map<String, Object>> action(UiContext context, dev.vfyjxf.mcp.api.ui.UiActionRequest request) {
+            lastActionTargetId.set(request.target().id());
+            return OperationResult.success(Map.of(
+                    "driverId", descriptor().id(),
+                    "action", request.action(),
+                    "performed", true
+            ));
+        }
+
+        @Override
+        public UiInspectResult inspect(UiContext context, SnapshotOptions options) {
+            return new UiInspectResult(
+                    context.screenClass(),
+                    "inspect-screen-1",
+                    descriptor().id(),
+                    Map.of(
+                            "targetCount", 2,
+                            "actionableCount", 1
+                    ),
+                    targets(context),
+                    Map.of(
+                            "focusedTargetId", "launch-button",
+                            "hoveredTargetId", "disabled-button"
+                    ),
+                    null
+            );
+        }
+
+        private List<UiTarget> targets(UiContext context) {
+            return List.of(
+                    new UiTarget(
+                            "launch-button",
+                            descriptor().id(),
+                            context.screenClass(),
+                            context.modId(),
+                            "button",
+                            "Launch",
+                            new Bounds(10, 20, 40, 20),
+                            UiTargetState.defaultState(),
+                            List.of("click"),
+                            Map.of()
+                    ),
+                    new UiTarget(
+                            "disabled-button",
+                            descriptor().id(),
+                            context.screenClass(),
+                            context.modId(),
+                            "button",
+                            "Disabled",
+                            new Bounds(60, 20, 40, 20),
+                            new UiTargetState(true, false, false, false, false, false),
+                            List.of("click"),
+                            Map.of()
+                    )
+            );
+        }
+    }
+
     private static final class WaitTestUiDriver implements UiDriver {
 
         private static final DriverDescriptor DESCRIPTOR = new DriverDescriptor(
@@ -2109,6 +2359,68 @@ class UiToolInvocationTest {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException(exception);
             }
+        }
+    }
+
+    private static final class DriverWaitUiDriver implements UiDriver {
+
+        private final String screenClass;
+
+        private DriverWaitUiDriver(String screenClass) {
+            this.screenClass = screenClass;
+        }
+
+        @Override
+        public DriverDescriptor descriptor() {
+            return new DriverDescriptor("driver-wait", "test", 10_000, Set.of("snapshot", "query"));
+        }
+
+        @Override
+        public boolean matches(UiContext context) {
+            return screenClass.equals(context.screenClass());
+        }
+
+        @Override
+        public UiSnapshot snapshot(UiContext context, SnapshotOptions options) {
+            return new UiSnapshot(
+                    "wait-api-screen",
+                    context.screenClass(),
+                    descriptor().id(),
+                    query(context, dev.vfyjxf.mcp.api.ui.TargetSelector.builder().build()),
+                    List.of(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    Map.of()
+            );
+        }
+
+        @Override
+        public List<UiTarget> query(UiContext context, dev.vfyjxf.mcp.api.ui.TargetSelector selector) {
+            return List.of(new UiTarget(
+                    "wait-target",
+                    descriptor().id(),
+                    context.screenClass(),
+                    context.modId(),
+                    "button",
+                    "Wait Target",
+                    new Bounds(10, 20, 40, 20),
+                    UiTargetState.defaultState(),
+                    List.of("click"),
+                    Map.of()
+            ));
+        }
+
+        @Override
+        public UiWaitResult waitFor(UiContext context, UiWaitRequest request) {
+            return new UiWaitResult(
+                    false,
+                    75L,
+                    query(context, dev.vfyjxf.mcp.api.ui.TargetSelector.builder().build()).getFirst(),
+                    "timeout",
+                    Map.of("condition", request.condition())
+            );
         }
     }
 
