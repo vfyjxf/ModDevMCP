@@ -51,7 +51,15 @@ public final class HotswapToolProvider implements McpToolProvider {
                         "moddev.hotswap",
                         "moddev.hotswap",
                         "Compile (optional) and reload changed classes into the running game via JVM hotswap.",
-                        Map.of(),
+                        Map.of(
+                                "type", "object",
+                                "properties", Map.of(
+                                        "compile", Map.of(
+                                                "type", "boolean",
+                                                "description", "Whether to compile before attempting hotswap. Defaults to true."
+                                        )
+                                )
+                        ),
                         Map.of(),
                         List.of("hotswap", "reload"),
                         "client",

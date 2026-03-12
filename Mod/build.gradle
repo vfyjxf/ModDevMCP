@@ -112,6 +112,12 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+tasks.withType(Test).configureEach {
+    dependsOn(":Agent:jar")
+    var agentJar = rootProject.project(":Agent").layout.buildDirectory.file("libs/Agent.jar")
+    jvmArgs("-javaagent:${agentJar.get().asFile.absolutePath}")
+}
+
 idea {
     module {
         downloadSources = true

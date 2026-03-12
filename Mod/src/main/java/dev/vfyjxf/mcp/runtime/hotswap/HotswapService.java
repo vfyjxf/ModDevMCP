@@ -18,13 +18,11 @@ import java.util.stream.Collectors;
 
 public final class HotswapService {
 
-    private final Path projectRoot;
-    private final Path classOutputDir;
+    private final HotswapRuntimeConfig config;
     private Map<String, Long> baseline;
 
-    public HotswapService(Path projectRoot) {
-        this.projectRoot = projectRoot.toAbsolutePath().normalize();
-        this.classOutputDir = this.projectRoot.resolve("Mod/build/classes/java/main");
+    public HotswapService(HotswapRuntimeConfig config) {
+        this.config = config;
         this.baseline = new HashMap<>();
     }
 
@@ -37,8 +35,8 @@ public final class HotswapService {
 
     public CompileResult compile() {
         String gradleCommand = isWindows() ? "gradlew.bat" : "./gradlew";
-        ProcessBuilder pb = new ProcessBuilder(gradleCommand, ":Mod:compileJava");
-        pb.directory(projectRoot.toFile());
+        ProcessBuilder pb = new ProcessBuilder(gradleCommand, config.compileTask());
+        pb.directory(config.projectRoot().toFile());
         try {
             Process process = pb.start();
             String stdout = readStream(process.getInputStream());
@@ -64,7 +62,7 @@ public final class HotswapService {
         }
 
         HotswapCapabilities capabilities = HotswapCapabilities.detect(inst);
-        Map<String, byte[]> changed = ClassFileScanner.readChanged(classOutputDir, baseline);
+        Map<String, byte[]> changed = ClassFileScanner.readChanged(config.classOutputDir(), baseline);
 
         if (changed.isEmpty()) {
             return new ReloadResult(List.of(), List.of(), Map.of(), capabilities.toMap());
@@ -106,7 +104,7 @@ public final class HotswapService {
     }
 
     public void snapshotTimestamps() {
-        this.baseline = ClassFileScanner.scan(classOutputDir);
+        this.baseline = ClassFileScanner.scan(config.classOutputDir());
     }
 
     private static boolean isWindows() {
