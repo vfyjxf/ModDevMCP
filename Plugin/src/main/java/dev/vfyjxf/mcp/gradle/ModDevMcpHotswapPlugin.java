@@ -12,6 +12,8 @@ public final class ModDevMcpHotswapPlugin implements Plugin<Project> {
         extension.getProjectRoot().convention(project.getRootProject().getProjectDir());
 
         project.getPluginManager().withPlugin("net.neoforged.moddev",
-                ignored -> new dev.vfyjxf.mcp.gradle.neoforge.NeoForgeRunInjector().inject(project, extension));
+                ignored -> project.afterEvaluate(
+                        evaluated -> new dev.vfyjxf.mcp.gradle.neoforge.NeoForgeRunInjector().inject(evaluated, extension)
+                ));
     }
 }

@@ -1,9 +1,12 @@
 plugins {
     id 'java-gradle-plugin'
+    id 'maven-publish'
 }
 
 group = 'dev.vfyjxf'
-version = rootProject.version
+version = rootProject.findProperty('plugin_version')
+        ?: rootProject.findProperty('mod_version')
+        ?: '0.1'
 
 def neoForgeModDevVersion = '2.0.140'
 def neoForgeModDevJar = fileTree("${rootProject.projectDir}/.gradle-user-home/caches/modules-2/files-2.1/net.neoforged/moddev-gradle/${neoForgeModDevVersion}") {
@@ -27,4 +30,10 @@ dependencies {
     testImplementation neoForgeModDevJar
     testImplementation 'org.junit.jupiter:junit-jupiter:5.12.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+publishing {
+    repositories {
+        mavenLocal()
+    }
 }

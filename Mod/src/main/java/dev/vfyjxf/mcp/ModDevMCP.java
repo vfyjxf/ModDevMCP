@@ -20,13 +20,15 @@ import dev.vfyjxf.mcp.runtime.ui.VanillaContainerUiDriver;
 import dev.vfyjxf.mcp.runtime.ui.VanillaScreenUiDriver;
 import dev.vfyjxf.mcp.server.ModDevMcpServer;
 import dev.vfyjxf.mcp.server.api.McpToolProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
 
 public class ModDevMCP {
-
+    public static final Logger LOGGER = LoggerFactory.getLogger(ModDevMCP.class);
     public static final String modId = "mod_dev_mcp";
 
     private final ModDevMcpServer server;
@@ -39,6 +41,7 @@ public class ModDevMCP {
     private final McpToolProvider hotswapToolProvider;
     private final Set<McpToolProvider> registeredToolProviders = Collections.newSetFromMap(new IdentityHashMap<>());
 
+
     public ModDevMCP() {
         this(new ModDevMcpServer(), new RuntimeRegistries());
     }
@@ -48,6 +51,7 @@ public class ModDevMCP {
     }
 
     public ModDevMCP(ModDevMcpServer server, RuntimeRegistries registries) {
+        LOGGER.info("Initializing ModDev MCP");
         this.server = server;
         this.registries = registries;
         this.api = new ModMcpApi(registries);

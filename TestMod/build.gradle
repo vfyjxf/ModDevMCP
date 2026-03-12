@@ -2,6 +2,7 @@ plugins {
     id 'java-library'
     id 'idea'
     id 'net.neoforged.moddev' version '2.0.140'
+    id 'dev.vfyjxf.moddev-hotswap' version '0.1.1'
 }
 
 version = mod_version
@@ -71,6 +72,14 @@ dependencies {
     implementation("com.example.examplemod:mod_dev_mcp:0.1") {
         transitive = false
     }
+}
+
+modDevMcpHotswap {
+    agentJarPath = file("../Agent/build/libs/Agent.jar").absolutePath
+    projectRoot = rootProject.projectDir
+    compileTask = ":compileJava"
+    classOutputDir = "build/classes/java/main"
+    runs = ["client"]
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {

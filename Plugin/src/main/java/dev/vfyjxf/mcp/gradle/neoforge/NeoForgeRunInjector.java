@@ -25,7 +25,9 @@ public final class NeoForgeRunInjector {
 
         File projectRoot = extension.getProjectRoot().get();
         File classOutput = resolvePath(projectRoot, extension.getClassOutputDir().get());
-        String agentPath = project.getRootProject().file("Agent/build/libs/Agent.jar").getAbsolutePath();
+        String agentPath = extension.getAgentJarPath().isPresent()
+                ? extension.getAgentJarPath().get()
+                : project.getRootProject().file("Agent/build/libs/Agent.jar").getAbsolutePath();
 
         run.jvmArgument("-javaagent:" + agentPath);
         run.systemProperty("moddevmcp.project.root", projectRoot.getAbsolutePath());

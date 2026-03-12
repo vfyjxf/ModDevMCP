@@ -11,6 +11,7 @@ public abstract class ModDevMcpHotswapExtension {
 
     private final Property<Boolean> enabled;
     private final Property<File> projectRoot;
+    private final Property<String> agentJarPath;
     private final Property<String> compileTask;
     private final Property<String> classOutputDir;
     private final ListProperty<String> runs;
@@ -20,6 +21,7 @@ public abstract class ModDevMcpHotswapExtension {
     public ModDevMcpHotswapExtension(ObjectFactory objects) {
         this.enabled = objects.property(Boolean.class).convention(true);
         this.projectRoot = objects.property(File.class);
+        this.agentJarPath = objects.property(String.class);
         this.compileTask = objects.property(String.class).convention(":Mod:compileJava");
         this.classOutputDir = objects.property(String.class).convention("Mod/build/classes/java/main");
         this.runs = objects.listProperty(String.class).convention(java.util.List.of("client"));
@@ -32,6 +34,10 @@ public abstract class ModDevMcpHotswapExtension {
 
     public Property<File> getProjectRoot() {
         return projectRoot;
+    }
+
+    public Property<String> getAgentJarPath() {
+        return agentJarPath;
     }
 
     public Property<String> getCompileTask() {
