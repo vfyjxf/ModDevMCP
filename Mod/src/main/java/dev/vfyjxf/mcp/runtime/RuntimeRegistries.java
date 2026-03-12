@@ -2,8 +2,10 @@ package dev.vfyjxf.mcp.runtime;
 
 import dev.vfyjxf.mcp.api.runtime.InputController;
 import dev.vfyjxf.mcp.runtime.event.RuntimeEventPublisher;
+import dev.vfyjxf.mcp.runtime.tool.UiAutomationSessionManager;
 import dev.vfyjxf.mcp.runtime.ui.UiCaptureArtifactStore;
 import dev.vfyjxf.mcp.runtime.ui.UiCaptureRenderer;
+import dev.vfyjxf.mcp.runtime.ui.UiPointerStateRegistry;
 import dev.vfyjxf.mcp.runtime.ui.UiSnapshotJournal;
 import dev.vfyjxf.mcp.runtime.ui.UiSessionStateRegistry;
 import dev.vfyjxf.mcp.server.api.McpToolProvider;
@@ -19,12 +21,14 @@ public final class RuntimeRegistries {
     private final List<McpToolProvider> toolProviders = new ArrayList<>();
     private final RuntimeEventPublisher eventPublisher = new RuntimeEventPublisher();
     private final UiSessionStateRegistry uiSessionStates = new UiSessionStateRegistry();
+    private final UiPointerStateRegistry uiPointerStates = new UiPointerStateRegistry();
     private final UiSnapshotJournal uiSnapshotJournal = new UiSnapshotJournal();
     private final UiInteractionStateResolverRegistry uiInteractionResolvers = new UiInteractionStateResolverRegistry();
     private final UiOffscreenCaptureProviderRegistry uiOffscreenCaptureProviders = new UiOffscreenCaptureProviderRegistry();
     private final UiFramebufferCaptureProviderRegistry uiFramebufferCaptureProviders = new UiFramebufferCaptureProviderRegistry();
     private final UiCaptureRenderer uiCaptureRenderer = new UiCaptureRenderer();
     private final UiCaptureArtifactStore uiCaptureArtifactStore = new UiCaptureArtifactStore();
+    private final UiAutomationSessionManager uiAutomationSessions = new UiAutomationSessionManager();
 
     public UiDriverRegistry uiDrivers() {
         return uiDrivers;
@@ -50,6 +54,10 @@ public final class RuntimeRegistries {
         return uiSessionStates;
     }
 
+    public UiPointerStateRegistry uiPointerStates() {
+        return uiPointerStates;
+    }
+
     public UiSnapshotJournal uiSnapshotJournal() {
         return uiSnapshotJournal;
     }
@@ -72,5 +80,9 @@ public final class RuntimeRegistries {
 
     public UiCaptureArtifactStore uiCaptureArtifactStore() {
         return uiCaptureArtifactStore;
+    }
+
+    public UiAutomationSessionManager uiAutomationSessions() {
+        return uiAutomationSessions;
     }
 }

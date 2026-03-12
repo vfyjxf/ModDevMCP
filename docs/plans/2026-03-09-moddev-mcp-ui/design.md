@@ -233,4 +233,4 @@ This avoids collapsing all GUI failures into generic internal errors and gives a
 
 ## Notes
 
-- `D:\ProjectDir\AgentFarm\ModDevMCP` is not currently a git repository, so this design doc cannot be committed from the present workspace state.
+- `<repo>` was not a git repository in that earlier workspace snapshot, so this design doc could not be committed from that state.

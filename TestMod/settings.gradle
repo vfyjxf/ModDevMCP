@@ -1,0 +1,17 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+    }
+}
+
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
+rootProject.name = 'TestMod'
+
+includeBuild("..") {
+    dependencySubstitution {
+        substitute module("com.example.examplemod:mod_dev_mcp") using project(":Mod")
+    }
+}

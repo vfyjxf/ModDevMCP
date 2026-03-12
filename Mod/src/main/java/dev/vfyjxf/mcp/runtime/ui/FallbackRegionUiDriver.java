@@ -131,18 +131,27 @@ public final class FallbackRegionUiDriver implements UiDriver {
     public OperationResult<Map<String, Object>> action(UiContext context, UiActionRequest request) {
         if ("close".equals(request.action())) {
             sessionStates.update(context, DESCRIPTOR.id(), UiSessionState.closedState());
-        } else if ("open".equals(request.action())) {
-            sessionStates.update(context, DESCRIPTOR.id(), UiSessionState.openedState().reopened("programmatic"));
-        } else if ("switch".equals(request.action())) {
+            return OperationResult.success(Map.of(
+                    "driverId", DESCRIPTOR.id(),
+                    "action", request.action(),
+                    "performed", true,
+                    "target", request.target()
+            ));
+        }
+        if ("switch".equals(request.action())) {
             var target = query(context, request.target()).stream().findFirst().orElse(snapshot(context, SnapshotOptions.DEFAULT).targets().getFirst());
             sessionStates.update(context, DESCRIPTOR.id(), UiSessionState.openedState().withFocus(target.targetId(), "programmatic"));
+            return OperationResult.success(Map.of(
+                    "driverId", DESCRIPTOR.id(),
+                    "action", request.action(),
+                    "performed", true,
+                    "target", request.target()
+            ));
         }
-        return OperationResult.success(Map.of(
-                "driverId", DESCRIPTOR.id(),
-                "action", request.action(),
-                "performed", true,
-                "target", request.target()
-        ));
+        if ("run_intent".equals(request.action())) {
+            return OperationResult.rejected("unsupported_intent");
+        }
+        return OperationResult.rejected("unsupported_action");
     }
 
     @Override

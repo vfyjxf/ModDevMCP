@@ -33,10 +33,12 @@ class DevUiCaptureVerificationRunnerTest {
         }
 
         assertEquals("custom.UnknownScreen", properties.getProperty("screenClass"));
-        assertEquals("placeholder", properties.getProperty("offscreen.imageMeta.source"));
-        assertEquals("placeholder", properties.getProperty("framebuffer.imageMeta.source"));
-        assertTrue(Files.exists(java.nio.file.Path.of(properties.getProperty("offscreen.imagePath"))));
-        assertTrue(Files.exists(java.nio.file.Path.of(properties.getProperty("framebuffer.imagePath"))));
+        assertEquals("false", properties.getProperty("offscreen.success"));
+        assertEquals("false", properties.getProperty("framebuffer.success"));
+        assertTrue(properties.getProperty("offscreen.error").contains("capture_unavailable"));
+        assertTrue(properties.getProperty("framebuffer.error").contains("capture_unavailable"));
+        assertEquals("", properties.getProperty("offscreen.imagePath"));
+        assertEquals("", properties.getProperty("framebuffer.imagePath"));
     }
 
     @Test

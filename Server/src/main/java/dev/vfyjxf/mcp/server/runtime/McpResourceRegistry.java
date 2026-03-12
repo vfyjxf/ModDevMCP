@@ -21,4 +21,10 @@ public final class McpResourceRegistry {
                 .flatMap(Optional::stream)
                 .findFirst();
     }
+
+    public List<McpResource> list() {
+        return providers.stream()
+                .flatMap(provider -> provider.list().stream())
+                .toList();
+    }
 }
