@@ -8,12 +8,11 @@ version = rootProject.findProperty('plugin_version')
         ?: rootProject.findProperty('mod_version')
         ?: '0.1'
 
-def neoForgeModDevVersion = '2.0.140'
-def neoForgeModDevJar = fileTree("${rootProject.projectDir}/.gradle-user-home/caches/modules-2/files-2.1/net.neoforged/moddev-gradle/${neoForgeModDevVersion}") {
-    include '**/moddev-gradle-*.jar'
-}
-
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+repositories {
+    gradlePluginPortal()
+}
 
 gradlePlugin {
     plugins {
@@ -25,9 +24,9 @@ gradlePlugin {
 }
 
 dependencies {
-    compileOnly neoForgeModDevJar
+    compileOnly("net.neoforged.moddev:net.neoforged.moddev.gradle.plugin:2.0.140")
     testImplementation gradleTestKit()
-    testImplementation neoForgeModDevJar
+    testImplementation ("net.neoforged.moddev:net.neoforged.moddev.gradle.plugin:2.0.140")
     testImplementation 'org.junit.jupiter:junit-jupiter:5.12.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
