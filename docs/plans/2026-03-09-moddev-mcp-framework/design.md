@@ -270,6 +270,8 @@ Fields:
 
 Returns expanded detail for a target.
 
+If a provided target selector matches nothing, return a `not_found` style tool failure instead of a synthetic empty detail object.
+
 Suggested content:
 
 - base target data
@@ -280,15 +282,17 @@ Suggested content:
 - inventory slot or text-input metadata
 - `extensions`
 
-#### `ui_open`
+#### Historical `ui_open`
 
-Semantically opens:
+This section is historical only.
+
+Current active API guidance uses `moddev.ui_run_intent` for explicit high-level entry actions such as:
 
 - `inventory`
 - `chat`
-- `recipe`
-- `search`
-- `custom`
+- `pause_menu`
+
+The generic `ui_open` tool is no longer part of the active public API because it implied behavior the runtime could not honestly guarantee.
 
 #### `ui_close`
 

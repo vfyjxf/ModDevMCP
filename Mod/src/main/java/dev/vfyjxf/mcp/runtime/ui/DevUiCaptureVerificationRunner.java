@@ -68,9 +68,17 @@ public final class DevUiCaptureVerificationRunner {
                 "source", source
         ));
         if (!result.success()) {
-            throw new IllegalStateException("ui_capture failed for source=" + source + ": " + result.error());
+            return Map.of(
+                    "success", false,
+                    "error", String.valueOf(result.error()),
+                    "requestedSource", source
+            );
         }
-        return (Map<String, Object>) result.value();
+        var payload = new LinkedHashMap<String, Object>();
+        payload.put("success", true);
+        payload.put("requestedSource", source);
+        payload.putAll((Map<String, Object>) result.value());
+        return Map.copyOf(payload);
     }
 
     private Path writeReport(String screenClass, Map<String, Object> offscreen, Map<String, Object> framebuffer) {
@@ -92,6 +100,9 @@ public final class DevUiCaptureVerificationRunner {
 
     @SuppressWarnings("unchecked")
     private void putCaptureProperties(Properties properties, String prefix, Map<String, Object> payload) {
+        properties.setProperty(prefix + ".success", String.valueOf(payload.getOrDefault("success", false)));
+        properties.setProperty(prefix + ".requestedSource", String.valueOf(payload.getOrDefault("requestedSource", "")));
+        properties.setProperty(prefix + ".error", String.valueOf(payload.getOrDefault("error", "")));
         properties.setProperty(prefix + ".driverId", String.valueOf(payload.getOrDefault("driverId", "")));
         properties.setProperty(prefix + ".imagePath", String.valueOf(payload.getOrDefault("imagePath", "")));
         properties.setProperty(prefix + ".imageRef", String.valueOf(payload.getOrDefault("imageRef", "")));

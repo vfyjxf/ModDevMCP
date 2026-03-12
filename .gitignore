@@ -24,5 +24,7 @@ runs/
 
 docs/plans/*.tmp
 .worktrees/
+.moddevmcp/
+TestMod/*.log
 /.claude
 /.gradle-user-home

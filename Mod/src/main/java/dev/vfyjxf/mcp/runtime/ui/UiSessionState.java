@@ -21,6 +21,14 @@ public record UiSessionState(
         return new UiSessionState(true, targetId, targetId, hoveredTargetId, targetId, source);
     }
 
+    public UiSessionState withHover(String targetId, String source) {
+        return new UiSessionState(true, focusedTargetId, selectedTargetId, targetId, activeTargetId, source);
+    }
+
+    public UiSessionState withActive(String targetId, String source) {
+        return new UiSessionState(true, targetId, targetId, hoveredTargetId, targetId, source);
+    }
+
     public UiSessionState reopened(String source) {
         return new UiSessionState(true, null, null, null, null, source);
     }
