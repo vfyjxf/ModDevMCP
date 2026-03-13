@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NeoForgeRunInjectorTest {
@@ -21,6 +22,7 @@ class NeoForgeRunInjectorTest {
 
         NeoForgeExtension neoForge = project.getExtensions().getByType(NeoForgeExtension.class);
         neoForge.getRuns().create("client", RunModel::client);
+        evaluate(project);
 
         RunModel run = neoForge.getRuns().getByName("client");
 
@@ -28,6 +30,9 @@ class NeoForgeRunInjectorTest {
         assertTrue(run.getSystemProperties().get().containsKey("moddevmcp.project.root"));
         assertTrue(run.getSystemProperties().get().containsKey("moddevmcp.compile.task"));
         assertTrue(run.getSystemProperties().get().containsKey("moddevmcp.class.output"));
+        assertEquals("compileJava", run.getSystemProperties().get().get("moddevmcp.compile.task"));
+        assertEquals(new File(project.getRootProject().getProjectDir(), "build/classes/java/main").getAbsolutePath(),
+                run.getSystemProperties().get().get("moddevmcp.class.output"));
     }
 
     @Test

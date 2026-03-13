@@ -7,14 +7,63 @@ import javax.tools.ToolProvider;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HotswapServiceIntegrationTest {
+
+    @Test
+    void compileUsesWrapperFromConfiguredProjectRootOnWindows() throws IOException {
+        if (!System.getProperty("os.name", "").toLowerCase().contains("win")) {
+            return;
+        }
+
+        Path tempDir = Files.createTempDirectory("hotswap-compile-it-");
+        Path wrapper = tempDir.resolve("gradlew.bat");
+        Files.writeString(wrapper, """
+                @echo off
+                echo wrapper-ok
+                exit /b 0
+                """, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+
+        HotswapService service = new HotswapService(new HotswapRuntimeConfig(tempDir, "compileJava", tempDir));
+
+        var result = service.compile();
+
+        assertEquals(0, result.exitCode(), () -> "Expected wrapper to be executable from project root but stderr was: " + result.stderr());
+        assertTrue(result.stdout().contains("wrapper-ok"), () -> "Expected wrapper output but got: " + result.stdout());
+    }
+
+    @Test
+    void reloadReportsAgentClassloaderDiagnostics() {
+        HotswapService service = new HotswapService(new HotswapRuntimeConfig(Path.of("."), ":noop", Path.of(".")));
+
+        var result = service.reload();
+
+        assertTrue(result.diagnostics().containsKey("modAgentClassLoader"));
+        assertTrue(result.diagnostics().containsKey("systemAgentClassLoader"));
+        assertTrue(result.diagnostics().containsKey("sameAgentClass"));
+        assertTrue(result.diagnostics().containsKey("modInstrumentationPresent"));
+        assertTrue(result.diagnostics().containsKey("systemInstrumentationPresent"));
+    }
+
+    @Test
+    void reloadReturnsAgentErrorWhenAgentClassIsUnavailable() {
+        HotswapService service = new HotswapService(
+                new HotswapRuntimeConfig(Path.of("."), ":noop", Path.of(".")),
+                new ClassLoader(null) { },
+                "missing.Agent"
+        );
+
+        var result = service.reload();
+
+        assertEquals("HotswapAgent not loaded. Ensure -javaagent is configured.", result.errors().get("agent"));
+        assertTrue(result.diagnostics().containsKey("systemAgentLookupError"));
+    }
 
     @Test
     void reloadReplacesMethodBodyForAlreadyLoadedClass() throws Exception {

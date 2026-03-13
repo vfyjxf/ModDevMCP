@@ -22,8 +22,8 @@ public abstract class ModDevMcpHotswapExtension {
         this.enabled = objects.property(Boolean.class).convention(true);
         this.projectRoot = objects.property(File.class);
         this.agentJarPath = objects.property(String.class);
-        this.compileTask = objects.property(String.class).convention(":Mod:compileJava");
-        this.classOutputDir = objects.property(String.class).convention("Mod/build/classes/java/main");
+        this.compileTask = objects.property(String.class).convention("compileJava");
+        this.classOutputDir = objects.property(String.class).convention("build/classes/java/main");
         this.runs = objects.listProperty(String.class).convention(java.util.List.of("client"));
         this.requireEnhancedHotswap = objects.property(Boolean.class).convention(false);
     }
