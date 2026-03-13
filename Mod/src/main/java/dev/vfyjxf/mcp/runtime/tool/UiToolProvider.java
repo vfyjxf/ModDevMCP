@@ -4,9 +4,13 @@ import dev.vfyjxf.mcp.api.model.OperationResult;
 import dev.vfyjxf.mcp.api.runtime.ClientScreenMetrics;
 import dev.vfyjxf.mcp.api.runtime.ClientScreenProbe;
 import dev.vfyjxf.mcp.runtime.RuntimeRegistries;
+import dev.vfyjxf.mcp.api.runtime.UiLocator;
 import dev.vfyjxf.mcp.api.runtime.UiCaptureImage;
 import dev.vfyjxf.mcp.api.runtime.UiContext;
 import dev.vfyjxf.mcp.api.runtime.UiDriver;
+import dev.vfyjxf.mcp.api.runtime.UiInspectResult;
+import dev.vfyjxf.mcp.api.runtime.UiResolveRequest;
+import dev.vfyjxf.mcp.api.runtime.UiTargetReference;
 import dev.vfyjxf.mcp.api.ui.Bounds;
 import dev.vfyjxf.mcp.api.ui.CaptureRequest;
 import dev.vfyjxf.mcp.api.ui.SnapshotOptions;
@@ -72,9 +76,56 @@ public final class UiToolProvider implements McpToolProvider {
         registry.registerTool(definition("moddev.ui_press_key"), (context, arguments) -> inputActionResult("key_press", arguments));
         registry.registerTool(definition("moddev.ui_type_text"), (context, arguments) -> inputActionResult("type_text", arguments));
         registry.registerTool(definition("moddev.ui_wait_for"), (context, arguments) -> sessionWaitResult(arguments));
-        registry.registerTool(definition("moddev.ui_screenshot"), (context, arguments) -> sessionScreenshotResult(arguments));
+        registry.registerTool(definition("moddev.ui_screenshot"), (context, arguments) -> screenshotResult(arguments));
         registry.registerTool(definition("moddev.ui_batch"), (context, arguments) -> sessionBatchResult(arguments));
         registry.registerTool(definition("moddev.ui_trace_get"), (context, arguments) -> traceGetResult(arguments));
+        registry.registerTool(definition("moddev.ui_trace_recent"), (context, arguments) -> traceRecentResult(arguments));
+        registry.registerTool(definition("moddev.ui_inspect"), (context, arguments) -> {
+            var uiContext = uiContext(arguments);
+            return withDriver(uiContext, driver -> ToolResult.success(inspectResultToMap(driver.inspect(uiContext, SnapshotOptions.DEFAULT))));
+        });
+        registry.registerTool(definition("moddev.ui_act"), (context, arguments) -> {
+            var action = stringArgument(arguments.get("action"));
+            if (action == null || action.isBlank()) {
+                return ToolResult.failure("invalid_input: missing action");
+            }
+            var reference = targetReferenceFrom(arguments);
+            if (reference == null) {
+                return ToolResult.failure("invalid_input: missing locator/ref");
+            }
+            var uiContext = uiContext(arguments);
+            return withDriver(uiContext, driver -> {
+                var resolved = driver.resolve(uiContext, new UiResolveRequest(reference, false, true, true));
+                if (!"resolved".equals(resolved.status())) {
+                    return ToolResult.failure(resolved.errorCode());
+                }
+                var actionability = driver.checkActionability(uiContext, resolved.primary(), action);
+                if (!actionability.actionable()) {
+                    return ToolResult.failure(actionability.errorCode());
+                }
+                var selector = TargetSelector.builder().id(resolved.primary().targetId()).build();
+                var preSnapshot = driver.snapshot(uiContext, SnapshotOptions.DEFAULT);
+                var preSnapshotRef = registries.uiSnapshotJournal().record(uiContext, preSnapshot);
+                var actionResult = driver.action(uiContext, new UiActionRequest(selector, action, arguments));
+                if (!actionResult.accepted()) {
+                    return ToolResult.failure(actionResult.reason() == null || actionResult.reason().isBlank()
+                            ? "unsupported_action"
+                            : actionResult.reason());
+                }
+                var postSnapshot = driver.snapshot(uiContext, SnapshotOptions.DEFAULT);
+                var postSnapshotRef = registries.uiSnapshotJournal().record(uiContext, postSnapshot);
+                return ToolResult.success(Map.of(
+                        "driverId", driver.descriptor().id(),
+                        "action", action,
+                        "performed", actionResult.performed(),
+                        "resolvedTarget", targetToMap(resolved.primary()),
+                        "preSnapshotRef", preSnapshotRef,
+                        "postSnapshotRef", postSnapshotRef,
+                        "postActionSnapshot", snapshotToMap(postSnapshot),
+                        "needsReinspect", true
+                ));
+            });
+        });
         registry.registerTool(definition("moddev.ui_snapshot"), (context, arguments) -> {
             var uiContext = uiContext(arguments);
             return withDriver(uiContext, driver -> {
@@ -105,59 +156,14 @@ public final class UiToolProvider implements McpToolProvider {
                     exclude,
                     (Boolean) arguments.getOrDefault("withOverlays", true)
             );
-            return withDriver(uiContext, driver -> {
-                var captureResult = driver.capture(uiContext, request);
-                if (!captureResult.accepted()) {
-                    return operationRejected("capture", driver, captureResult);
-                }
-                var snapshot = driver.snapshot(uiContext, SnapshotOptions.DEFAULT);
-                var snapshotRef = registries.uiSnapshotJournal().record(uiContext, snapshot);
-                var captured = resolveTargets(driver, uiContext, targets, true);
-                if (explicitSelectorsRequested(targets) && captured.isEmpty()) {
-                    return ToolResult.failure("target_not_found: selector did not match any target");
-                }
-                var excluded = resolveTargets(driver, uiContext, exclude, false);
-                var filtered = captured.stream()
-                        .filter(target -> excluded.stream().noneMatch(excludedTarget -> excludedTarget.targetId().equals(target.targetId())))
-                        .toList();
-                if (explicitSelectorsRequested(targets) && filtered.isEmpty()) {
-                    return ToolResult.failure("target_not_found: explicit targets were excluded or resolved to no capturable targets");
-                }
-                var requestedSource = (String) arguments.getOrDefault("source", "auto");
-                var captureImage = selectCaptureImage(
-                        requestedSource,
-                        uiContext,
-                        snapshot,
-                        request,
-                        filtered,
-                        excluded
-                );
-                if (captureImage.isEmpty()) {
-                    return ToolResult.failure(captureUnavailableMessage(requestedSource, driver.descriptor().id(), snapshot.screenClass()));
-                }
-                var artifact = registries.uiCaptureArtifactStore().store(
-                        driver.descriptor().id(),
-                        captureImage.get().pngBytes(),
-                        captureImage.get().width(),
-                        captureImage.get().height(),
-                        Map.of(
-                                "source", captureImage.get().source(),
-                                "providerId", captureImage.get().providerId()
-                        )
-                );
-                return ToolResult.success(Map.of(
-                        "driverId", driver.descriptor().id(),
-                        "mode", request.mode(),
-                        "capturedTargets", filtered.stream().map(this::targetToMap).toList(),
-                        "excludedTargets", excluded.stream().map(this::targetToMap).toList(),
-                        "snapshotRef", snapshotRef,
-                        "capturedSnapshot", snapshotToMap(snapshot),
-                        "imageRef", artifact.imageRef(),
-                        "imagePath", artifact.path(),
-                        "imageResourceUri", artifact.resourceUri(),
-                        "imageMeta", artifact.metadata()
-                ));
-            });
+            return withDriver(uiContext, driver -> captureResult(
+                    driver,
+                    uiContext,
+                    request,
+                    targets,
+                    exclude,
+                    (String) arguments.getOrDefault("source", "auto")
+            ));
         });
         registry.registerTool(definition("moddev.ui_action"), (context, arguments) -> {
             var uiContext = uiContext(arguments);
@@ -192,12 +198,23 @@ public final class UiToolProvider implements McpToolProvider {
         });
         registry.registerTool(definition("moddev.ui_wait"), (context, arguments) -> {
             var uiContext = uiContext(arguments);
-            var selector = selectorFrom(arguments.get("selector"));
             var condition = (String) arguments.getOrDefault("condition", "appeared");
             var timeoutMs = longArgument(arguments, "timeoutMs", 0L);
             var pollIntervalMs = Math.max(1L, longArgument(arguments, "pollIntervalMs", 50L));
             var stableForMs = longArgument(arguments, "stableForMs", 100L);
             return withDriver(uiContext, driver -> {
+                var reference = targetReferenceFrom(arguments);
+                if (reference != null) {
+                    var waitResult = driver.waitFor(uiContext, new dev.vfyjxf.mcp.api.runtime.UiWaitRequest(
+                            reference,
+                            condition,
+                            timeoutMs,
+                            pollIntervalMs,
+                            stableForMs
+                    ));
+                    return ToolResult.success(waitResultToMap(driver, condition, waitResult));
+                }
+                var selector = selectorFrom(arguments.get("selector"));
                 var waitResult = waitForCondition(driver, uiContext, selector, condition, timeoutMs, pollIntervalMs, stableForMs);
                 return ToolResult.success(Map.of(
                         "driverId", driver.descriptor().id(),
@@ -500,29 +517,35 @@ public final class UiToolProvider implements McpToolProvider {
                     name,
                     "Built-in UI automation tool",
                     objectSchema(
-                            Map.of(
-                                    "sessionId", stringSchema(),
-                                    "refId", stringSchema(),
-                                    "mode", stringSchema(),
-                                    "source", stringSchema(),
-                                    "withOverlays", booleanSchema()
+                            Map.ofEntries(
+                                    Map.entry("sessionId", stringSchema()),
+                                    Map.entry("refId", stringSchema()),
+                                    Map.entry("ref", stringSchema()),
+                                    Map.entry("locator", objectSchema()),
+                                    Map.entry("x", integerSchema()),
+                                    Map.entry("y", integerSchema()),
+                                    Map.entry("mode", stringSchema()),
+                                    Map.entry("source", stringSchema()),
+                                    Map.entry("withOverlays", booleanSchema())
                             ),
-                            List.of("sessionId")
+                            List.of()
                     ),
                     objectSchema(
-                            Map.of(
-                                    "driverId", stringSchema(),
-                                    "mode", stringSchema(),
-                                    "capturedTargets", arraySchema(objectSchema()),
-                                    "excludedTargets", arraySchema(objectSchema()),
-                                    "snapshotRef", stringSchema(),
-                                    "capturedSnapshot", objectSchema(),
-                                    "imageRef", stringSchema(),
-                                    "imagePath", stringSchema(),
-                                    "imageResourceUri", stringSchema(),
-                                    "imageMeta", objectSchema()
+                            Map.ofEntries(
+                                    Map.entry("driverId", stringSchema()),
+                                    Map.entry("mode", stringSchema()),
+                                    Map.entry("resolvedTarget", objectSchema()),
+                                    Map.entry("capturedTargets", arraySchema(objectSchema())),
+                                    Map.entry("excludedTargets", arraySchema(objectSchema())),
+                                    Map.entry("snapshotRef", stringSchema()),
+                                    Map.entry("capturedSnapshot", objectSchema()),
+                                    Map.entry("imageRef", stringSchema()),
+                                    Map.entry("imagePath", stringSchema()),
+                                    Map.entry("imageResourceUri", stringSchema()),
+                                    Map.entry("imageMeta", objectSchema()),
+                                    Map.entry("needsReinspect", booleanSchema())
                             ),
-                            List.of("driverId", "capturedTargets", "excludedTargets", "snapshotRef", "imageRef", "imageMeta")
+                            List.of("driverId", "snapshotRef", "imageRef", "imageMeta")
                     ),
                     List.of("ui"),
                     "either",
@@ -572,6 +595,98 @@ public final class UiToolProvider implements McpToolProvider {
                                     "traces", arraySchema(objectSchema())
                             ),
                             List.of("sessionId", "traces")
+                    ),
+                    List.of("ui"),
+                    "either",
+                    false,
+                    false,
+                    "public",
+                    "public"
+            );
+            case "moddev.ui_trace_recent" -> new McpToolDefinition(
+                    name,
+                    name,
+                    "Built-in recent UI trace tool",
+                    objectSchema(
+                            Map.of(
+                                    "sessionId", stringSchema(),
+                                    "limit", integerSchema()
+                            ),
+                            List.of("sessionId")
+                    ),
+                    objectSchema(
+                            Map.of(
+                                    "sessionId", stringSchema(),
+                                    "traces", arraySchema(objectSchema())
+                            ),
+                            List.of("sessionId", "traces")
+                    ),
+                    List.of("ui"),
+                    "either",
+                    false,
+                    false,
+                    "public",
+                    "public"
+            );
+            case "moddev.ui_inspect" -> new McpToolDefinition(
+                    name,
+                    name,
+                    "Built-in high-level UI inspect tool",
+                    objectSchema(
+                            Map.of(
+                                    "screenClass", stringSchema(),
+                                    "modId", stringSchema(),
+                                    "mouseX", integerSchema(),
+                                    "mouseY", integerSchema()
+                            ),
+                            List.of()
+                    ),
+                    objectSchema(
+                            Map.of(
+                                    "screen", stringSchema(),
+                                    "screenId", stringSchema(),
+                                    "driverId", stringSchema(),
+                                    "summary", objectSchema(),
+                                    "targets", arraySchema(objectSchema()),
+                                    "interaction", objectSchema()
+                            ),
+                            List.of("screen", "screenId", "driverId", "summary", "targets", "interaction")
+                    ),
+                    List.of("ui"),
+                    "either",
+                    false,
+                    false,
+                    "public",
+                    "public"
+            );
+            case "moddev.ui_act" -> new McpToolDefinition(
+                    name,
+                    name,
+                    "Built-in high-level UI action tool",
+                    objectSchema(
+                            Map.of(
+                                    "screenClass", stringSchema(),
+                                    "modId", stringSchema(),
+                                    "action", stringSchema(),
+                                    "ref", stringSchema(),
+                                    "locator", objectSchema(),
+                                    "x", integerSchema(),
+                                    "y", integerSchema()
+                            ),
+                            List.of("action")
+                    ),
+                    objectSchema(
+                            Map.of(
+                                    "driverId", stringSchema(),
+                                    "action", stringSchema(),
+                                    "performed", booleanSchema(),
+                                    "resolvedTarget", objectSchema(),
+                                    "preSnapshotRef", stringSchema(),
+                                    "postSnapshotRef", stringSchema(),
+                                    "postActionSnapshot", objectSchema(),
+                                    "needsReinspect", booleanSchema()
+                            ),
+                            List.of("driverId", "action", "performed", "resolvedTarget", "preSnapshotRef", "postSnapshotRef", "postActionSnapshot", "needsReinspect")
                     ),
                     List.of("ui"),
                     "either",
@@ -1346,6 +1461,14 @@ public final class UiToolProvider implements McpToolProvider {
         return result;
     }
 
+    private ToolResult screenshotResult(Map<String, Object> arguments) {
+        var sessionId = stringArgument(arguments.get("sessionId"));
+        if (sessionId != null && !sessionId.isBlank()) {
+            return sessionScreenshotResult(arguments);
+        }
+        return liveScreenshotResult(arguments);
+    }
+
     private ToolResult sessionScreenshotResult(Map<String, Object> arguments) {
         var sessionId = stringArgument(arguments.get("sessionId"));
         if (sessionId == null || sessionId.isBlank()) {
@@ -1396,6 +1519,47 @@ public final class UiToolProvider implements McpToolProvider {
         ));
         recordSessionTrace(sessionId, "screenshot", startedAt, result);
         return result;
+    }
+
+    private ToolResult liveScreenshotResult(Map<String, Object> arguments) {
+        var unavailable = unavailableScreenResult(arguments);
+        if (unavailable != null) {
+            return unavailable;
+        }
+        var uiContext = uiContext(arguments);
+        return withDriver(uiContext, driver -> {
+            var reference = targetReferenceFrom(arguments);
+            List<TargetSelector> selectors = null;
+            UiTarget resolvedTarget = null;
+            if (reference != null) {
+                var resolved = driver.resolve(uiContext, new UiResolveRequest(reference, false, true, true));
+                if (!"resolved".equals(resolved.status())) {
+                    return ToolResult.failure(resolved.errorCode());
+                }
+                resolvedTarget = resolved.primary();
+                selectors = List.of(TargetSelector.builder().id(resolvedTarget.targetId()).build());
+            }
+            var request = new CaptureRequest(
+                    (String) arguments.getOrDefault("mode", selectors == null ? "full" : "crop"),
+                    selectors,
+                    List.of(),
+                    (Boolean) arguments.getOrDefault("withOverlays", true)
+            );
+            var result = captureResult(
+                    driver,
+                    uiContext,
+                    request,
+                    selectors,
+                    List.of(),
+                    (String) arguments.getOrDefault("source", "auto")
+            );
+            if (!result.success()) {
+                return result;
+            }
+            @SuppressWarnings("unchecked")
+            var payload = (Map<String, Object>) result.value();
+            return ToolResult.success(conciseScreenshotPayload(payload, resolvedTarget));
+        });
     }
 
     @SuppressWarnings("unchecked")
@@ -1513,17 +1677,21 @@ public final class UiToolProvider implements McpToolProvider {
         if (trace == null) {
             return ToolResult.failure("session_not_found");
         }
-        return ToolResult.success(Map.of(
-                "sessionId", sessionId,
-                "traces", trace.stream().map(entry -> Map.of(
-                        "stepIndex", entry.stepIndex(),
-                        "type", entry.type(),
-                        "elapsedMs", entry.elapsedMs(),
-                        "success", entry.success(),
-                        "errorCode", entry.errorCode(),
-                        "errorMessage", entry.errorMessage()
-                )).toList()
-        ));
+        return ToolResult.success(tracePayload(sessionId, trace));
+    }
+
+    private ToolResult traceRecentResult(Map<String, Object> arguments) {
+        var sessionId = stringArgument(arguments.get("sessionId"));
+        if (sessionId == null || sessionId.isBlank()) {
+            return ToolResult.failure("invalid_input: missing sessionId");
+        }
+        var trace = registries.uiAutomationSessions().trace(sessionId).orElse(null);
+        if (trace == null) {
+            return ToolResult.failure("session_not_found");
+        }
+        var limit = Math.max(1, (int) longArgument(arguments, "limit", 10L));
+        var fromIndex = Math.max(0, trace.size() - limit);
+        return ToolResult.success(tracePayload(sessionId, trace.subList(fromIndex, trace.size())));
     }
 
     private ToolResult captureResult(
@@ -1534,9 +1702,9 @@ public final class UiToolProvider implements McpToolProvider {
             List<TargetSelector> exclude,
             String requestedSource
     ) {
-        var captureAction = driver.capture(uiContext, request);
-        if (!captureAction.accepted()) {
-            return operationRejected("capture", driver, captureAction);
+        var captureHookResult = optionalCaptureHookResult(driver, uiContext, request);
+        if (captureHookResult != null) {
+            return captureHookResult;
         }
         var snapshot = driver.snapshot(uiContext, SnapshotOptions.DEFAULT);
         var snapshotRef = registries.uiSnapshotJournal().record(uiContext, snapshot);
@@ -1586,6 +1754,16 @@ public final class UiToolProvider implements McpToolProvider {
         ));
     }
 
+    private ToolResult optionalCaptureHookResult(UiDriver driver, UiContext uiContext, CaptureRequest request) {
+        var captureResult = driver.capture(uiContext, request);
+        if (captureResult.accepted()) {
+            return null;
+        }
+        return "Capture not supported".equals(captureResult.reason())
+                ? null
+                : operationRejected("capture", driver, captureResult);
+    }
+
     private UiContext automationContext(Map<String, Object> arguments, UiAutomationSession session, UiTarget target) {
         var delegatedArguments = new java.util.LinkedHashMap<String, Object>();
         delegatedArguments.putAll(arguments);
@@ -1602,6 +1780,33 @@ public final class UiToolProvider implements McpToolProvider {
 
     private String stringArgument(Object value) {
         return value instanceof String string ? string : null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private UiTargetReference targetReferenceFrom(Map<String, Object> arguments) {
+        var ref = stringArgument(arguments.get("ref"));
+        if (ref != null && !ref.isBlank()) {
+            return UiTargetReference.ref(ref);
+        }
+        if (arguments.get("locator") instanceof Map<?, ?> rawLocator) {
+            var locator = locatorFrom((Map<String, Object>) rawLocator);
+            return UiTargetReference.locator(locator);
+        }
+        if (arguments.get("x") instanceof Number x && arguments.get("y") instanceof Number y) {
+            return UiTargetReference.point(x.intValue(), y.intValue());
+        }
+        return null;
+    }
+
+    private UiLocator locatorFrom(Map<String, Object> rawLocator) {
+        return new UiLocator(
+                stringArgument(rawLocator.get("role")),
+                stringArgument(rawLocator.get("text")),
+                stringArgument(rawLocator.get("containsText")),
+                stringArgument(rawLocator.get("id")),
+                rawLocator.get("index") instanceof Number number ? number.intValue() : null,
+                stringArgument(rawLocator.get("scopeRef"))
+        );
     }
 
     @SuppressWarnings("unchecked")
@@ -2019,6 +2224,75 @@ public final class UiToolProvider implements McpToolProvider {
         );
     }
 
+    private Map<String, Object> inspectResultToMap(UiInspectResult inspectResult) {
+        var result = new java.util.LinkedHashMap<String, Object>();
+        result.put("screen", inspectResult.screen());
+        result.put("screenId", inspectResult.screenId());
+        result.put("driverId", inspectResult.driverId());
+        result.put("summary", inspectResult.summary());
+        result.put("targets", inspectResult.targets().stream().map(this::targetToMap).toList());
+        result.put("interaction", inspectResult.interaction());
+        if (inspectResult.tooltip() != null) {
+            result.put("tooltip", Map.of(
+                    "targetId", inspectResult.tooltip().targetId(),
+                    "lines", inspectResult.tooltip().lines(),
+                    "bounds", boundsToMap(inspectResult.tooltip().bounds())
+            ));
+        }
+        return Map.copyOf(result);
+    }
+
+    private Map<String, Object> conciseScreenshotPayload(Map<String, Object> payload, UiTarget resolvedTarget) {
+        var result = new java.util.LinkedHashMap<String, Object>();
+        result.put("driverId", payload.get("driverId"));
+        result.put("mode", payload.get("mode"));
+        if (resolvedTarget != null) {
+            result.put("resolvedTarget", targetToMap(resolvedTarget));
+        }
+        result.put("snapshotRef", payload.get("snapshotRef"));
+        result.put("imageRef", payload.get("imageRef"));
+        result.put("imagePath", payload.get("imagePath"));
+        result.put("imageResourceUri", payload.get("imageResourceUri"));
+        result.put("imageMeta", payload.get("imageMeta"));
+        result.put("needsReinspect", true);
+        return Map.copyOf(result);
+    }
+
+    private Map<String, Object> tracePayload(String sessionId, List<UiAutomationTraceEntry> trace) {
+        return Map.of(
+                "sessionId", sessionId,
+                "traces", trace.stream().map(this::traceEntryToMap).toList()
+        );
+    }
+
+    private Map<String, Object> traceEntryToMap(UiAutomationTraceEntry entry) {
+        return Map.of(
+                "stepIndex", entry.stepIndex(),
+                "type", entry.type(),
+                "elapsedMs", entry.elapsedMs(),
+                "success", entry.success(),
+                "errorCode", entry.errorCode(),
+                "errorMessage", entry.errorMessage()
+        );
+    }
+
+    private Map<String, Object> waitResultToMap(UiDriver driver, String condition, dev.vfyjxf.mcp.api.runtime.UiWaitResult waitResult) {
+        var result = new java.util.LinkedHashMap<String, Object>();
+        result.put("driverId", driver.descriptor().id());
+        result.put("condition", condition);
+        result.put("matched", waitResult.matched());
+        result.put("timedOut", "timeout".equals(waitResult.errorCode()));
+        result.put("elapsedMs", waitResult.elapsedMs());
+        result.put("targets", waitResult.matchedTarget() == null ? List.of() : List.of(targetToMap(waitResult.matchedTarget())));
+        if (waitResult.matchedTarget() != null) {
+            result.put("matchedTarget", targetToMap(waitResult.matchedTarget()));
+        }
+        if (waitResult.errorCode() != null && !waitResult.errorCode().isBlank()) {
+            result.put("errorCode", waitResult.errorCode());
+        }
+        return Map.copyOf(result);
+    }
+
     private Map<String, Object> interactionStateToMap(UiInteractionState state) {
         return Map.of(
                 "driverId", state.driverId(),
@@ -2071,6 +2345,15 @@ public final class UiToolProvider implements McpToolProvider {
                 "state", targetStateToMap(target),
                 "actions", target.actions(),
                 "extensions", target.extensions()
+        );
+    }
+
+    private Map<String, Object> boundsToMap(Bounds bounds) {
+        return Map.of(
+                "x", bounds.x(),
+                "y", bounds.y(),
+                "width", bounds.width(),
+                "height", bounds.height()
         );
     }
 

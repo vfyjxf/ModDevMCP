@@ -126,6 +126,33 @@ class UiAutomationTraceTest {
         assertEquals(true, traces.getFirst().get("success"));
     }
 
+    @Test
+    void uiTraceRecentReturnsOnlyLatestEntries() {
+        var runtime = new RuntimeHarness();
+        var session = runtime.openSession();
+        runtime.server.registry().findTool("moddev.ui_batch").orElseThrow().handler().handle(ToolCallContext.empty(), Map.of(
+                "sessionId", session.sessionId(),
+                "steps", List.of(
+                        Map.of("type", "clickRef", "refId", session.refId()),
+                        Map.of("type", "waitFor", "refId", session.refId(), "condition", "appeared", "timeoutMs", 50)
+                )
+        ));
+
+        var tool = runtime.server.registry().findTool("moddev.ui_trace_recent").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "sessionId", session.sessionId(),
+                "limit", 1
+        ));
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        @SuppressWarnings("unchecked")
+        var traces = (List<Map<String, Object>>) payload.get("traces");
+        assertEquals(1, traces.size());
+        assertEquals("waitFor", traces.getFirst().get("type"));
+    }
+
     private record SessionHandle(String sessionId, String refId) {
     }
 

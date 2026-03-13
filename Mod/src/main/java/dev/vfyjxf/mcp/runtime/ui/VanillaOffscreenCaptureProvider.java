@@ -23,7 +23,8 @@ public final class VanillaOffscreenCaptureProvider implements UiOffscreenCapture
 
     @Override
     public boolean matches(UiContext context, UiSnapshot snapshot) {
-        return VanillaUiCaptureAvailability.hasMatchingLiveScreen(context);
+        return VanillaUiCaptureAvailability.hasMatchingLiveScreen(context)
+                && VanillaUiCaptureAvailability.supportsOffscreenSnapshot(snapshot);
     }
 
     @Override
