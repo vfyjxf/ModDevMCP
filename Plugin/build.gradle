@@ -16,9 +16,9 @@ repositories {
 
 gradlePlugin {
     plugins {
-        modDevMcpHotswap {
-            id = 'dev.vfyjxf.moddev-hotswap'
-            implementationClass = 'dev.vfyjxf.mcp.gradle.ModDevMcpHotswapPlugin'
+        modDevMcp {
+            id = 'dev.vfyjxf.moddevmcp'
+            implementationClass = 'dev.vfyjxf.mcp.gradle.ModDevMcpPlugin'
         }
     }
 }

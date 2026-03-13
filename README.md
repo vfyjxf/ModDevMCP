@@ -1,27 +1,25 @@
 # ModDevMCP
 
-MCP for NeoForge mod development.
+MCP tooling for NeoForge mod development.
 
-Current layout:
+## Repository Layout
 
-- `Server`: reusable MCP protocol, registry, transport, and SDK glue
-- `Mod`: Minecraft runtime, drivers, built-in tools, capture/input logic, and game-side entrypoints
+- `Server`: standalone MCP host server, MCP protocol/transport glue, host scheduling, status tools
+- `Mod`: Minecraft runtime integration, runtime client, built-in game tools, UI/input/capture implementations
 - `TestMod`: standalone composite-build test project for real `runClient` validation
 
 ## Current Primary Architecture
 
-The primary runtime path is now `game MCP`.
+The repository now uses a host-first architecture.
 
-That means:
+- agents connect only to `Server`
+- the MCP stdio entrypoint is `dev.vfyjxf.mcp.server.bootstrap.ModDevMcpStdioMain`
+- the Minecraft client does not host MCP directly
+- `Mod` starts a runtime client and reconnects to the host in the background
+- runtime tools appear dynamically after the game connects
+- if the game is offline, host-owned tools still respond with explicit status such as `hostReady=true`
 
-- `runClient` starts Minecraft
-- the Minecraft client process starts the MCP endpoint inside the same JVM
-- the embedded MCP bootstrap/runtime implementation now lives in `Server`
-- `Mod` prepares Minecraft runtime providers and calls the `Server` bootstrap
-- external agents connect only after the game is already running
-- there is no stable-server/backend chain in the primary workflow
-
-Default game MCP endpoint:
+Default host endpoint for the game runtime client:
 
 - host: `127.0.0.1`
 - port: `47653`
@@ -33,82 +31,107 @@ Optional JVM overrides:
 
 ## Primary Real-Game Workflow
 
-Run the client from `TestMod`:
+1. Start the MCP host from `Server`.
+2. Start Minecraft from `TestMod`.
+3. Let the client reconnect to the host automatically.
+4. Call `moddev.status` first.
+5. Only use game tools after `gameConnected=true`.
+
+Manual host startup for repository debugging:
+
+```powershell
+$env:GRADLE_USER_HOME='.gradle-user'
+.\gradlew.bat :Server:runStdioMcp --no-daemon
+```
+
+Real client startup:
 
 ```powershell
 cd TestMod
+$env:GRADLE_USER_HOME='..\.gradle-user'
 .\gradlew.bat runClient --no-daemon
 ```
 
-This is the primary real-game validation path.
-
-What it does:
+What `runClient` does:
 
 - starts the standalone NeoForge client
 - loads `mod_dev_mcp`
-- starts the game MCP socket inside the client process
+- initializes runtime providers inside the game process
+- starts a background reconnect loop to `127.0.0.1:47653`
+
+## Plugin Consumer Notes
+
+`modDevMcp` resolves the hotswap agent from Maven by default instead of assuming a repository-local jar path.
+
+Typical consumer configuration:
+
+```groovy
+modDevMcp {
+    agentCoordinates = "dev.vfyjxf:moddevmcp-agent:<version>"
+}
+```
+
+Repository-local validation flow:
+
+```powershell
+$env:GRADLE_USER_HOME='.gradle-user'
+.\gradlew.bat :Agent:publishToMavenLocal :Plugin:publishToMavenLocal --no-daemon
+.\TestMod\gradlew.bat -p .\TestMod createMcpClientFiles --no-daemon
+```
 
 ## MCP Client Connection
 
-For command-based MCP clients such as Codex, Claude Code, Gemini CLI, or Goose, use the connect-only bridge:
+For MCP clients such as Codex, Claude Code, Gemini CLI, or Goose, point the client at the `Server` stdio entrypoint.
 
-```powershell
-.\gradlew.bat :Mod:createGameMcpBridgeLaunchScript --no-daemon
-```
-
-Generated files:
-
-- `Mod\build\moddevmcp\game-mcp\run-game-mcp-bridge.bat`
-- `Mod\build\moddevmcp\game-mcp\game-mcp-bridge-java.args`
-
-Bridge bootstrap class:
-
-- `dev.vfyjxf.mcp.bootstrap.GameMcpBridgeMain`
-
-Example MCP config:
+Generic command shape:
 
 ```toml
 [mcp_servers.moddevmcp]
-command = '<repo>\\Mod\\build\\moddevmcp\\game-mcp\\run-game-mcp-bridge.bat'
+command = 'java'
+args = [
+  '-cp',
+  '<server-runtime-classpath>',
+  'dev.vfyjxf.mcp.server.bootstrap.ModDevMcpStdioMain',
+]
 ```
 
-The bridge only connects to an already running game MCP socket.
+Repository-local Gradle task for manual debugging:
 
-It does not:
+- `:Server:runStdioMcp`
 
-- start Minecraft
-- start any separate MCP daemon for you
-- infer that the game is ready without a real tool check
+Optional listener-only debug task:
+
+- `:Server:runServer`
+
+`runServer` only starts the host runtime listener. It is not the MCP stdio entrypoint used by agents.
 
 ## Agent Rule
 
 Use this operator rule:
 
-1. start Minecraft first
-2. wait for the title screen or target world/UI to be ready
-3. start the MCP client
-4. first verify the MCP connection
-5. then use game tools
+1. start the MCP host
+2. start Minecraft
+3. wait until the target UI is ready
+4. call `moddev.status`
+5. continue only if `gameConnected=true`
+6. then call `moddev.ui_get_live_screen`
 
-Recommended first tool call after connection:
-
-- `moddev.ui_get_live_screen`
-
-If MCP connection fails, the agent should stop and tell the user in Chinese:
+If status or the first UI probe fails, stop and tell the user in Chinese:
 
 - `请先启动并加载游戏，再继续使用 ModDevMCP。`
 
 Prompt templates:
 
 - `docs/guides/2026-03-11-agent-prompt-templates.md`
-- `docs/guides/2026-03-11-game-mcp-guide.md`
+- `docs/guides/2026-03-11-agent-preflight-checklist.md`
 
 ## Implemented Runtime Capabilities
 
+- host-owned status reporting via `moddev.status`
+- runtime tool refresh on game connect/disconnect
 - UI snapshot/query/capture/action/wait/tooltip
 - interaction state and target details
 - live screen probe via `moddev.ui_get_live_screen`
-- explicit high-level UI entry via `moddev.ui_run_intent` for `inventory`, `chat`, and `pause_menu`
 - high-level Playwright-style debug flow via:
   - `moddev.ui_inspect`
   - `moddev.ui_act`
@@ -132,47 +155,15 @@ Prompt templates:
 
 If no real capture provider matches, `moddev.ui_capture` returns a real failure instead of a fake screenshot.
 
-Automation usage notes:
+## Verification Notes
 
-- `docs/guides/2026-03-12-playwright-style-ui-automation-guide.md`
-- `docs/plans/2026-03-12-playwright-style-ui-automation/impl.md`
-- `docs/plans/2026-03-12-ui-driver-playwright-debug-api/impl.md`
+Recent real validation covered:
 
-## Repository Development Entry Points
+- sequential JSON-line MCP requests against `ModDevMcpStdioMain`
+- `moddev.status` over a real Codex MCP session
+- `TestMod` `runClient` startup with runtime reconnect logs
+- host-aware server regression tests in `Server`
 
-Protocol-only `Server` stdio example:
+If Gradle dependency downloads fail, treat TLS/repository/network failures separately from code failures.
 
-```toml
-[mcp_servers.moddevmcp_protocol]
-command = 'java'
-args = [
-  '-cp',
-  '<repo>\\Server\\build\\libs\\<server-jar>.jar',
-  'dev.vfyjxf.mcp.server.bootstrap.ModDevMcpStdioMain',
-]
-```
 
-That validates the protocol host itself, but it does not expose Minecraft runtime tools.
-
-Legacy standalone embedded stdio host for repository debugging:
-
-```powershell
-.\gradlew.bat :Mod:createEmbeddedMcpLaunchScript --no-daemon
-```
-
-Outputs:
-
-- `Mod\build\moddevmcp\embedded-mcp\run-embedded-mcp-stdio.bat`
-- `Mod\build\moddevmcp\embedded-mcp\embedded-mcp-java.args`
-
-This path is for low-level debugging, not the primary real-game workflow.
-
-## Real Artifacts
-
-Recent real verification artifacts live under:
-
-- `build\demo\live-screen`
-- `build\demo\playwright-ui-flow`
-- `TestMod\run\build\moddevmcp\captures`
-
-If Gradle dependency downloads fail, treat repository/TLS/network failures separately from code failures.

@@ -1,13 +1,13 @@
 # 2026-03-11 Simple Agent Install Guide
 
 Date: 2026-03-11 17:30 CST
-Updated: 2026-03-12 08:10 CST
+Updated: 2026-03-13 20:26 CST
 
 ## Purpose
 
-- give MCP clients one simple project-local command
-- keep the runtime inside Minecraft
-- avoid any separate server startup in the normal flow
+- give MCP clients one stable host entrypoint
+- keep Minecraft as a reconnecting runtime client, not an MCP host
+- keep setup generic for project-local or user-level MCP configuration
 
 See also:
 
@@ -16,43 +16,70 @@ See also:
 
 ## Workflow
 
-Game-hosted integration contract:
+Host-first integration contract:
 
-- the Minecraft process is the real MCP host
-- default endpoint is `127.0.0.1:47653`
-- the external bridge only connects to that endpoint
-- the bridge does not start the game
+- the MCP server is `Server`
+- the game connects outward to the host on `127.0.0.1:47653`
+- agents should connect to `ModDevMcpStdioMain`
+- the game may start later and reconnect automatically
 
-Setup:
+## Setup
 
-1. Start Minecraft with ModDevMCP loaded.
-2. Generate the connect-only bridge:
+Start the MCP host:
 
 ```powershell
-.\gradlew.bat :Mod:createGameMcpBridgeLaunchScript --no-daemon
+$env:GRADLE_USER_HOME='.gradle-user'
+.\gradlew.bat :Server:runStdioMcp --no-daemon
 ```
 
-This writes:
+Start Minecraft:
 
-- `Mod\build\moddevmcp\game-mcp\run-game-mcp-bridge.bat`
-- `Mod\build\moddevmcp\game-mcp\game-mcp-bridge-java.args`
+```powershell
+cd TestMod
+$env:GRADLE_USER_HOME='..\.gradle-user'
+.\gradlew.bat runClient --no-daemon
+```
 
 Minimal MCP client setup:
 
-- configure the client to launch `run-game-mcp-bridge.bat`
-
-Example:
-
 ```toml
 [mcp_servers.moddevmcp]
-command = '<repo>\\Mod\\build\\moddevmcp\\game-mcp\\run-game-mcp-bridge.bat'
+command = 'java'
+args = [
+  '-cp',
+  '<server-runtime-classpath>',
+  'dev.vfyjxf.mcp.server.bootstrap.ModDevMcpStdioMain',
+]
+```
+
+## Plugin Consumer Notes
+
+For NeoForge consumer projects using the Gradle plugin, prefer Maven coordinates over a hard-coded local Agent jar path:
+
+```groovy
+modDevMcp {
+    agentCoordinates = "dev.vfyjxf:moddevmcp-agent:<version>"
+}
+```
+
+For repository-local validation, publish first:
+
+```powershell
+$env:GRADLE_USER_HOME='.gradle-user'
+.\gradlew.bat :Agent:publishToMavenLocal :Plugin:publishToMavenLocal --no-daemon
+.\TestMod\gradlew.bat -p .\TestMod createMcpClientFiles --no-daemon
 ```
 
 ## Verification
 
 Agent rule:
 
-1. Start the game first.
-2. Start the MCP client second.
-3. First call `moddev.ui_get_live_screen`.
-4. If connection or that call fails, stop and ask the user to finish loading the game.
+1. start the host first
+2. start the game second
+3. first call `moddev.status`
+4. continue only if `gameConnected=true`
+5. then call `moddev.ui_get_live_screen`
+
+If status or the first UI call fails, stop and ask the user to finish loading the game.
+
+

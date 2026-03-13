@@ -1,6 +1,6 @@
 package dev.vfyjxf.mcp.server.bootstrap;
 
-public record EmbeddedGameMcpConfig(
+public record HostEndpointConfig(
         String host,
         int port
 ) {
@@ -10,7 +10,7 @@ public record EmbeddedGameMcpConfig(
     public static final String DEFAULT_HOST = "127.0.0.1";
     public static final int DEFAULT_PORT = 47653;
 
-    public EmbeddedGameMcpConfig {
+    public HostEndpointConfig {
         if (host == null || host.isBlank()) {
             throw new IllegalArgumentException("host must not be blank");
         }
@@ -19,12 +19,14 @@ public record EmbeddedGameMcpConfig(
         }
     }
 
-    public static EmbeddedGameMcpConfig loadResolved() {
+    public static HostEndpointConfig loadResolved() {
         var host = System.getProperty(HOST_PROPERTY, DEFAULT_HOST);
         var portValue = System.getProperty(PORT_PROPERTY);
         var port = portValue == null || portValue.isBlank()
                 ? DEFAULT_PORT
                 : Integer.parseInt(portValue);
-        return new EmbeddedGameMcpConfig(host, port);
+        return new HostEndpointConfig(host, port);
     }
 }
+
+

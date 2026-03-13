@@ -1,72 +1,53 @@
 # TestMod RunClient Guide
 
-Date: 2026-03-11 17:20 CST
-Updated: 2026-03-12 08:10 CST
+Date: 2026-03-11 17:30 CST
+Updated: 2026-03-13 20:26 CST
 
 ## Purpose
 
-- run real Minecraft integration tests from a standalone Gradle project
-- keep MCP implementation in the main repository
-- make `TestMod` the default real-game `runClient` entrypoint
+- run a standalone NeoForge client against the current host-first ModDevMCP architecture
+- use `TestMod` as the real `runClient` validation path
 
-## Workflow
+## Start the Host
 
-Project layout:
+From the repository root:
 
-- main repo root:
-  - `Server`
-  - `Mod`
-  - `TestMod`
-- `TestMod` is a separate Gradle build
-- `TestMod/settings.gradle` uses `includeBuild("..")` to consume this repository as an included build
+```powershell
+$env:GRADLE_USER_HOME='.gradle-user'
+.\gradlew.bat :Server:runStdioMcp --no-daemon
+```
 
-Primary startup flow:
+## Start the Client
+
+From `TestMod`:
 
 ```powershell
 cd TestMod
+$env:GRADLE_USER_HOME='..\.gradle-user'
 .\gradlew.bat runClient --no-daemon
 ```
 
-What that does:
-
-- starts the standalone `TestMod` NeoForge client
-- loads the current `mod_dev_mcp` code from the included build
-- starts the game MCP endpoint inside the Minecraft process
-
-Current wiring:
-
-- current included MCP runtime dependency coordinate:
-  - `com.example.examplemod:mod_dev_mcp:0.1`
-- default game MCP endpoint:
-  - `127.0.0.1:47653`
-
-Optional MCP bridge generation:
+Generate generic MCP client files:
 
 ```powershell
-.\gradlew.bat :Mod:createGameMcpBridgeLaunchScript --no-daemon
+.\gradlew.bat createMcpClientFiles --no-daemon
 ```
 
-This writes:
+## What This Does
 
-- `..\Mod\build\moddevmcp\game-mcp\run-game-mcp-bridge.bat`
-- `..\Mod\build\moddevmcp\game-mcp\game-mcp-bridge-java.args`
+- starts the standalone Minecraft client
+- loads `mod_dev_mcp`
+- initializes runtime providers in the game process
+- connects the game runtime to the host on `127.0.0.1:47653`
 
-Quick verification:
+## MCP Readiness
 
-```powershell
-cd TestMod
-.\gradlew.bat tasks --all --no-daemon
-.\gradlew.bat compileJava --no-daemon
-```
+Recommended first checks from the agent side:
 
-Expected:
+1. call `moddev.status`
+2. verify `gameConnected=true`
+3. call `moddev.ui_get_live_screen`
 
-- `runClient` appears in task output
-- `compileJava` succeeds
+A typical MCP config should launch `dev.vfyjxf.mcp.server.bootstrap.ModDevMcpStdioMain`, not a bridge script.
 
-## Notes
 
-- `TestMod` is the current primary real-game validation path
-- start game first, then connect the MCP client
-- a typical MCP config command path is `<repo>\Mod\build\moddevmcp\game-mcp\run-game-mcp-bridge.bat`
-- if Gradle dependency downloads fail, classify the failure separately as repository/TLS/environment issue

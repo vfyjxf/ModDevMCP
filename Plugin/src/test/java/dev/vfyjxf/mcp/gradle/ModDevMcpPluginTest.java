@@ -7,14 +7,14 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-class ModDevMcpHotswapPluginTest {
+class ModDevMcpPluginTest {
 
     @Test
     void pluginIdCanBeAppliedAndCreatesExtension() {
         Project project = ProjectBuilder.builder().build();
 
-        assertDoesNotThrow(() -> project.getPluginManager().apply("dev.vfyjxf.moddev-hotswap"));
+        assertDoesNotThrow(() -> project.getPluginManager().apply("dev.vfyjxf.moddevmcp"));
 
-        assertNotNull(project.getExtensions().findByName("modDevMcpHotswap"));
+        assertNotNull(project.getExtensions().findByName("modDevMcp"));
     }
 }

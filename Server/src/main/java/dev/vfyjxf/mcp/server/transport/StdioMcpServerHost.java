@@ -46,6 +46,10 @@ public final class StdioMcpServerHost implements McpServerTransport {
                 var response = dispatcher.handle(request);
                 if (response.isPresent()) {
                     writeMessage(response.get(), message.framing());
+                    continue;
+                }
+                if ("notifications/initialized".equals(request.get("method"))) {
+                    writeMessage(dispatcher.initializedNotification(), message.framing());
                 }
             }
         } catch (IOException exception) {
