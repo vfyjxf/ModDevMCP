@@ -1,0 +1,156 @@
+package dev.vfyjxf.mcp.runtime.input;
+
+import dev.vfyjxf.mcp.api.model.OperationResult;
+import dev.vfyjxf.mcp.api.runtime.ClientScreenMetrics;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import org.lwjgl.glfw.GLFW;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+final class LiveClientInputBridge implements ClientInputBridge {
+
+    private static final long EXECUTION_TIMEOUT_SECONDS = 5L;
+
+    @Override
+    public ClientScreenMetrics metrics() {
+        var minecraft = Minecraft.getInstance();
+        return new ClientScreenMetrics(
+                minecraft.screen == null ? null : minecraft.screen.getClass().getName(),
+                minecraft.getWindow().getGuiScaledWidth(),
+                minecraft.getWindow().getGuiScaledHeight(),
+                minecraft.getWindow().getWidth(),
+                minecraft.getWindow().getHeight()
+        );
+    }
+
+    @Override
+    public OperationResult<Void> execute(InputCommand command) {
+        var minecraft = Minecraft.getInstance();
+        if (minecraft.isSameThread()) {
+            return executeOnClient(command);
+        }
+        var future = new CompletableFuture<OperationResult<Void>>();
+        minecraft.execute(() -> future.complete(executeOnClient(command)));
+        try {
+            return future.get(EXECUTION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            return OperationResult.rejected("interrupted while waiting for client input execution");
+        } catch (ExecutionException exception) {
+            return OperationResult.rejected("client input execution failed: " + exception.getCause().getMessage());
+        } catch (TimeoutException exception) {
+            return OperationResult.rejected("timed out waiting for client input execution");
+        }
+    }
+
+    private OperationResult<Void> executeOnClient(InputCommand command) {
+        var screen = Minecraft.getInstance().screen;
+        return switch (command.action()) {
+            case "click" -> click(screen, command);
+            case "move" -> move(screen, command);
+            case "hover" -> hover(screen, command);
+            case "key_press" -> keyPress(screen, command);
+            case "type_text" -> typeText(screen, command);
+            default -> OperationResult.rejected("unsupported input action: " + command.action());
+        };
+    }
+
+    private OperationResult<Void> move(Screen screen, InputCommand command) {
+        if (screen == null) {
+            return OperationResult.rejected("game_unavailable: no active client screen");
+        }
+        screen.mouseMoved(command.x(), command.y());
+        return OperationResult.success(null);
+    }
+
+    private OperationResult<Void> hover(Screen screen, InputCommand command) {
+        if (screen == null) {
+            return OperationResult.rejected("game_unavailable: no active client screen");
+        }
+        screen.mouseMoved(command.x(), command.y());
+        if (command.durationMs() > 0) {
+            try {
+                Thread.sleep(command.durationMs());
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                return OperationResult.rejected("interrupted while waiting for hover delay");
+            }
+        }
+        return OperationResult.success(null);
+    }
+
+    private OperationResult<Void> click(Screen screen, InputCommand command) {
+        if (screen == null) {
+            return OperationResult.rejected("game_unavailable: no active client screen");
+        }
+        screen.mouseMoved(command.x(), command.y());
+        var clicked = screen.mouseClicked(command.x(), command.y(), command.button());
+        var released = screen.mouseReleased(command.x(), command.y(), command.button());
+        return clicked || released
+                ? OperationResult.success(null)
+                : OperationResult.rejected("click was not handled by current screen");
+    }
+
+    private OperationResult<Void> keyPress(Screen screen, InputCommand command) {
+        var minecraft = Minecraft.getInstance();
+        return KeyboardInputRouter.keyPress(
+                command,
+                screen == null ? null : new ScreenKeyboardInput(screen),
+                new MinecraftKeyboardInput(minecraft)
+        );
+    }
+
+    private OperationResult<Void> typeText(Screen screen, InputCommand command) {
+        if (screen == null) {
+            return OperationResult.rejected("game_unavailable: no active client screen");
+        }
+        if (command.text() == null || command.text().isBlank()) {
+            return OperationResult.rejected("type_text requires non-empty text");
+        }
+        var handled = false;
+        for (char character : command.text().toCharArray()) {
+            handled = screen.charTyped(character, command.modifiers()) || handled;
+        }
+        return handled
+                ? OperationResult.success(null)
+                : OperationResult.rejected("type_text was not handled by current screen");
+    }
+
+    private record ScreenKeyboardInput(Screen screen) implements KeyboardInputRouter.ScreenInput {
+
+        @Override
+        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+            return screen.keyPressed(keyCode, scanCode, modifiers);
+        }
+
+        @Override
+        public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+            return screen.keyReleased(keyCode, scanCode, modifiers);
+        }
+
+        @Override
+        public boolean charTyped(char character, int modifiers) {
+            return screen.charTyped(character, modifiers);
+        }
+    }
+
+    private static final class MinecraftKeyboardInput implements KeyboardInputRouter.FallbackInput {
+
+        private final Minecraft minecraft;
+
+        private MinecraftKeyboardInput(Minecraft minecraft) {
+            this.minecraft = minecraft;
+        }
+
+        @Override
+        public void dispatchKeyPress(int keyCode, int scanCode, int modifiers) {
+            var windowHandle = minecraft.getWindow().getWindow();
+            minecraft.keyboardHandler.keyPress(windowHandle, keyCode, scanCode, GLFW.GLFW_PRESS, modifiers);
+            minecraft.keyboardHandler.keyPress(windowHandle, keyCode, scanCode, GLFW.GLFW_RELEASE, modifiers);
+        }
+    }
+}

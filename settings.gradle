@@ -9,4 +9,4 @@ plugins {
 }
 
 
-include(":Mod", ":Server")
+include(":Mod", ":Server", ":Agent", ":Plugin")

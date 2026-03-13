@@ -10,7 +10,7 @@
 
 ---
 
-> Current workspace note: `D:\ProjectDir\AgentFarm\ModDevMCP` is not a git repository right now. Commit steps below assume the plan is executed from the actual VCS root or after git init.
+> Current workspace note: `<repo>` was not a git repository in that earlier snapshot. Commit steps below assume execution from the actual VCS root or after git init.
 
 ### Task 1: Add the Common module and baseline test wiring
 
@@ -619,7 +619,7 @@ git commit -m "docs: wire embedded mcp server and document extension api"
 ### Task 10: Run full verification before claiming completion
 
 **Files:**
-- Modify: `docs/plans/2026-03-09-moddev-mcp-ui-framework.md`
+- Modify: `docs/plans/2026-03-09-moddev-mcp-ui-framework/design.md`
 
 **Step 1: Write the failing test**
 

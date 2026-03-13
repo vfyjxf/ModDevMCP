@@ -1,0 +1,38 @@
+plugins {
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+}
+
+group = 'dev.vfyjxf'
+version = rootProject.findProperty('plugin_version')
+        ?: rootProject.findProperty('mod_version')
+        ?: '0.1'
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+repositories {
+    gradlePluginPortal()
+}
+
+gradlePlugin {
+    plugins {
+        modDevMcpHotswap {
+            id = 'dev.vfyjxf.moddev-hotswap'
+            implementationClass = 'dev.vfyjxf.mcp.gradle.ModDevMcpHotswapPlugin'
+        }
+    }
+}
+
+dependencies {
+    compileOnly("net.neoforged.moddev:net.neoforged.moddev.gradle.plugin:2.0.140")
+    testImplementation gradleTestKit()
+    testImplementation ("net.neoforged.moddev:net.neoforged.moddev.gradle.plugin:2.0.140")
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.12.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+publishing {
+    repositories {
+        mavenLocal()
+    }
+}

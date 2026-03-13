@@ -162,7 +162,7 @@ final class VanillaUiCaptureSupport {
             var path = Files.createTempFile("moddevmcp-capture-", ".png");
             try {
                 image.writeToFile(path);
-                return Files.readAllBytes(path);
+                return UiCapturePngNormalizer.normalizeToOpaquePng(Files.readAllBytes(path));
             } finally {
                 Files.deleteIfExists(path);
             }

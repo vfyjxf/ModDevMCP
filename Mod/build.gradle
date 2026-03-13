@@ -1,3 +1,6 @@
+import dev.vfyjxf.gradle.EmbeddedMcpLaunchFiles
+import dev.vfyjxf.gradle.ModDevClientRunFlags
+
 plugins {
     id 'java-library'
     id 'maven-publish'
@@ -16,6 +19,13 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
+def clientRunJvmSystemProperties = ModDevClientRunFlags.resolveJvmSystemProperties(
+        System.getProperties().collectEntries { key, value -> [(String.valueOf(key)): String.valueOf(value)] },
+        project.properties.collectEntries { key, value -> [(String.valueOf(key)): String.valueOf(value)] }
+)
+def mcpCoreVersion = "1.0.0"
+def gsonVersion = "2.10.1"
+
 neoForge {
     version = project.neo_version
 
@@ -27,6 +37,9 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            clientRunJvmSystemProperties.each { key, value ->
+                systemProperty key, value
+            }
         }
 
         server {
@@ -43,6 +56,8 @@ neoForge {
         configureEach {
             systemProperty 'forge.logging.markers', 'REGISTRIES'
             logLevel = org.slf4j.event.Level.DEBUG
+            var agentJarDir = rootProject.project(":Agent").layout.buildDirectory.dir("libs")
+            jvmArgument "-javaagent:${agentJarDir.get().asFile.absolutePath}/Agent.jar"
         }
     }
 
@@ -57,16 +72,74 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 configurations {
     runtimeClasspath.extendsFrom localRuntime
+    embeddedMcpRuntime
+}
+
+def embeddedMcpCoreJar = configurations.detachedConfiguration(
+        dependencies.create("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
+            exclude(group: "org.slf4j")
+        }
+)
+
+def sanitizeEmbeddedMcpCoreJar = tasks.register("sanitizeEmbeddedMcpCoreJar", Jar) {
+    archiveBaseName = "mcp-core"
+    archiveVersion = mcpCoreVersion
+    archiveClassifier = "moddev-embedded"
+    destinationDirectory = layout.buildDirectory.dir("generated/embedded-libs")
+    duplicatesStrategy = org.gradle.api.file.DuplicatesStrategy.EXCLUDE
+    inputs.files(embeddedMcpCoreJar)
+    from({
+        embeddedMcpCoreJar.collect { zipTree(it) }
+    }) {
+        exclude "META-INF/MANIFEST.MF"
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+    }
+    manifest {
+        attributes(
+                "Manifest-Version": "1.0",
+                "Implementation-Title": "mcp-core",
+                "Implementation-Version": mcpCoreVersion,
+                "Automatic-Module-Name": "io.modelcontextprotocol.sdk.mcp.core"
+        )
+    }
 }
 
 dependencies {
-    implementation(project(":Server")){
+    compileOnly(project(":Server")){
         exclude(group: "org.slf4j")
         transitive = false
     }
-    additionalRuntimeClasspath(project(":Server")) {
+    testImplementation(project(":Server")){
+        exclude(group: "org.slf4j")
         transitive = false
     }
+    jarJar(project(":Server")) {
+        exclude(group: "org.slf4j")
+        transitive = false
+    }
+    implementation(project(":Agent"))
+    additionalRuntimeClasspath(project(":Server")) {
+        exclude(group: "org.slf4j")
+        transitive = false
+    }
+    additionalRuntimeClasspath(project(":Agent"))
+    testRuntimeOnly("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
+        exclude(group: "org.slf4j")
+    }
+    testRuntimeOnly("com.google.code.gson:gson:${gsonVersion}")
+    testRuntimeOnly("org.slf4j:slf4j-api:2.0.9")
+    jarJar(files(sanitizeEmbeddedMcpCoreJar))
+    embeddedMcpRuntime(project(":Server")) {
+        exclude(group: "org.slf4j")
+        transitive = false
+    }
+    embeddedMcpRuntime("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
+        exclude(group: "org.slf4j")
+    }
+    embeddedMcpRuntime("com.google.code.gson:gson:${gsonVersion}")
+    embeddedMcpRuntime("org.slf4j:slf4j-api:2.0.9")
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.12.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -106,6 +179,98 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+tasks.withType(Test).configureEach {
+    dependsOn(":Agent:jar")
+    var agentJar = rootProject.project(":Agent").layout.buildDirectory.file("libs/Agent.jar")
+    jvmArgs("-javaagent:${agentJar.get().asFile.absolutePath}")
+}
+
+def mainRuntimeClasspath = sourceSets.main.runtimeClasspath
+def embeddedMcpRuntimeClasspath = files(mainRuntimeClasspath, configurations.embeddedMcpRuntime)
+def embeddedMcpClasspathPath = providers.provider { embeddedMcpRuntimeClasspath.asPath }
+tasks.register("runEmbeddedMcpStdio", JavaExec) {
+    group = "mod development"
+    description = "Runs the embedded ModDevMCP stdio host for MCP clients."
+    classpath = embeddedMcpRuntimeClasspath
+    mainClass = "dev.vfyjxf.mcp.bootstrap.EmbeddedModDevMcpStdioMain"
+    standardInput = System.in
+    standardOutput = System.out
+    errorOutput = System.err
+}
+
+def embeddedMcpOutputDir = layout.buildDirectory.dir("moddevmcp/embedded-mcp")
+def gameMcpOutputDir = layout.buildDirectory.dir("moddevmcp/game-mcp")
+
+tasks.register("writeEmbeddedMcpClasspath") {
+    dependsOn classes
+    inputs.files(embeddedMcpRuntimeClasspath)
+    outputs.file(embeddedMcpOutputDir.map { it.file("classpath.txt") })
+    outputs.file(embeddedMcpOutputDir.map { it.file(EmbeddedMcpLaunchFiles.DEFAULT_ARGS_FILE_NAME) })
+    doLast {
+        def outputDir = embeddedMcpOutputDir.get().asFile
+        outputDir.mkdirs()
+        def classpathFile = new File(outputDir, EmbeddedMcpLaunchFiles.DEFAULT_CLASSPATH_FILE_NAME)
+        classpathFile.text = embeddedMcpClasspathPath.get()
+        def argsFile = new File(outputDir, EmbeddedMcpLaunchFiles.DEFAULT_ARGS_FILE_NAME)
+        argsFile.text = EmbeddedMcpLaunchFiles.javaArgs(
+                embeddedMcpClasspathPath.get(),
+                "dev.vfyjxf.mcp.bootstrap.EmbeddedModDevMcpStdioMain"
+        )
+    }
+}
+
+tasks.register("createEmbeddedMcpLaunchScript") {
+    dependsOn writeEmbeddedMcpClasspath
+    outputs.file(embeddedMcpOutputDir.map { it.file("run-embedded-mcp-stdio.bat") })
+    doLast {
+        def outputDir = embeddedMcpOutputDir.get().asFile
+        outputDir.mkdirs()
+        def scriptFile = new File(outputDir, EmbeddedMcpLaunchFiles.DEFAULT_BATCH_FILE_NAME)
+        scriptFile.text = EmbeddedMcpLaunchFiles.windowsBatchScript(EmbeddedMcpLaunchFiles.DEFAULT_ARGS_FILE_NAME)
+    }
+}
+
+tasks.register("runGameMcpBridge", JavaExec) {
+    group = "mod development"
+    description = "Connects stdio MCP clients to an already running game MCP socket."
+    classpath = embeddedMcpRuntimeClasspath
+    mainClass = "dev.vfyjxf.mcp.bootstrap.GameMcpBridgeMain"
+    standardInput = System.in
+    standardOutput = System.out
+    errorOutput = System.err
+}
+
+tasks.register("writeGameMcpBridgeClasspath") {
+    dependsOn classes
+    inputs.files(embeddedMcpRuntimeClasspath)
+    outputs.file(gameMcpOutputDir.map { it.file("classpath.txt") })
+    outputs.file(gameMcpOutputDir.map { it.file("game-mcp-bridge-java.args") })
+    doLast {
+        def outputDir = gameMcpOutputDir.get().asFile
+        outputDir.mkdirs()
+        def classpathFile = new File(outputDir, EmbeddedMcpLaunchFiles.DEFAULT_CLASSPATH_FILE_NAME)
+        classpathFile.text = embeddedMcpClasspathPath.get()
+        def argsFile = new File(outputDir, "game-mcp-bridge-java.args")
+        argsFile.text = String.join(System.lineSeparator(),
+                "-cp",
+                "\"${embeddedMcpClasspathPath.get().replace("\\", "\\\\").replace("\"", "\\\"")}\"",
+                "dev.vfyjxf.mcp.bootstrap.GameMcpBridgeMain",
+                ""
+        )
+    }
+}
+
+tasks.register("createGameMcpBridgeLaunchScript") {
+    dependsOn writeGameMcpBridgeClasspath
+    outputs.file(gameMcpOutputDir.map { it.file("run-game-mcp-bridge.bat") })
+    doLast {
+        def outputDir = gameMcpOutputDir.get().asFile
+        outputDir.mkdirs()
+        def scriptFile = new File(outputDir, "run-game-mcp-bridge.bat")
+        scriptFile.text = EmbeddedMcpLaunchFiles.windowsBatchScript("game-mcp-bridge-java.args")
+    }
 }
 
 idea {

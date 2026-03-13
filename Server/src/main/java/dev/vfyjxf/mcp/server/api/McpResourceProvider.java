@@ -6,4 +6,8 @@ import java.util.Optional;
 public interface McpResourceProvider {
 
     Optional<McpResource> read(String uri);
+
+    default java.util.List<McpResource> list() {
+        return java.util.List.of();
+    }
 }
