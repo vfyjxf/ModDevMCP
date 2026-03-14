@@ -1,5 +1,6 @@
 package dev.vfyjxf.mcp.runtime.ui;
 
+import dev.vfyjxf.mcp.ClientRuntimeBootstrap;
 import dev.vfyjxf.mcp.ModDevMCP;
 import dev.vfyjxf.mcp.server.api.ToolCallContext;
 
@@ -47,7 +48,7 @@ public final class DevUiCaptureVerificationRunner {
 
     private void ensureUiCaptureToolRegistered() {
         if (mod.server().registry().findTool("moddev.ui_capture").isEmpty()) {
-            mod.registerBuiltinProviders();
+            new ClientRuntimeBootstrap(mod).prepareClientServer();
         }
     }
 

@@ -27,9 +27,9 @@ publishing {
 
 tasks.register('runServer', JavaExec) {
     group = 'application'
-    description = 'Runs the standalone ModDev host runtime server.'
+    description = 'Runs the standalone ModDev MCP backend.'
     classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'dev.vfyjxf.mcp.server.bootstrap.RuntimeHostMain'
+    mainClass = 'dev.vfyjxf.mcp.server.bootstrap.ModDevMcpBackendMain'
     standardInput = System.in
     standardOutput = System.out
     errorOutput = System.err
@@ -37,9 +37,9 @@ tasks.register('runServer', JavaExec) {
 
 tasks.register('runStdioMcp', JavaExec) {
     group = 'application'
-    description = 'Runs the ModDev MCP stdio host with an attached host runtime listener.'
+    description = 'Runs the ModDev MCP stdio gateway.'
     classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'dev.vfyjxf.mcp.server.bootstrap.ModDevMcpStdioMain'
+    mainClass = 'dev.vfyjxf.mcp.server.bootstrap.ModDevMcpGatewayMain'
     standardInput = System.in
     standardOutput = System.out
     errorOutput = System.err

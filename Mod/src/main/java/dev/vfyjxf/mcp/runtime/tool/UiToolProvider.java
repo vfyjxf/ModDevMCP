@@ -23,6 +23,7 @@ import dev.vfyjxf.mcp.server.api.McpToolDefinition;
 import dev.vfyjxf.mcp.server.api.McpToolProvider;
 import dev.vfyjxf.mcp.server.api.ToolResult;
 import dev.vfyjxf.mcp.server.runtime.McpToolRegistry;
+import dev.vfyjxf.mcp.runtime.ui.UiCapturePostProcessor;
 
 import java.util.List;
 import java.util.Map;
@@ -1730,14 +1731,20 @@ public final class UiToolProvider implements McpToolProvider {
         if (captureImage.isEmpty()) {
             return ToolResult.failure(captureUnavailableMessage(requestedSource, driver.descriptor().id(), snapshot.screenClass()));
         }
+        var processedCaptureImage = UiCapturePostProcessor.process(
+                captureImage.get(),
+                request,
+                filtered,
+                excluded
+        );
         var artifact = registries.uiCaptureArtifactStore().store(
                 driver.descriptor().id(),
-                captureImage.get().pngBytes(),
-                captureImage.get().width(),
-                captureImage.get().height(),
+                processedCaptureImage.pngBytes(),
+                processedCaptureImage.width(),
+                processedCaptureImage.height(),
                 Map.of(
-                        "source", captureImage.get().source(),
-                        "providerId", captureImage.get().providerId()
+                        "source", processedCaptureImage.source(),
+                        "providerId", processedCaptureImage.providerId()
                 )
         );
         return ToolResult.success(Map.of(

@@ -31,6 +31,10 @@ public final class NeoForgeRunInjector {
         run.systemProperty("moddevmcp.project.root", projectRoot.getAbsolutePath());
         run.systemProperty("moddevmcp.compile.task", extension.getCompileTask().get());
         run.systemProperty("moddevmcp.class.output", classOutput.getAbsolutePath());
+        run.systemProperty("moddevmcp.host", extension.getMcpHost().get());
+        run.systemProperty("moddevmcp.port", String.valueOf(extension.getMcpPort().get()));
+        project.getTasks().matching(task -> task.getName().equals(runTaskName(run.getName())))
+                .configureEach(task -> task.dependsOn("createMcpClientFiles"));
     }
 
     private static String resolveAgentPath(Project project, ModDevMcpExtension extension) {
@@ -56,5 +60,12 @@ public final class NeoForgeRunInjector {
             return path;
         }
         return new File(projectRoot, configuredPath);
+    }
+
+    private static String runTaskName(String runName) {
+        if (runName == null || runName.isBlank()) {
+            return "run";
+        }
+        return "run" + Character.toUpperCase(runName.charAt(0)) + runName.substring(1);
     }
 }

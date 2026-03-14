@@ -12,6 +12,7 @@ public final class ModDevMcpPlugin implements Plugin<Project> {
         extension.getProjectRoot().convention(project.getRootProject().getProjectDir());
         extension.getAgentCoordinates().convention(project.provider(() ->
                 "dev.vfyjxf:moddevmcp-agent:" + resolveDefaultVersion(project)));
+        extension.getJavaCommand().convention(project.provider(ModDevMcpPlugin::resolveDefaultJavaCommand));
         extension.getMcpClientFilesOutputDir().convention(
                 project.getLayout().getBuildDirectory().dir("moddevmcp/mcp-clients"));
 
@@ -20,6 +21,11 @@ public final class ModDevMcpPlugin implements Plugin<Project> {
             task.setDescription("Generates generic MCP client launch files and configuration snippets.");
             task.getServerId().set(extension.getMcpServerId());
             task.getMainClass().set(extension.getMcpMainClass());
+            task.getBackendMainClass().set(extension.getBackendMainClass());
+            task.getJavaCommand().set(extension.getJavaCommand());
+            task.getMcpHost().set(extension.getMcpHost());
+            task.getMcpPort().set(extension.getMcpPort());
+            task.getMcpProxyPort().set(extension.getMcpProxyPort());
             task.getRuntimeClasspath().from(extension.getMcpRuntimeClasspath());
             task.getOutputDir().set(extension.getMcpClientFilesOutputDir());
         });
@@ -52,5 +58,18 @@ public final class ModDevMcpPlugin implements Plugin<Project> {
         }
         var stringValue = String.valueOf(value).trim();
         return stringValue.isEmpty() ? null : stringValue;
+    }
+
+    private static String resolveDefaultJavaCommand() {
+        var javaHome = System.getProperty("java.home");
+        if (javaHome == null || javaHome.isBlank()) {
+            return "java";
+        }
+        var executableName = isWindows() ? "java.exe" : "java";
+        return new java.io.File(new java.io.File(javaHome, "bin"), executableName).getAbsolutePath();
+    }
+
+    private static boolean isWindows() {
+        return System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT).contains("win");
     }
 }

@@ -12,11 +12,13 @@ import net.neoforged.fml.common.Mod;
 public class ClientEntrypoint extends ModDevMCP {
 
     private final HostReconnectLoop reconnectLoop;
+    private final ClientRuntimeBootstrap clientBootstrap;
 
     public ClientEntrypoint() {
+        this.clientBootstrap = new ClientRuntimeBootstrap(this);
         var config = HostRuntimeClientConfig.loadResolved();
         this.reconnectLoop = new HostReconnectLoop(
-                () -> new HostGameClient(prepareServer(), config, "client-runtime", "client").runUntilDisconnected(),
+                () -> new HostGameClient(clientBootstrap.prepareClientServer(), config, "client-runtime", "client").runUntilDisconnected(),
                 config.reconnectDelayMs()
         );
         this.reconnectLoop.start();

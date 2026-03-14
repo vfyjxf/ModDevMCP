@@ -28,9 +28,12 @@ class NeoForgeRunInjectorTest {
 
         ModDevMcpExtension extension = project.getExtensions().getByType(ModDevMcpExtension.class);
         extension.getAgentCoordinates().set("dev.vfyjxf:moddevmcp-agent:1.2.3");
+        extension.getMcpHost().set("127.0.0.1");
+        extension.getMcpPort().set(47653);
 
         NeoForgeExtension neoForge = project.getExtensions().getByType(NeoForgeExtension.class);
         neoForge.getRuns().create("client", RunModel::client);
+        project.getTasks().register("runClient");
         evaluate(project);
 
         RunModel run = neoForge.getRuns().getByName("client");
@@ -39,6 +42,9 @@ class NeoForgeRunInjectorTest {
         assertTrue(run.getSystemProperties().get().containsKey("moddevmcp.project.root"));
         assertTrue(run.getSystemProperties().get().containsKey("moddevmcp.compile.task"));
         assertTrue(run.getSystemProperties().get().containsKey("moddevmcp.class.output"));
+        assertTrue("127.0.0.1".equals(run.getSystemProperties().get().get("moddevmcp.host")));
+        assertTrue("47653".equals(String.valueOf(run.getSystemProperties().get().get("moddevmcp.port"))));
+        assertTrue(project.getTasks().getByName("runClient").getDependsOn().contains("createMcpClientFiles"));
     }
 
     @Test

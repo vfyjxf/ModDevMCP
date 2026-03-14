@@ -24,6 +24,21 @@ public abstract class CreateMcpClientFilesTask extends DefaultTask {
     @Input
     public abstract Property<String> getMainClass();
 
+    @Input
+    public abstract Property<String> getBackendMainClass();
+
+    @Input
+    public abstract Property<String> getJavaCommand();
+
+    @Input
+    public abstract Property<String> getMcpHost();
+
+    @Input
+    public abstract Property<Integer> getMcpPort();
+
+    @Input
+    public abstract Property<Integer> getMcpProxyPort();
+
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
     public abstract ConfigurableFileCollection getRuntimeClasspath();
@@ -35,6 +50,7 @@ public abstract class CreateMcpClientFilesTask extends DefaultTask {
     public void generate() throws IOException {
         var outputDir = getOutputDir().get().getAsFile().toPath();
         Files.createDirectories(outputDir);
+        deleteLegacyOutputs(outputDir);
         var clientsDir = outputDir.resolve("clients");
         Files.createDirectories(clientsDir);
 
@@ -44,31 +60,63 @@ public abstract class CreateMcpClientFilesTask extends DefaultTask {
         }
 
         var classpathFile = outputDir.resolve(McpLaunchFiles.DEFAULT_CLASSPATH_FILE_NAME);
-        var argsFile = outputDir.resolve(McpLaunchFiles.DEFAULT_JAVA_ARGS_FILE_NAME);
-        var windowsScript = outputDir.resolve(McpLaunchFiles.DEFAULT_WINDOWS_SCRIPT_FILE_NAME);
-        var posixScript = outputDir.resolve(McpLaunchFiles.DEFAULT_POSIX_SCRIPT_FILE_NAME);
-        var argsReference = "@" + argsFile.toAbsolutePath();
+        var gatewayArgsFile = outputDir.resolve(McpLaunchFiles.DEFAULT_GATEWAY_JAVA_ARGS_FILE_NAME);
+        var backendArgsFile = outputDir.resolve(McpLaunchFiles.DEFAULT_BACKEND_JAVA_ARGS_FILE_NAME);
+        var gatewayWindowsScript = outputDir.resolve(McpLaunchFiles.DEFAULT_GATEWAY_WINDOWS_SCRIPT_FILE_NAME);
+        var gatewayPosixScript = outputDir.resolve(McpLaunchFiles.DEFAULT_GATEWAY_POSIX_SCRIPT_FILE_NAME);
+        var backendWindowsScript = outputDir.resolve(McpLaunchFiles.DEFAULT_BACKEND_WINDOWS_SCRIPT_FILE_NAME);
+        var backendPosixScript = outputDir.resolve(McpLaunchFiles.DEFAULT_BACKEND_POSIX_SCRIPT_FILE_NAME);
+        var backendLauncher = isWindows() ? backendWindowsScript : backendPosixScript;
+        var gatewayArgsReference = "@" + gatewayArgsFile.toAbsolutePath();
+        var clientArgs = List.of(
+                "-Dmoddevmcp.host=" + getMcpHost().get(),
+                "-Dmoddevmcp.port=" + getMcpPort().get(),
+                "-Dmoddevmcp.mcpPort=" + getMcpProxyPort().get(),
+                "-Dmoddevmcp.backend.javaCommand=" + getJavaCommand().get(),
+                "-Dmoddevmcp.backend.argsFile=" + backendArgsFile.toAbsolutePath(),
+                "-Dmoddevmcp.backend.launcher=" + backendLauncher.toAbsolutePath(),
+                "-Dmoddevmcp.backend.startTimeoutMs=60000",
+                gatewayArgsReference
+        );
 
         Files.writeString(classpathFile, classpath);
-        Files.writeString(argsFile, McpLaunchFiles.javaArgs(classpath, getMainClass().get()));
-        Files.writeString(windowsScript, McpLaunchFiles.windowsBatchScript(McpLaunchFiles.DEFAULT_JAVA_ARGS_FILE_NAME));
-        Files.writeString(posixScript, McpLaunchFiles.posixShellScript(McpLaunchFiles.DEFAULT_JAVA_ARGS_FILE_NAME));
-        posixScript.toFile().setExecutable(true, false);
+        Files.writeString(gatewayArgsFile, McpLaunchFiles.javaArgs(classpath, getMainClass().get()));
+        Files.writeString(backendArgsFile, McpLaunchFiles.javaArgs(classpath, getBackendMainClass().get()));
+        Files.writeString(gatewayWindowsScript, McpLaunchFiles.windowsBatchScript(McpLaunchFiles.DEFAULT_GATEWAY_JAVA_ARGS_FILE_NAME, getJavaCommand().get()));
+        Files.writeString(gatewayPosixScript, McpLaunchFiles.posixShellScript(McpLaunchFiles.DEFAULT_GATEWAY_JAVA_ARGS_FILE_NAME, getJavaCommand().get()));
+        Files.writeString(backendWindowsScript, McpLaunchFiles.windowsBatchScript(McpLaunchFiles.DEFAULT_BACKEND_JAVA_ARGS_FILE_NAME, getJavaCommand().get()));
+        Files.writeString(backendPosixScript, McpLaunchFiles.posixShellScript(McpLaunchFiles.DEFAULT_BACKEND_JAVA_ARGS_FILE_NAME, getJavaCommand().get()));
+        gatewayPosixScript.toFile().setExecutable(true, false);
+        backendPosixScript.toFile().setExecutable(true, false);
 
         writeClientFile(clientsDir.resolve("codex.toml"),
-                McpLaunchFiles.mcpClientTomlSnippet(getServerId().get(), "java", List.of(argsReference)));
-        var mcpServersJson = McpLaunchFiles.mcpServersJsonSnippet(getServerId().get(), "java", List.of(argsReference));
+                McpLaunchFiles.mcpClientTomlSnippet(getServerId().get(), getJavaCommand().get(), clientArgs));
+        var mcpServersJson = McpLaunchFiles.mcpServersJsonSnippet(getServerId().get(), getJavaCommand().get(), clientArgs);
+        writeClientFile(clientsDir.resolve(McpLaunchFiles.DEFAULT_SHARED_JSON_FILE_NAME), mcpServersJson);
         writeClientFile(clientsDir.resolve("claude-code.mcp.json"), mcpServersJson);
+        writeClientFile(clientsDir.resolve("claude-desktop.mcp.json"), mcpServersJson);
         writeClientFile(clientsDir.resolve("cursor-mcp.json"), mcpServersJson);
         writeClientFile(clientsDir.resolve("cline_mcp_settings.json"), mcpServersJson);
         writeClientFile(clientsDir.resolve("windsurf-mcp_config.json"), mcpServersJson);
         writeClientFile(clientsDir.resolve("vscode-mcp.json"), mcpServersJson);
         writeClientFile(clientsDir.resolve("gemini-settings.json"), mcpServersJson);
         writeClientFile(clientsDir.resolve("goose-setup.md"),
-                McpLaunchFiles.gooseSetupMarkdown(getServerId().get(), argsFile.toAbsolutePath().toString()));
+                McpLaunchFiles.gooseSetupMarkdown(getServerId().get(), getJavaCommand().get(), clientArgs));
+        writeClientFile(clientsDir.resolve(McpLaunchFiles.DEFAULT_INSTALL_GUIDE_FILE_NAME),
+                McpLaunchFiles.agentInstallMarkdown(getServerId().get(), getJavaCommand().get(), clientArgs));
     }
 
     private static void writeClientFile(java.nio.file.Path path, String content) throws IOException {
         Files.writeString(path, content);
+    }
+
+    private static void deleteLegacyOutputs(java.nio.file.Path outputDir) throws IOException {
+        Files.deleteIfExists(outputDir.resolve("mcp-server-java.args"));
+        Files.deleteIfExists(outputDir.resolve("run-mcp-server.bat"));
+        Files.deleteIfExists(outputDir.resolve("run-mcp-server.sh"));
+    }
+
+    private static boolean isWindows() {
+        return System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT).contains("win");
     }
 }

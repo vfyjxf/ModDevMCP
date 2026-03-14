@@ -19,6 +19,11 @@ public abstract class ModDevMcpExtension {
     private final Property<String> classOutputDir;
     private final Property<String> mcpServerId;
     private final Property<String> mcpMainClass;
+    private final Property<String> backendMainClass;
+    private final Property<String> javaCommand;
+    private final Property<String> mcpHost;
+    private final Property<Integer> mcpPort;
+    private final Property<Integer> mcpProxyPort;
     private final ConfigurableFileCollection mcpRuntimeClasspath;
     private final DirectoryProperty mcpClientFilesOutputDir;
     private final ListProperty<String> runs;
@@ -33,7 +38,12 @@ public abstract class ModDevMcpExtension {
         this.compileTask = objects.property(String.class).convention(":Mod:compileJava");
         this.classOutputDir = objects.property(String.class).convention("Mod/build/classes/java/main");
         this.mcpServerId = objects.property(String.class).convention("moddevmcp");
-        this.mcpMainClass = objects.property(String.class).convention("dev.vfyjxf.mcp.server.bootstrap.ModDevMcpStdioMain");
+        this.mcpMainClass = objects.property(String.class).convention("dev.vfyjxf.mcp.server.bootstrap.ModDevMcpGatewayMain");
+        this.backendMainClass = objects.property(String.class).convention("dev.vfyjxf.mcp.server.bootstrap.ModDevMcpBackendMain");
+        this.javaCommand = objects.property(String.class);
+        this.mcpHost = objects.property(String.class).convention("127.0.0.1");
+        this.mcpPort = objects.property(Integer.class).convention(47653);
+        this.mcpProxyPort = objects.property(Integer.class).convention(47654);
         this.mcpRuntimeClasspath = objects.fileCollection();
         this.mcpClientFilesOutputDir = objects.directoryProperty();
         this.runs = objects.listProperty(String.class).convention(java.util.List.of("client"));
@@ -70,6 +80,26 @@ public abstract class ModDevMcpExtension {
 
     public Property<String> getMcpMainClass() {
         return mcpMainClass;
+    }
+
+    public Property<String> getJavaCommand() {
+        return javaCommand;
+    }
+
+    public Property<String> getBackendMainClass() {
+        return backendMainClass;
+    }
+
+    public Property<String> getMcpHost() {
+        return mcpHost;
+    }
+
+    public Property<Integer> getMcpPort() {
+        return mcpPort;
+    }
+
+    public Property<Integer> getMcpProxyPort() {
+        return mcpProxyPort;
     }
 
     public ConfigurableFileCollection getMcpRuntimeClasspath() {

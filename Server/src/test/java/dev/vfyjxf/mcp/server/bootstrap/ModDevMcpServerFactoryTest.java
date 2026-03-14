@@ -15,6 +15,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ModDevMcpServerFactoryTest {
 
@@ -46,8 +47,9 @@ class ModDevMcpServerFactoryTest {
 
         assertFalse(sdkServer.getServerCapabilities().tools() == null);
         assertFalse(sdkServer.getServerCapabilities().resources() == null);
-        assertEquals(1, sdkServer.listTools().size());
-        assertEquals("demo.echo", sdkServer.listTools().getFirst().name());
+        assertEquals(2, sdkServer.listTools().size());
+        assertTrue(sdkServer.listTools().stream().anyMatch(tool -> tool.name().equals("demo.echo")));
+        assertTrue(sdkServer.listTools().stream().anyMatch(tool -> tool.name().equals("moddev.status")));
         assertEquals(1, sdkServer.listResources().size());
         assertEquals("moddev://capture/ui-1", sdkServer.listResources().getFirst().uri());
 
