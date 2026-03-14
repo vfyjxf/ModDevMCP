@@ -4,6 +4,8 @@ import dev.vfyjxf.mcp.server.ModDevMcpServer;
 import dev.vfyjxf.mcp.server.api.McpResource;
 import dev.vfyjxf.mcp.server.api.McpToolDefinition;
 import dev.vfyjxf.mcp.server.api.ToolResult;
+import dev.vfyjxf.mcp.server.host.RuntimeSession;
+import dev.vfyjxf.mcp.server.host.RuntimeToolDescriptor;
 import dev.vfyjxf.mcp.server.runtime.McpToolRegistry;
 import org.junit.jupiter.api.Test;
 
@@ -41,6 +43,7 @@ class McpProtocolDispatcherTest {
         assertEquals("moddev-mcp", ((Map<?, ?>) result.get("serverInfo")).get("name"));
         assertTrue(((Map<?, ?>) result.get("capabilities")).containsKey("tools"));
         assertTrue(((Map<?, ?>) result.get("capabilities")).containsKey("resources"));
+        assertEquals(true, ((Map<?, ?>) ((Map<?, ?>) result.get("capabilities")).get("tools")).get("listChanged"));
     }
 
     @Test
@@ -58,10 +61,100 @@ class McpProtocolDispatcherTest {
         var result = (Map<String, Object>) response.get("result");
         @SuppressWarnings("unchecked")
         var tools = (List<Map<String, Object>>) result.get("tools");
-        assertEquals(1, tools.size());
-        assertEquals("demo.echo", tools.getFirst().get("name"));
-        assertEquals("Echo", tools.getFirst().get("title"));
-        assertTrue(tools.getFirst().containsKey("inputSchema"));
+        assertEquals(2, tools.size());
+        assertEquals("moddev.status", tools.getFirst().get("name"));
+        assertEquals("demo.echo", tools.get(1).get("name"));
+        assertEquals("Echo", tools.get(1).get("title"));
+        assertTrue(tools.get(1).containsKey("inputSchema"));
+    }
+
+    @Test
+    void toolsListIncludesConnectedRuntimeTools() {
+        var server = demoServer();
+        server.runtimeRegistry().connect(
+                new RuntimeSession("runtime-1", "client", List.of("common", "client"), List.of("client"), Map.of()),
+                List.of(new RuntimeToolDescriptor(
+                        new McpToolDefinition(
+                                "moddev.ui.inspect",
+                                "Inspect UI",
+                                "Dynamic runtime tool",
+                                Map.of("type", "object"),
+                                Map.of("type", "object"),
+                                List.of("ui"),
+                                "client",
+                                false,
+                                false,
+                                "runtime",
+                                "runtime"
+                        ),
+                        "client",
+                        "client",
+                        true,
+                        false
+                ))
+        );
+        var dispatcher = new McpProtocolDispatcher(server);
+
+        var response = dispatcher.handle(Map.of(
+                "jsonrpc", "2.0",
+                "id", 21,
+                "method", "tools/list"
+        )).orElseThrow();
+
+        @SuppressWarnings("unchecked")
+        var result = (Map<String, Object>) response.get("result");
+        @SuppressWarnings("unchecked")
+        var tools = (List<Map<String, Object>>) result.get("tools");
+        var toolNames = tools.stream().map(tool -> String.valueOf(tool.get("name"))).toList();
+        assertTrue(toolNames.contains("moddev.status"));
+        assertTrue(toolNames.contains("demo.echo"));
+        assertTrue(toolNames.contains("moddev.ui.inspect"));
+    }
+
+    @Test
+    void callingUnknownRuntimeToolReturnsExplicitDisconnectedError() {
+        var dispatcher = new McpProtocolDispatcher(new ModDevMcpServer());
+
+        var response = dispatcher.handle(Map.of(
+                "jsonrpc", "2.0",
+                "id", 22,
+                "method", "tools/call",
+                "params", Map.of(
+                        "name", "moddev.ui.inspect",
+                        "arguments", Map.of()
+                )
+        )).orElseThrow();
+
+        @SuppressWarnings("unchecked")
+        var result = (Map<String, Object>) response.get("result");
+        assertEquals(true, result.get("isError"));
+        @SuppressWarnings("unchecked")
+        var content = (List<Map<String, Object>>) result.get("content");
+        assertEquals("game_not_connected", content.getFirst().get("text"));
+    }
+
+    @Test
+    void statusToolReturnsExplicitDisconnectedState() {
+        var dispatcher = new McpProtocolDispatcher(new ModDevMcpServer());
+
+        var response = dispatcher.handle(Map.of(
+                "jsonrpc", "2.0",
+                "id", 23,
+                "method", "tools/call",
+                "params", Map.of(
+                        "name", "moddev.status",
+                        "arguments", Map.of()
+                )
+        )).orElseThrow();
+
+        @SuppressWarnings("unchecked")
+        var result = (Map<String, Object>) response.get("result");
+        assertEquals(false, result.get("isError"));
+        @SuppressWarnings("unchecked")
+        var structuredContent = (Map<String, Object>) result.get("structuredContent");
+        assertEquals(true, structuredContent.get("hostReady"));
+        assertEquals(false, structuredContent.get("gameConnected"));
+        assertTrue(structuredContent.containsKey("connectedAgentCount"));
     }
 
     @Test
@@ -256,3 +349,4 @@ class McpProtocolDispatcherTest {
         }
     }
 }
+

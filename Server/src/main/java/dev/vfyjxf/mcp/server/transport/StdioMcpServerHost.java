@@ -19,17 +19,31 @@ public final class StdioMcpServerHost implements McpServerTransport {
 
     private final InputStream input;
     private final OutputStream output;
-    private final McpProtocolDispatcher dispatcher;
+    private final JsonRpcRequestHandler handler;
     private final JsonCodec jsonCodec;
 
     public StdioMcpServerHost(InputStream input, OutputStream output, McpProtocolDispatcher dispatcher) {
-        this(input, output, dispatcher, new JsonCodec());
+        this(input, output, new JsonRpcRequestHandler() {
+            @Override
+            public java.util.Optional<java.util.Map<String, Object>> handle(java.util.Map<String, Object> request) {
+                return dispatcher.handle(request);
+            }
+
+            @Override
+            public java.util.Map<String, Object> initializedNotification() {
+                return dispatcher.initializedNotification();
+            }
+        }, new JsonCodec());
     }
 
-    StdioMcpServerHost(InputStream input, OutputStream output, McpProtocolDispatcher dispatcher, JsonCodec jsonCodec) {
+    public StdioMcpServerHost(InputStream input, OutputStream output, JsonRpcRequestHandler handler) {
+        this(input, output, handler, new JsonCodec());
+    }
+
+    StdioMcpServerHost(InputStream input, OutputStream output, JsonRpcRequestHandler handler, JsonCodec jsonCodec) {
         this.input = input;
         this.output = output;
-        this.dispatcher = dispatcher;
+        this.handler = handler;
         this.jsonCodec = jsonCodec;
     }
 
@@ -43,9 +57,13 @@ public final class StdioMcpServerHost implements McpServerTransport {
                 }
                 debugLog("in", message.body());
                 var request = jsonCodec.parseObject(message.body());
-                var response = dispatcher.handle(request);
+                var response = handler.handle(request);
                 if (response.isPresent()) {
                     writeMessage(response.get(), message.framing());
+                    continue;
+                }
+                if ("notifications/initialized".equals(request.get("method"))) {
+                    writeMessage(handler.initializedNotification(), message.framing());
                 }
             }
         } catch (IOException exception) {

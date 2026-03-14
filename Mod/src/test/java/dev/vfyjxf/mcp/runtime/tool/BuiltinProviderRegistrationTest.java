@@ -9,8 +9,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BuiltinProviderRegistrationTest {
@@ -30,12 +32,29 @@ class BuiltinProviderRegistrationTest {
     }
 
     @Test
-    void modStartupRegistersBuiltinRealCaptureProvidersIntoRuntime() {
+    void modStartupKeepsClientOnlyRuntimeOutOfCommonRuntime() {
         var server = new ModDevMcpServer(new McpToolRegistry());
         var mod = new ModDevMCP(server);
 
+        assertEquals(0, mod.registries().uiOffscreenCaptureProviders().size());
+        assertEquals(0, mod.registries().uiFramebufferCaptureProviders().size());
+        assertEquals(0, mod.registries().uiDrivers().size());
+        assertEquals(0, mod.registries().inventoryDrivers().size());
+        assertEquals(0, mod.registries().inputControllers().size());
+    }
+
+    @Test
+    void clientServerPreparationRegistersBuiltinClientRuntime() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var mod = new ModDevMCP(server);
+
+        mod.prepareClientServer();
+
         assertEquals(1, mod.registries().uiOffscreenCaptureProviders().size());
         assertEquals(1, mod.registries().uiFramebufferCaptureProviders().size());
+        assertEquals(3, mod.registries().uiDrivers().size());
+        assertEquals(1, mod.registries().inventoryDrivers().size());
+        assertEquals(1, mod.registries().inputControllers().size());
     }
 
     @Test
@@ -54,5 +73,42 @@ class BuiltinProviderRegistrationTest {
         assertEquals(1, server.registry().listTools().stream()
                 .filter(tool -> tool.definition().name().equals("demo.extra"))
                 .count());
+    }
+
+    @Test
+    void commonServerPreparationDoesNotRegisterClientOnlyTools() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var mod = new ModDevMCP(server);
+
+        mod.prepareCommonServer();
+
+        assertTrue(server.registry().findTool("moddev.event_subscribe").isPresent());
+        assertTrue(server.registry().findTool("moddev.hotswap").isPresent());
+        assertTrue(server.registry().findTool("moddev.ui_snapshot").isEmpty());
+        assertTrue(server.registry().findTool("moddev.ui_get_live_screen").isEmpty());
+        assertTrue(server.registry().findTool("moddev.input_action").isEmpty());
+        assertTrue(server.registry().findTool("moddev.inventory_snapshot").isEmpty());
+    }
+
+    @Test
+    void clientServerPreparationRegistersClientOnlyTools() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var mod = new ModDevMCP(server);
+
+        mod.prepareClientServer();
+
+        assertTrue(server.registry().findTool("moddev.ui_snapshot").isPresent());
+        assertTrue(server.registry().findTool("moddev.ui_get_live_screen").isPresent());
+        assertTrue(server.registry().findTool("moddev.input_action").isPresent());
+        assertTrue(server.registry().findTool("moddev.inventory_snapshot").isPresent());
+    }
+
+    @Test
+    void commonModClassDoesNotStoreClientOnlyProviderInstances() {
+        var fieldNames = Set.of("uiToolProvider", "inputToolProvider", "inventoryToolProvider");
+
+        assertFalse(java.util.Arrays.stream(ModDevMCP.class.getDeclaredFields())
+                .map(java.lang.reflect.Field::getName)
+                .anyMatch(fieldNames::contains));
     }
 }

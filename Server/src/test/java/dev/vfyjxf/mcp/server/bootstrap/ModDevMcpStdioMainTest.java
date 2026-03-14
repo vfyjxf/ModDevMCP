@@ -4,12 +4,15 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -22,7 +25,8 @@ class ModDevMcpStdioMainTest {
                 new ByteArrayInputStream("""
                         {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"codex","version":"0.0.0"}}}
                         """.getBytes(StandardCharsets.UTF_8)),
-                output
+                output,
+                new HostEndpointConfig("127.0.0.1", freePort())
         );
 
         assertNotNull(host);
@@ -35,19 +39,72 @@ class ModDevMcpStdioMainTest {
     }
 
     @Test
-    void readmeDocumentsGameHostedPrimaryEntryPoint() throws Exception {
+    void bootstrapStartsRuntimeHostListenerAlongsideStdioHost() throws Exception {
+        var hostPort = freePort();
+        var host = ModDevMcpStdioMain.createHost(
+                new ByteArrayInputStream(new byte[0]),
+                new ByteArrayOutputStream(),
+                new HostEndpointConfig("127.0.0.1", hostPort)
+        );
+        try {
+            try (var socket = new Socket("127.0.0.1", hostPort)) {
+                assertTrue(socket.isConnected());
+            }
+        } finally {
+            if (host instanceof AutoCloseable closeable) {
+                closeable.close();
+            }
+        }
+    }
+
+    @Test
+    void bootstrapHandlesSequentialJsonLineToolRequests() {
+        var output = new ByteArrayOutputStream();
+        var host = ModDevMcpStdioMain.createHost(
+                new ByteArrayInputStream(("""
+                        {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"codex","version":"0.0.0"}}}
+                        {"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}
+                        {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"moddev.status","arguments":{}}}
+                        """).getBytes(StandardCharsets.UTF_8)),
+                output,
+                new HostEndpointConfig("127.0.0.1", freePort())
+        );
+
+        host.serve();
+        waitForOutput(output, Duration.ofSeconds(3));
+
+        var raw = output.toString(StandardCharsets.UTF_8);
+        assertTrue(raw.contains("\"id\":1"));
+        assertTrue(raw.contains("\"id\":2"));
+        assertTrue(raw.contains("\"id\":3"));
+        assertTrue(raw.contains("\"moddev.status\""));
+        assertTrue(raw.contains("\"hostReady\""));
+    }
+
+    @Test
+    void readmeDocumentsHostFirstPrimaryEntryPoint() throws Exception {
         var moduleDir = Path.of("").toAbsolutePath().normalize();
         var readmePath = moduleDir.resolveSibling("README.md");
         var readme = Files.readString(readmePath);
 
-        assertTrue(readme.contains("[mcp_servers.moddevmcp]"));
+        assertTrue(readme.contains("host-first architecture"));
+        assertTrue(readme.contains(":Server:runStdioMcp"));
+        assertTrue(readme.contains("runClient --no-daemon"));
         assertTrue(readme.contains("ModDevMcpStdioMain"));
-        assertTrue(readme.contains(":Mod:createGameMcpBridgeLaunchScript"));
-        assertTrue(readme.contains("run-game-mcp-bridge.bat"));
-        assertTrue(readme.contains("GameMcpBridgeMain"));
-        assertTrue(readme.contains("game MCP"));
-        assertTrue(!readme.contains("StableModDevMcpServerMain"));
-        assertTrue(!readme.contains("StableMcpStdioBridgeMain"));
+        assertTrue(readme.contains("moddev.status"));
+        assertTrue(readme.contains("hostReady"));
+        assertFalse(readme.toLowerCase().contains("relay"));
+        assertFalse(readme.contains("createGameMcpBridgeLaunchScript"));
+        assertFalse(readme.contains("run-game-mcp-bridge.bat"));
+        assertFalse(readme.contains("GameMcpBridgeMain"));
+    }
+
+    private int freePort() {
+        try (var serverSocket = new ServerSocket(0)) {
+            return serverSocket.getLocalPort();
+        } catch (java.io.IOException exception) {
+            throw new IllegalStateException(exception);
+        }
     }
 
     private void waitForOutput(ByteArrayOutputStream output, Duration timeout) {
@@ -66,3 +123,6 @@ class ModDevMcpStdioMainTest {
         throw new AssertionError("Timed out waiting for stdio output");
     }
 }
+
+
+

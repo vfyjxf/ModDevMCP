@@ -1,66 +1,69 @@
 # Game MCP Guide
 
 Date: 2026-03-11 17:20 CST
-Updated: 2026-03-12 08:10 CST
+Updated: 2026-03-14 14:40 CST
 
 ## Purpose
 
-- describe the current primary architecture
-- show how to connect MCP clients after the game is already running
+- describe the current gateway/backend/game architecture
+- show how agents reach the game through the standalone server
+- keep this legacy filename, but document the current flow only
 
 ## Architecture
 
 Primary runtime shape:
 
-- Minecraft process hosts MCP directly
-- default endpoint is `127.0.0.1:47653`
-- embedded MCP host/bootstrap code lives in `Server`
-- `Mod` provides runtime/tool implementations and starts that embedded host from the client entrypoint
-- MCP clients connect only after the game is already up
-- there is no stable server in the primary path
+- `Server` starts the stdio gateway seen by MCP clients
+- the gateway auto-starts the backend when needed
+- the backend is the stable state center
+- `Mod` starts a reconnecting runtime client inside Minecraft
+- agents connect only to `:Server:runStdioMcp`
+- runtime tools are exposed dynamically after the game connects
+- `moddev.status` remains callable even with no game connected
 
 ## Startup Flow
 
-Start game:
+Start the gateway:
+
+```powershell
+$env:GRADLE_USER_HOME='.gradle-user'
+.\gradlew.bat :Server:runStdioMcp --no-daemon
+```
+
+Start the game:
 
 ```powershell
 cd TestMod
+$env:GRADLE_USER_HOME='..\.gradle-user'
 .\gradlew.bat runClient --no-daemon
 ```
 
-Generate the connect-only bridge if needed:
+## Generated MCP Configs
 
-```powershell
-.\gradlew.bat :Mod:createGameMcpBridgeLaunchScript --no-daemon
-```
+Use the generated files from:
 
-Bridge outputs:
+- `TestMod/build/moddevmcp/mcp-clients/clients/codex.toml`
+- `TestMod/build/moddevmcp/mcp-clients/clients/mcp-servers.json`
+- `TestMod/build/moddevmcp/mcp-clients/clients/INSTALL.md`
 
-- `Mod\build\moddevmcp\game-mcp\run-game-mcp-bridge.bat`
-- `Mod\build\moddevmcp\game-mcp\game-mcp-bridge-java.args`
-
-Example MCP config:
-
-```toml
-[mcp_servers.moddevmcp]
-command = '<repo>\\Mod\\build\\moddevmcp\\game-mcp\\run-game-mcp-bridge.bat'
-```
+These generated configs already point at the gateway and include the backend bootstrap properties.
 
 ## Verification
 
-Recommended first call after MCP connects:
+Recommended first calls after MCP connects:
 
-- `moddev.ui_get_live_screen`
+1. `moddev.status`
+2. `moddev.ui_get_live_screen`
 
-Continue only if it succeeds.
+Continue only after status reports `gameConnected=true`.
 
 ## Readiness Rule
 
 Use this order:
 
-1. start the game
-2. connect the MCP client
-3. call `moddev.ui_get_live_screen`
-4. only then use snapshot/capture/input/inventory tools
+1. start the gateway
+2. start the game
+3. call `moddev.status`
+4. only then use snapshot, capture, input, inventory, or UI tools
 
 If connection or the first tool call fails, treat the game as not ready.

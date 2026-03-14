@@ -1,6 +1,10 @@
 plugins {
     id 'java'
+    id 'maven-publish'
 }
+
+group = 'dev.vfyjxf'
+version = rootProject.findProperty('mod_version') ?: '0.1'
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
@@ -11,5 +15,17 @@ jar {
                 'Can-Redefine-Classes': 'true',
                 'Can-Retransform-Classes': 'true'
         )
+    }
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+            artifactId = 'moddevmcp-agent'
+        }
+    }
+    repositories {
+        mavenLocal()
     }
 }

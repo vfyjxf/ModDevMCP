@@ -164,7 +164,7 @@ class StdioMcpServerHostTest {
     }
 
     @Test
-    void hostIgnoresInitializedNotificationWithoutWritingResponse() {
+    void hostWritesStatusNotificationAfterInitialized() {
         var output = new ByteArrayOutputStream();
         var host = new StdioMcpServerHost(
                 new ByteArrayInputStream(frame("""
@@ -176,7 +176,10 @@ class StdioMcpServerHostTest {
 
         host.serve();
 
-        assertEquals("", output.toString(StandardCharsets.UTF_8));
+        var body = extractSingleBody(output.toString(StandardCharsets.UTF_8));
+        assertTrue(body.contains("\"method\":\"notifications/moddev/status\""));
+        assertTrue(body.contains("\"hostReady\":true"));
+        assertTrue(body.contains("\"gameConnected\":false"));
     }
 
     @Test
@@ -309,3 +312,4 @@ class StdioMcpServerHostTest {
         return raw.split("Content-Length: ", -1).length - 1;
     }
 }
+
