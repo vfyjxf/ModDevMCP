@@ -147,9 +147,14 @@ final class LiveClientInputBridge implements ClientInputBridge {
         }
 
         @Override
-        public void dispatchKeyPress(int keyCode, int scanCode, int modifiers) {
+        public void dispatchKeyDown(int keyCode, int scanCode, int modifiers) {
             var windowHandle = minecraft.getWindow().getWindow();
             minecraft.keyboardHandler.keyPress(windowHandle, keyCode, scanCode, GLFW.GLFW_PRESS, modifiers);
+        }
+
+        @Override
+        public void dispatchKeyUp(int keyCode, int scanCode, int modifiers) {
+            var windowHandle = minecraft.getWindow().getWindow();
             minecraft.keyboardHandler.keyPress(windowHandle, keyCode, scanCode, GLFW.GLFW_RELEASE, modifiers);
         }
     }
