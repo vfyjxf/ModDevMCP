@@ -54,6 +54,23 @@ class KeyboardInputRouterTest {
         );
     }
 
+    @Test
+    void keyPressWithModifiersUsesScreenHandlingBeforeFallback() {
+        var screen = new RecordingScreenInput(true, false, false);
+        var fallback = new RecordingFallbackInput();
+
+        var result = KeyboardInputRouter.keyPress(
+                new InputCommand("key_press", 0.0d, 0.0d, 0, KEY_A, 0, MOD_CONTROL, null, 0),
+                screen,
+                fallback
+        );
+
+        assertTrue(result.accepted());
+        assertEquals(1, screen.keyPressedCalls);
+        assertEquals(0, screen.keyReleasedCalls);
+        assertEquals(List.of(), fallback.events);
+    }
+
     private static final class RecordingScreenInput implements KeyboardInputRouter.ScreenInput {
 
         private final boolean keyPressedResult;

@@ -3,9 +3,12 @@ package dev.vfyjxf.mcp.runtime.input;
 import dev.vfyjxf.mcp.api.model.OperationResult;
 import dev.vfyjxf.mcp.api.runtime.ClientScreenMetrics;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.client.gui.screens.Screen;
 import org.lwjgl.glfw.GLFW;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -97,11 +100,28 @@ final class LiveClientInputBridge implements ClientInputBridge {
 
     private OperationResult<Void> keyPress(Screen screen, InputCommand command) {
         var minecraft = Minecraft.getInstance();
+        if (screen != null) {
+            var focusedTextInput = focusedTextInput(screen);
+            if (focusedTextInput != null && FocusedTextShortcutHandler.tryHandle(command, focusedTextInput, new MinecraftClipboardAccess(minecraft))) {
+                return OperationResult.success(null);
+            }
+        }
         return KeyboardInputRouter.keyPress(
                 command,
                 screen == null ? null : new ScreenKeyboardInput(screen),
                 new MinecraftKeyboardInput(minecraft)
         );
+    }
+
+    private FocusedTextShortcutHandler.FocusedTextInput focusedTextInput(Screen screen) {
+        var focused = screen.getFocused();
+        if (focused instanceof EditBox editBox) {
+            return new EditBoxFocusedTextInput(editBox);
+        }
+        if (focused instanceof MultiLineEditBox editBox) {
+            return MultiLineEditBoxFocusedTextInput.create(editBox);
+        }
+        return null;
     }
 
     private OperationResult<Void> typeText(Screen screen, InputCommand command) {
@@ -156,6 +176,139 @@ final class LiveClientInputBridge implements ClientInputBridge {
         public void dispatchKeyUp(int keyCode, int scanCode, int modifiers) {
             var windowHandle = minecraft.getWindow().getWindow();
             minecraft.keyboardHandler.keyPress(windowHandle, keyCode, scanCode, GLFW.GLFW_RELEASE, modifiers);
+        }
+    }
+
+    private record MinecraftClipboardAccess(Minecraft minecraft) implements FocusedTextShortcutHandler.ClipboardAccess {
+
+        @Override
+        public String getClipboard() {
+            return minecraft.keyboardHandler.getClipboard();
+        }
+
+        @Override
+        public void setClipboard(String text) {
+            minecraft.keyboardHandler.setClipboard(text == null ? "" : text);
+        }
+    }
+
+    private static final class EditBoxFocusedTextInput implements FocusedTextShortcutHandler.FocusedTextInput {
+
+        private final EditBox editBox;
+
+        private EditBoxFocusedTextInput(EditBox editBox) {
+            this.editBox = editBox;
+        }
+
+        @Override
+        public void selectAll() {
+            editBox.moveCursorToEnd(false);
+            editBox.setHighlightPos(0);
+        }
+
+        @Override
+        public String selectedText() {
+            return editBox.getHighlighted();
+        }
+
+        @Override
+        public void insertText(String text) {
+            editBox.insertText(text);
+        }
+
+        @Override
+        public boolean editable() {
+            return readBooleanField(editBox, "isEditable");
+        }
+    }
+
+    private static final class MultiLineEditBoxFocusedTextInput implements FocusedTextShortcutHandler.FocusedTextInput {
+
+        private final Object textField;
+        private final Object whenceAbsolute;
+        private final Object whenceEnd;
+
+        private MultiLineEditBoxFocusedTextInput(Object textField, Object whenceAbsolute, Object whenceEnd) {
+            this.textField = textField;
+            this.whenceAbsolute = whenceAbsolute;
+            this.whenceEnd = whenceEnd;
+        }
+
+        static MultiLineEditBoxFocusedTextInput create(MultiLineEditBox editBox) {
+            try {
+                var textFieldField = MultiLineEditBox.class.getDeclaredField("textField");
+                textFieldField.setAccessible(true);
+                var textField = textFieldField.get(editBox);
+                var whenceClass = Class.forName("net.minecraft.client.gui.components.MultilineTextField$Whence");
+                @SuppressWarnings("unchecked")
+                var enumClass = (Class<? extends Enum>) whenceClass;
+                return new MultiLineEditBoxFocusedTextInput(
+                        textField,
+                        Enum.valueOf(enumClass, "ABSOLUTE"),
+                        Enum.valueOf(enumClass, "END")
+                );
+            } catch (ReflectiveOperationException exception) {
+                return null;
+            }
+        }
+
+        @Override
+        public void selectAll() {
+            invoke(textField, "seekCursor", whenceEnd.getClass(), whenceEnd, int.class, 0);
+            invoke(textField, "setSelecting", boolean.class, true);
+            invoke(textField, "seekCursor", whenceAbsolute.getClass(), whenceAbsolute, int.class, 0);
+            invoke(textField, "setSelecting", boolean.class, false);
+        }
+
+        @Override
+        public String selectedText() {
+            return (String) invoke(textField, "getSelectedText");
+        }
+
+        @Override
+        public void insertText(String text) {
+            invoke(textField, "insertText", String.class, text);
+        }
+
+        @Override
+        public boolean editable() {
+            return true;
+        }
+    }
+
+    private static Object invoke(Object target, String methodName, Object... args) {
+        Class<?>[] parameterTypes = new Class<?>[args.length / 2];
+        Object[] values = new Object[args.length / 2];
+        for (int index = 0; index < args.length; index += 2) {
+            parameterTypes[index / 2] = (Class<?>) args[index];
+            values[index / 2] = args[index + 1];
+        }
+        try {
+            var method = target.getClass().getMethod(methodName, parameterTypes);
+            method.setAccessible(true);
+            return method.invoke(target, values);
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Failed to invoke " + methodName + " on " + target.getClass().getName(), exception);
+        }
+    }
+
+    private static Object invoke(Object target, String methodName) {
+        try {
+            var method = target.getClass().getMethod(methodName);
+            method.setAccessible(true);
+            return method.invoke(target);
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Failed to invoke " + methodName + " on " + target.getClass().getName(), exception);
+        }
+    }
+
+    private static boolean readBooleanField(Object target, String fieldName) {
+        try {
+            Field field = target.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.getBoolean(target);
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Failed to read " + fieldName + " on " + target.getClass().getName(), exception);
         }
     }
 }

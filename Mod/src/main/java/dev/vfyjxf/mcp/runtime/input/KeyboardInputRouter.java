@@ -20,15 +20,15 @@ final class KeyboardInputRouter {
             ScreenInput screenInput,
             FallbackInput fallbackInput
     ) {
-        if (command.modifiers() != 0) {
-            dispatchModifiedKeyPress(command, fallbackInput);
-            return OperationResult.success(null);
-        }
         var handled = screenInput != null && (
                 screenInput.keyPressed(command.keyCode(), command.scanCode(), command.modifiers())
                         || screenInput.keyReleased(command.keyCode(), command.scanCode(), command.modifiers())
         );
         if (handled) {
+            return OperationResult.success(null);
+        }
+        if (command.modifiers() != 0) {
+            dispatchModifiedKeyPress(command, fallbackInput);
             return OperationResult.success(null);
         }
         dispatchPlainKeyPress(command, fallbackInput);
