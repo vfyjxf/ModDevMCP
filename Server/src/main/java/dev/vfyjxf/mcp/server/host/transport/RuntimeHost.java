@@ -26,7 +26,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 public final class RuntimeHost implements AutoCloseable, RuntimeInvoker {
 
@@ -37,7 +36,7 @@ public final class RuntimeHost implements AutoCloseable, RuntimeInvoker {
     private final JsonCodec jsonCodec;
     private final Set<Socket> openSockets;
     private final ConcurrentHashMap<String, CompletableFuture<ToolResult>> pendingResults;
-    private final AtomicReference<RuntimeConnection> activeConnection;
+    private final ConcurrentHashMap<String, RuntimeConnection> connectionsByRuntimeId;
     private final AtomicLong nextCallId;
     private final RuntimeCallQueue scheduler;
     private final Thread acceptThread;
@@ -49,7 +48,7 @@ public final class RuntimeHost implements AutoCloseable, RuntimeInvoker {
         this.jsonCodec = new JsonCodec();
         this.openSockets = ConcurrentHashMap.newKeySet();
         this.pendingResults = new ConcurrentHashMap<>();
-        this.activeConnection = new AtomicReference<>();
+        this.connectionsByRuntimeId = new ConcurrentHashMap<>();
         this.nextCallId = new AtomicLong();
         this.scheduler = scheduler;
         if (scheduler != null) {
@@ -75,7 +74,7 @@ public final class RuntimeHost implements AutoCloseable, RuntimeInvoker {
 
     @Override
     public ToolResult invoke(RuntimeSession session, RuntimeToolDescriptor descriptor, Map<String, Object> arguments) throws Exception {
-        var connection = activeConnection.get();
+        var connection = connectionsByRuntimeId.get(session.runtimeId());
         if (connection == null || connection.runtimeId() == null || !connection.runtimeId().equals(session.runtimeId())) {
             return ToolResult.failure("game_not_connected");
         }
@@ -150,7 +149,7 @@ public final class RuntimeHost implements AutoCloseable, RuntimeInvoker {
                     runtimeId = requestRuntimeId;
                     if ("runtime.hello".equals(request.get("type"))) {
                         connection.runtimeId = runtimeId;
-                        activeConnection.set(connection);
+                        connectionsByRuntimeId.put(runtimeId, connection);
                         System.err.println("runtime connected: " + runtimeId + " from " + socket.getRemoteSocketAddress());
                     }
                 }
@@ -163,8 +162,8 @@ public final class RuntimeHost implements AutoCloseable, RuntimeInvoker {
             }
         } finally {
             openSockets.remove(socket);
-            if (connection != null) {
-                activeConnection.compareAndSet(connection, null);
+            if (connection != null && connection.runtimeId() != null) {
+                connectionsByRuntimeId.remove(connection.runtimeId(), connection);
             }
             if (runtimeId != null && !runtimeId.isBlank()) {
                 dispatcher.handle(java.util.Map.of(
@@ -220,6 +219,3 @@ public final class RuntimeHost implements AutoCloseable, RuntimeInvoker {
         }
     }
 }
-
-
-

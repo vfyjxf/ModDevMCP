@@ -1,5 +1,7 @@
 package dev.vfyjxf.mcp.server.host;
 
+import java.util.Collection;
+
 public record RuntimeState(
         boolean gameConnected,
         boolean gameConnecting,
@@ -10,8 +12,14 @@ public record RuntimeState(
         return new RuntimeState(false, false, "", "");
     }
 
-    public static RuntimeState connected(RuntimeSession session) {
-        return new RuntimeState(true, false, session.runtimeId(), session.runtimeSide());
+    public static RuntimeState fromSessions(Collection<RuntimeSession> sessions) {
+        if (sessions == null || sessions.isEmpty()) {
+            return disconnected();
+        }
+        if (sessions.size() == 1) {
+            var session = sessions.iterator().next();
+            return new RuntimeState(true, false, session.runtimeId(), session.runtimeSide());
+        }
+        return new RuntimeState(true, false, "", "");
     }
 }
-

@@ -29,7 +29,8 @@ public class ModDevMCP {
     private boolean commonRuntimeRegistered;
     private boolean clientRuntimeRegistered;
     private boolean clientProvidersRegistered;
-
+    private boolean serverRuntimeRegistered;
+    private boolean serverProvidersRegistered;
 
     public ModDevMCP() {
         this(new ModDevMcpServer(), new RuntimeRegistries());
@@ -74,7 +75,7 @@ public class ModDevMCP {
     }
 
     public synchronized ModDevMcpServer prepareServer() {
-        return prepareClientServer();
+        return new ServerRuntimeBootstrap(this).prepareServer();
     }
 
     public synchronized ModDevMcpServer prepareCommonServer() {
@@ -93,6 +94,14 @@ public class ModDevMCP {
 
     public synchronized void registerClientProviders() {
         new ClientRuntimeBootstrap(this).registerClientProviders();
+    }
+
+    public synchronized void prepareServerRuntime() {
+        new ServerRuntimeBootstrap(this).prepareServerRuntime();
+    }
+
+    public synchronized void registerServerProviders() {
+        new ServerRuntimeBootstrap(this).registerServerProviders();
     }
 
     private void registerCommonRuntime() {
@@ -127,6 +136,22 @@ public class ModDevMCP {
             return false;
         }
         clientProvidersRegistered = true;
+        return true;
+    }
+
+    boolean claimServerRuntimeRegistration() {
+        if (serverRuntimeRegistered) {
+            return false;
+        }
+        serverRuntimeRegistered = true;
+        return true;
+    }
+
+    boolean claimServerProviderRegistration() {
+        if (serverProvidersRegistered) {
+            return false;
+        }
+        serverProvidersRegistered = true;
         return true;
     }
 }

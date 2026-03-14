@@ -4,6 +4,7 @@ import dev.vfyjxf.mcp.server.ModDevMcpServer;
 import dev.vfyjxf.mcp.server.api.ToolCallContext;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,11 +21,15 @@ class HostStatusToolProviderTest {
     }
 
     @Test
-    void statusToolReflectsRuntimeConnectionState() {
+    void statusToolReflectsClientAndServerRuntimeConnectionState() {
         var server = new ModDevMcpServer();
         server.runtimeRegistry().connect(
-                new RuntimeSession("runtime-1", "client", java.util.List.of("common", "client"), java.util.List.of("client"), Map.of("worldLoaded", true)),
-                java.util.List.of()
+                new RuntimeSession("client-runtime", "client", List.of("common", "client"), List.of("client"), Map.of("worldLoaded", true)),
+                List.of()
+        );
+        server.runtimeRegistry().connect(
+                new RuntimeSession("server-runtime", "server", List.of("common", "server"), List.of("server"), Map.of("worldLoaded", true)),
+                List.of()
         );
 
         var result = server.registry().findTool("moddev.status").orElseThrow()
@@ -37,8 +42,10 @@ class HostStatusToolProviderTest {
         assertTrue((Boolean) payload.get("hostReady"));
         assertTrue((Boolean) payload.get("gameConnected"));
         assertFalse((Boolean) payload.get("gameConnecting"));
-        assertEquals("runtime-1", payload.get("runtimeId"));
-        assertEquals("client", payload.get("runtimeSide"));
+        assertTrue((Boolean) payload.get("clientConnected"));
+        assertTrue((Boolean) payload.get("serverConnected"));
+        @SuppressWarnings("unchecked")
+        var connectedRuntimes = (List<Map<String, Object>>) payload.get("connectedRuntimes");
+        assertEquals(2, connectedRuntimes.size());
     }
 }
-

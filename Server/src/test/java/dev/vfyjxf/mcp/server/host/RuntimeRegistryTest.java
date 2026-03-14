@@ -8,7 +8,6 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RuntimeRegistryTest {
@@ -18,76 +17,79 @@ class RuntimeRegistryTest {
         var registry = new RuntimeRegistry();
 
         assertFalse(registry.state().gameConnected());
-        assertTrue(registry.activeSession().isEmpty());
+        assertTrue(registry.listSessions().isEmpty());
         assertTrue(registry.listDynamicTools().isEmpty());
     }
 
     @Test
-    void connectRegistersActiveRuntimeSessionAndDynamicTools() {
+    void connectKeepsClientAndServerSessionsAtTheSameTime() {
         var registry = new RuntimeRegistry();
-        var session = new RuntimeSession(
-                "runtime-1",
+        var clientSession = new RuntimeSession(
+                "client-runtime",
                 "client",
                 List.of("common", "client"),
                 List.of("client"),
                 Map.of("screenClass", "net.minecraft.client.gui.screens.TitleScreen")
         );
-        var tool = descriptor("moddev.ui.inspect", "client");
-
-        registry.connect(session, List.of(tool));
-
-        assertTrue(registry.state().gameConnected());
-        assertSame(session, registry.activeSession().orElseThrow());
-        assertEquals(List.of(tool), registry.listDynamicTools());
-    }
-
-    @Test
-    void connectReplacesPreviousRuntimeSessionAndDescriptors() {
-        var registry = new RuntimeRegistry();
-        var first = new RuntimeSession("runtime-1", "client", List.of("client"), List.of("client"), Map.of());
-        var second = new RuntimeSession("runtime-2", "client", List.of("common", "client"), List.of("client"), Map.of("worldLoaded", true));
-        var firstTool = descriptor("moddev.ui.inspect", "client");
-        var secondTool = descriptor("moddev.status.client", "common");
-
-        registry.connect(first, List.of(firstTool));
-        registry.connect(second, List.of(secondTool));
-
-        assertEquals("runtime-2", registry.activeSession().orElseThrow().runtimeId());
-        assertEquals(List.of(secondTool), registry.listDynamicTools());
-    }
-
-    @Test
-    void disconnectClearsRuntimeSessionAndDescriptors() {
-        var registry = new RuntimeRegistry();
-        registry.connect(
-                new RuntimeSession("runtime-1", "client", List.of("client"), List.of("client"), Map.of()),
-                List.of(descriptor("moddev.ui.inspect", "client"))
+        var serverSession = new RuntimeSession(
+                "server-runtime",
+                "server",
+                List.of("common", "server"),
+                List.of("server"),
+                Map.of("worldLoaded", true)
         );
 
-        registry.disconnect("runtime-1");
+        registry.connect(clientSession, List.of(descriptor("moddev.game_close", "common", "client", "common")));
+        registry.connect(serverSession, List.of(descriptor("moddev.game_close", "common", "server", "common")));
 
-        assertFalse(registry.state().gameConnected());
-        assertTrue(registry.activeSession().isEmpty());
-        assertTrue(registry.listDynamicTools().isEmpty());
+        assertTrue(registry.state().gameConnected());
+        assertEquals(2, registry.listSessions().size());
+        assertTrue(registry.findSession("client-runtime").isPresent());
+        assertTrue(registry.findSession("server-runtime").isPresent());
+        assertEquals(1, registry.listDynamicTools().size());
+        assertEquals("moddev.game_close", registry.listDynamicTools().getFirst().definition().name());
     }
 
     @Test
-    void refreshToolsKeepsSessionButReplacesDescriptors() {
+    void disconnectRemovesOnlyMatchingRuntimeAndKeepsOtherSideConnected() {
         var registry = new RuntimeRegistry();
         registry.connect(
-                new RuntimeSession("runtime-1", "client", List.of("common", "client"), List.of("client"), Map.of()),
-                List.of(descriptor("moddev.ui.inspect", "client"))
+                new RuntimeSession("client-runtime", "client", List.of("common", "client"), List.of("client"), Map.of()),
+                List.of(descriptor("moddev.game_close", "common", "client", "common"))
         );
-        var refreshed = descriptor("moddev.ui.capture", "client");
+        registry.connect(
+                new RuntimeSession("server-runtime", "server", List.of("common", "server"), List.of("server"), Map.of()),
+                List.of(descriptor("moddev.game_close", "common", "server", "common"))
+        );
 
-        registry.refreshTools("runtime-1", List.of(refreshed));
+        registry.disconnect("client-runtime");
 
         assertTrue(registry.state().gameConnected());
-        assertEquals("runtime-1", registry.activeSession().orElseThrow().runtimeId());
-        assertEquals(List.of(refreshed), registry.listDynamicTools());
+        assertEquals(1, registry.listSessions().size());
+        assertTrue(registry.findSession("server-runtime").isPresent());
+        assertFalse(registry.findSession("client-runtime").isPresent());
+        assertEquals(1, registry.listDynamicTools().size());
     }
 
-    private RuntimeToolDescriptor descriptor(String toolName, String scope) {
+    @Test
+    void refreshToolsUpdatesOnlyMatchingRuntimeWithoutDroppingOtherRuntimeDescriptors() {
+        var registry = new RuntimeRegistry();
+        registry.connect(
+                new RuntimeSession("client-runtime", "client", List.of("common", "client"), List.of("client"), Map.of()),
+                List.of(descriptor("moddev.ui_snapshot", "client", "client", "client"))
+        );
+        registry.connect(
+                new RuntimeSession("server-runtime", "server", List.of("common", "server"), List.of("server"), Map.of()),
+                List.of(descriptor("moddev.game_close", "common", "server", "common"))
+        );
+
+        registry.refreshTools("client-runtime", List.of(descriptor("moddev.ui_capture", "client", "client", "client")));
+
+        var toolNames = registry.listDynamicTools().stream().map(tool -> tool.definition().name()).toList();
+        assertEquals(List.of("moddev.game_close", "moddev.ui_capture"), toolNames.stream().sorted().toList());
+    }
+
+    private RuntimeToolDescriptor descriptor(String toolName, String scope, String runtimeSide, String definitionSide) {
         return new RuntimeToolDescriptor(
                 new McpToolDefinition(
                         toolName,
@@ -96,17 +98,16 @@ class RuntimeRegistryTest {
                         Map.of("type", "object"),
                         Map.of("type", "object"),
                         List.of("runtime"),
-                        "client",
+                        definitionSide,
                         false,
                         false,
                         "runtime",
                         "runtime"
                 ),
                 scope,
-                "client",
+                runtimeSide,
                 true,
                 false
         );
     }
 }
-

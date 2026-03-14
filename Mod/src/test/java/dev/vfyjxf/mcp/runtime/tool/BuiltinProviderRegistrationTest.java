@@ -27,6 +27,7 @@ class BuiltinProviderRegistrationTest {
         assertTrue(server.registry().findTool("moddev.ui_snapshot").isPresent());
         assertTrue(server.registry().findTool("moddev.ui_get_live_screen").isPresent());
         assertTrue(server.registry().findTool("moddev.inventory_snapshot").isPresent());
+        assertTrue(server.registry().findTool("moddev.game_close").isPresent());
         assertTrue(server.registry().findTool("moddev.compile").isPresent());
         assertTrue(server.registry().findTool("moddev.hotswap").isPresent());
     }
@@ -88,6 +89,7 @@ class BuiltinProviderRegistrationTest {
         assertTrue(server.registry().findTool("moddev.ui_get_live_screen").isEmpty());
         assertTrue(server.registry().findTool("moddev.input_action").isEmpty());
         assertTrue(server.registry().findTool("moddev.inventory_snapshot").isEmpty());
+        assertTrue(server.registry().findTool("moddev.game_close").isEmpty());
     }
 
     @Test
@@ -101,11 +103,26 @@ class BuiltinProviderRegistrationTest {
         assertTrue(server.registry().findTool("moddev.ui_get_live_screen").isPresent());
         assertTrue(server.registry().findTool("moddev.input_action").isPresent());
         assertTrue(server.registry().findTool("moddev.inventory_snapshot").isPresent());
+        assertTrue(server.registry().findTool("moddev.game_close").isPresent());
+    }
+
+    @Test
+    void serverPreparationRegistersGameCloseWithoutClientOnlyTools() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var mod = new ModDevMCP(server);
+
+        mod.prepareServer();
+
+        assertTrue(server.registry().findTool("moddev.game_close").isPresent());
+        assertTrue(server.registry().findTool("moddev.ui_snapshot").isEmpty());
+        assertTrue(server.registry().findTool("moddev.ui_get_live_screen").isEmpty());
+        assertTrue(server.registry().findTool("moddev.input_action").isEmpty());
+        assertTrue(server.registry().findTool("moddev.inventory_snapshot").isEmpty());
     }
 
     @Test
     void commonModClassDoesNotStoreClientOnlyProviderInstances() {
-        var fieldNames = Set.of("uiToolProvider", "inputToolProvider", "inventoryToolProvider");
+        var fieldNames = Set.of("uiToolProvider", "inputToolProvider", "inventoryToolProvider", "gameToolProvider");
 
         assertFalse(java.util.Arrays.stream(ModDevMCP.class.getDeclaredFields())
                 .map(java.lang.reflect.Field::getName)

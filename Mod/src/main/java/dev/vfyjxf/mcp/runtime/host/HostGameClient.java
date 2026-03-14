@@ -13,6 +13,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -45,8 +46,8 @@ public final class HostGameClient implements AutoCloseable {
                         "type", "runtime.hello",
                         "runtimeId", runtimeId,
                         "runtimeSide", runtimeSide,
-                        "supportedScopes", java.util.List.of("common", "client"),
-                        "supportedSides", java.util.List.of(runtimeSide),
+                        "supportedScopes", supportedScopes(),
+                        "supportedSides", List.of(runtimeSide),
                         "toolDescriptors", new GameRuntimeDescriptorFactory(server, runtimeSide).createToolDescriptors(),
                         "state", Map.of()
                 ));
@@ -101,11 +102,17 @@ public final class HostGameClient implements AutoCloseable {
         ));
     }
 
+    private List<String> supportedScopes() {
+        return switch (runtimeSide) {
+            case "client" -> List.of("common", "client");
+            case "server" -> List.of("common", "server");
+            default -> List.of("common");
+        };
+    }
+
     private void write(BufferedWriter writer, Map<String, Object> payload) throws IOException {
         writer.write(jsonCodec.writeString(payload));
         writer.newLine();
         writer.flush();
     }
 }
-
-

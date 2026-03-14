@@ -25,4 +25,3 @@ public class ClientEntrypoint extends ModDevMCP {
         new ClientAutomationPauseGuard().attach();
     }
 }
-

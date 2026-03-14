@@ -3,7 +3,6 @@ package dev.vfyjxf.mcp.server.protocol;
 import dev.vfyjxf.mcp.server.ModDevMcpServer;
 import dev.vfyjxf.mcp.server.api.McpResource;
 import dev.vfyjxf.mcp.server.api.ToolCallContext;
-import dev.vfyjxf.mcp.server.host.RuntimeToolDescriptor;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -69,16 +68,19 @@ public final class McpProtocolDispatcher {
                 .filter(Map.class::isInstance)
                 .map(Map.class::cast)
                 .map(this::castMap)
-                .orElse(Map.of(
-                        "hostReady", true,
-                        "gameConnected", false,
-                        "gameConnecting", false,
-                        "connectedAgentCount", 0,
-                        "queueDepth", 0,
-                        "runtimeId", "",
-                        "runtimeSide", "",
-                        "availableScopes", List.of(),
-                        "runtimeSides", List.of()
+                .orElse(Map.ofEntries(
+                        Map.entry("hostReady", true),
+                        Map.entry("gameConnected", false),
+                        Map.entry("gameConnecting", false),
+                        Map.entry("clientConnected", false),
+                        Map.entry("serverConnected", false),
+                        Map.entry("connectedAgentCount", 0),
+                        Map.entry("queueDepth", 0),
+                        Map.entry("runtimeId", ""),
+                        Map.entry("runtimeSide", ""),
+                        Map.entry("availableScopes", List.of()),
+                        Map.entry("runtimeSides", List.of()),
+                        Map.entry("connectedRuntimes", List.of())
                 ));
         return Map.of(
                 "jsonrpc", "2.0",
@@ -131,24 +133,19 @@ public final class McpProtocolDispatcher {
         if (!(rawArguments instanceof Map<?, ?> arguments)) {
             return errorResponse(id, INVALID_PARAMS, "Invalid params", Map.of("arguments", "must be object"));
         }
+        var toolArguments = castMap(arguments);
         var tool = server.registry().findTool(toolName);
         if (tool.isPresent()) {
-            return handleLocalToolCall(id, tool.get().handler().handle(ToolCallContext.empty(), castMap(arguments)));
+            return handleLocalToolCall(id, tool.get().handler().handle(ToolCallContext.empty(), toolArguments));
         }
-        var dynamicTool = findDynamicTool(toolName);
-        if (dynamicTool.isPresent()) {
-            return handleLocalToolCall(id, server.callScheduler().call(dynamicTool.get(), castMap(arguments)));
+        var selection = server.runtimeRegistry().resolveDynamicTool(toolName, toolArguments);
+        if (selection.resolved()) {
+            return handleLocalToolCall(id, server.callScheduler().call(selection.session(), selection.descriptor(), toolArguments));
         }
         if (toolName.startsWith("moddev.")) {
-            return handleLocalToolCall(id, dev.vfyjxf.mcp.server.api.ToolResult.failure("game_not_connected"));
+            return handleLocalToolCall(id, dev.vfyjxf.mcp.server.api.ToolResult.failure(selection.error()));
         }
         return errorResponse(id, METHOD_NOT_FOUND, "Method not found", Map.of("tool", toolName));
-    }
-
-    private Optional<RuntimeToolDescriptor> findDynamicTool(String toolName) {
-        return server.runtimeRegistry().listDynamicTools().stream()
-                .filter(tool -> tool.definition().name().equals(toolName))
-                .findFirst();
     }
 
     private Map<String, Object> handleLocalToolCall(Object id, dev.vfyjxf.mcp.server.api.ToolResult result) {
@@ -247,4 +244,3 @@ public final class McpProtocolDispatcher {
         return id;
     }
 }
-

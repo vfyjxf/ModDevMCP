@@ -47,9 +47,19 @@ public final class RuntimeCallQueue implements AutoCloseable {
         if (session == null || !runtimeRegistry.state().gameConnected()) {
             return ToolResult.failure("game_not_connected");
         }
+        return call(session, descriptor, arguments);
+    }
+
+    public ToolResult call(RuntimeSession session, RuntimeToolDescriptor descriptor, Map<String, Object> arguments) {
+        Objects.requireNonNull(session, "session");
+        Objects.requireNonNull(descriptor, "descriptor");
+        Objects.requireNonNull(arguments, "arguments");
+        if (!runtimeRegistry.state().gameConnected() || runtimeRegistry.findSession(session.runtimeId()).isEmpty()) {
+            return ToolResult.failure("game_not_connected");
+        }
         var pending = new PendingRuntimeCall(session.runtimeId(), descriptor, arguments);
         pendingCalls.add(pending);
-        executor.execute(() -> executePending(pending));
+        executor.execute(() -> executePending(session, pending));
         try {
             return pending.future().get(callTimeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (TimeoutException exception) {
@@ -91,7 +101,7 @@ public final class RuntimeCallQueue implements AutoCloseable {
         executor.shutdownNow();
     }
 
-    private void executePending(PendingRuntimeCall pending) {
+    private void executePending(RuntimeSession expectedSession, PendingRuntimeCall pending) {
         if (pending.isFinished()) {
             return;
         }
@@ -100,12 +110,8 @@ public final class RuntimeCallQueue implements AutoCloseable {
             if (pending.isFinished()) {
                 return;
             }
-            var session = runtimeRegistry.activeSession().orElse(null);
+            var session = runtimeRegistry.findSession(expectedSession.runtimeId()).orElse(null);
             if (session == null || !runtimeRegistry.state().gameConnected()) {
-                completePending(pending, ToolResult.failure("game_disconnected"));
-                return;
-            }
-            if (!session.runtimeId().equals(pending.runtimeId())) {
                 completePending(pending, ToolResult.failure("game_disconnected"));
                 return;
             }
@@ -137,5 +143,3 @@ public final class RuntimeCallQueue implements AutoCloseable {
         }
     }
 }
-
-

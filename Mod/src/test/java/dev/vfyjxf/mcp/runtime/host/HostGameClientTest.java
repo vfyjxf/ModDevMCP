@@ -57,6 +57,7 @@ class HostGameClientTest {
                 var hello = readJsonLine(reader);
                 assertEquals("runtime.hello", hello.get("type"));
                 assertEquals("runtime-1", hello.get("runtimeId"));
+                assertEquals(List.of("common", "client"), hello.get("supportedScopes"));
                 @SuppressWarnings("unchecked")
                 var descriptors = (List<Map<String, Object>>) hello.get("toolDescriptors");
                 assertEquals("demo.echo", descriptors.getFirst().get("name"));
@@ -81,6 +82,50 @@ class HostGameClientTest {
 
             runFuture.get(5, TimeUnit.SECONDS);
             client.close();
+        }
+    }
+
+    @Test
+    void serverRuntimeAdvertisesServerSupportedScopeInHello() throws Exception {
+        try (var relaySocket = new ServerSocket(0);
+             var executor = Executors.newSingleThreadExecutor()) {
+            var server = new ModDevMcpServer(new McpToolRegistry());
+            server.registry().registerTool(
+                    new McpToolDefinition(
+                            "moddev.game_close",
+                            "Game Close",
+                            "Close runtime",
+                            Map.of("type", "object"),
+                            Map.of("type", "object"),
+                            List.of("game"),
+                            "common",
+                            false,
+                            false,
+                            "runtime",
+                            "runtime"
+                    ),
+                    (context, arguments) -> ToolResult.success(Map.of("accepted", true))
+            );
+            var hostClient = new HostGameClient(server, new HostRuntimeClientConfig("127.0.0.1", relaySocket.getLocalPort(), 50L), "server-runtime", "server");
+
+            var runFuture = executor.submit(() -> { hostClient.runUntilDisconnected(); return null; });
+            try (var socket = relaySocket.accept();
+                 var reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+                 var writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8))) {
+                var hello = readJsonLine(reader);
+                assertEquals("runtime.hello", hello.get("type"));
+                assertEquals("server-runtime", hello.get("runtimeId"));
+                assertEquals("server", hello.get("runtimeSide"));
+                assertEquals(List.of("common", "server"), hello.get("supportedScopes"));
+                assertEquals(List.of("server"), hello.get("supportedSides"));
+                @SuppressWarnings("unchecked")
+                var descriptors = (List<Map<String, Object>>) hello.get("toolDescriptors");
+                assertEquals("moddev.game_close", descriptors.getFirst().get("name"));
+                writeLine(writer, "{\"status\":\"ok\"}");
+            }
+
+            runFuture.get(5, TimeUnit.SECONDS);
+            hostClient.close();
         }
     }
 
@@ -117,4 +162,3 @@ class HostGameClientTest {
         throw new AssertionError("Timed out waiting for JSON line");
     }
 }
-

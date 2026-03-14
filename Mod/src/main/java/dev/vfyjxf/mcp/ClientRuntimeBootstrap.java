@@ -1,7 +1,9 @@
 package dev.vfyjxf.mcp;
 
+import dev.vfyjxf.mcp.runtime.game.LiveClientGameCloser;
 import dev.vfyjxf.mcp.runtime.input.MinecraftInputController;
 import dev.vfyjxf.mcp.runtime.inventory.VanillaInventoryDriver;
+import dev.vfyjxf.mcp.runtime.tool.GameToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.InputToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.InventoryToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.UiToolProvider;
@@ -52,5 +54,6 @@ public final class ClientRuntimeBootstrap {
         mod.registerToolProvider(new UiToolProvider(registries, new LiveClientScreenProbe()));
         mod.registerToolProvider(new InputToolProvider(registries));
         mod.registerToolProvider(new InventoryToolProvider(registries));
+        mod.registerToolProvider(new GameToolProvider(new LiveClientGameCloser()));
     }
 }
