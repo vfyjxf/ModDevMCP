@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NeoForgeRunInjectorTest {
@@ -42,6 +43,9 @@ class NeoForgeRunInjectorTest {
         assertTrue(run.getSystemProperties().get().containsKey("moddevmcp.project.root"));
         assertTrue(run.getSystemProperties().get().containsKey("moddevmcp.compile.task"));
         assertTrue(run.getSystemProperties().get().containsKey("moddevmcp.class.output"));
+        assertEquals(":Mod:compileJava", run.getSystemProperties().get().get("moddevmcp.compile.task"));
+        assertEquals(new File(project.getRootProject().getProjectDir(), "Mod/build/classes/java/main").getAbsolutePath(),
+                run.getSystemProperties().get().get("moddevmcp.class.output"));
         assertTrue("127.0.0.1".equals(run.getSystemProperties().get().get("moddevmcp.host")));
         assertTrue("47653".equals(String.valueOf(run.getSystemProperties().get().get("moddevmcp.port"))));
         assertTrue(project.getTasks().getByName("runClient").getDependsOn().contains("createMcpClientFiles"));

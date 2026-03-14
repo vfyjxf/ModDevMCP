@@ -91,6 +91,7 @@ public final class HotswapToolProvider implements McpToolProvider {
                     response.put("notYetLoaded", reloadResult.notYetLoaded());
                     response.put("errors", reloadResult.errors());
                     response.put("capabilities", reloadResult.capabilities());
+                    response.put("diagnostics", reloadResult.diagnostics());
                     response.put("success", reloadResult.errors().isEmpty());
                     return ToolResult.success(response);
                 }
