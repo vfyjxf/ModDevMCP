@@ -25,6 +25,26 @@ publishing {
     }
 }
 
+tasks.register('runServer', JavaExec) {
+    group = 'application'
+    description = 'Runs the standalone ModDev MCP backend.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.vfyjxf.mcp.server.bootstrap.ModDevMcpBackendMain'
+    standardInput = System.in
+    standardOutput = System.out
+    errorOutput = System.err
+}
+
+tasks.register('runStdioMcp', JavaExec) {
+    group = 'application'
+    description = 'Runs the ModDev MCP stdio gateway.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.vfyjxf.mcp.server.bootstrap.ModDevMcpGatewayMain'
+    standardInput = System.in
+    standardOutput = System.out
+    errorOutput = System.err
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
@@ -35,3 +55,4 @@ idea {
         downloadJavadoc = true
     }
 }
+

@@ -1,44 +1,46 @@
-# Codex Screenshot Demo Guide
+# 2026-03-11 Codex Screenshot Demo Guide
 
 Date: 2026-03-11 17:30 CST
+Updated: 2026-03-13 17:08 CST
 
-Purpose:
+## Goal
 
-- connect a Codex-style MCP client to the game MCP entrypoint
-- capture and preserve real screenshots through MCP
+- connect a Codex-style MCP client to the host entrypoint
+- verify game readiness with `moddev.status`
+- capture and inspect a real screenshot after the game connects
 
-Setup:
+## Startup Order
+
+1. start the host MCP host
+2. start `TestMod` `runClient`
+3. wait for the game to load
+4. start Codex or let Codex launch the MCP entry
+
+## Repository Commands
+
+Host:
+
+```powershell
+$env:GRADLE_USER_HOME='.gradle-user'
+.\gradlew.bat :Server:runStdioMcp --no-daemon
+```
+
+Game:
 
 ```powershell
 cd TestMod
+$env:GRADLE_USER_HOME='..\.gradle-user'
 .\gradlew.bat runClient --no-daemon
-.\gradlew.bat :Mod:createGameMcpBridgeLaunchScript --no-daemon
 ```
 
-Recommended Codex MCP config:
+## Codex Rule
 
-```toml
-[mcp_servers.moddevmcp]
-command = 'D:\\ProjectDir\\AgentFarm\\ModDevMCP\\Mod\\build\\moddevmcp\\game-mcp\\run-game-mcp-bridge.bat'
-```
+First calls:
 
-Recommended first call:
+1. `moddev.status`
+2. `moddev.ui_get_live_screen`
+3. `moddev.ui_capture`
 
-- `moddev.ui_get_live_screen`
+If status reports `gameConnected=false`, stop and wait for the game.
 
-Then use:
 
-- `moddev.ui_snapshot`
-- `moddev.ui_capture`
-
-Example capture arguments:
-
-```json
-{
-  "screenClass": "net.minecraft.client.gui.screens.TitleScreen",
-  "modId": "minecraft",
-  "mouseX": 0,
-  "mouseY": 0,
-  "source": "framebuffer"
-}
-```

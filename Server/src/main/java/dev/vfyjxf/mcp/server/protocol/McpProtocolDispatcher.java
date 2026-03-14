@@ -3,6 +3,7 @@ package dev.vfyjxf.mcp.server.protocol;
 import dev.vfyjxf.mcp.server.ModDevMcpServer;
 import dev.vfyjxf.mcp.server.api.McpResource;
 import dev.vfyjxf.mcp.server.api.ToolCallContext;
+import dev.vfyjxf.mcp.server.host.RuntimeToolDescriptor;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -44,14 +45,7 @@ public final class McpProtocolDispatcher {
         try {
             return Optional.of(switch (methodName) {
                 case "initialize" -> successResponse(request.get("id"), initializeResult(request));
-                case "tools/list" -> successResponse(request.get("id"), Map.of(
-                        "tools", server.registry().listTools().stream().map(tool -> Map.<String, Object>of(
-                                "name", tool.definition().name(),
-                                "title", tool.definition().title(),
-                                "description", tool.definition().description(),
-                                "inputSchema", tool.definition().inputSchema()
-                        )).toList()
-                ));
+                case "tools/list" -> successResponse(request.get("id"), Map.of("tools", listTools()));
                 case "tools/call" -> handleToolCall(request.get("id"), (Map<String, Object>) request.get("params"));
                 case "resources/list" -> successResponse(request.get("id"), Map.of(
                         "resources", server.resourceRegistry().list().stream().map(this::resourceDescriptor).toList()
@@ -66,6 +60,33 @@ public final class McpProtocolDispatcher {
         }
     }
 
+    public Map<String, Object> initializedNotification() {
+        var statusTool = server.registry().findTool("moddev.status");
+        var payload = statusTool
+                .map(tool -> tool.handler().handle(ToolCallContext.empty(), Map.of()))
+                .filter(result -> result.success())
+                .map(dev.vfyjxf.mcp.server.api.ToolResult::value)
+                .filter(Map.class::isInstance)
+                .map(Map.class::cast)
+                .map(this::castMap)
+                .orElse(Map.of(
+                        "hostReady", true,
+                        "gameConnected", false,
+                        "gameConnecting", false,
+                        "connectedAgentCount", 0,
+                        "queueDepth", 0,
+                        "runtimeId", "",
+                        "runtimeSide", "",
+                        "availableScopes", List.of(),
+                        "runtimeSides", List.of()
+                ));
+        return Map.of(
+                "jsonrpc", "2.0",
+                "method", "notifications/moddev/status",
+                "params", payload
+        );
+    }
+
     private Map<String, Object> initializeResult(Map<String, Object> request) {
         var params = request.get("params") instanceof Map<?, ?> rawParams
                 ? castMap(rawParams)
@@ -76,13 +97,29 @@ public final class McpProtocolDispatcher {
         return Map.of(
                 "protocolVersion", protocolVersion,
                 "capabilities", Map.of(
-                        "tools", Map.of("listChanged", false),
+                        "tools", Map.of("listChanged", true),
                         "resources", Map.of("subscribe", false, "listChanged", false)
                 ),
                 "serverInfo", Map.of(
                         "name", serverName,
                         "version", serverVersion
                 )
+        );
+    }
+
+    private List<Map<String, Object>> listTools() {
+        var tools = new java.util.ArrayList<Map<String, Object>>();
+        server.registry().listTools().forEach(tool -> tools.add(toolDescriptor(tool.definition())));
+        server.runtimeRegistry().listDynamicTools().forEach(tool -> tools.add(toolDescriptor(tool.definition())));
+        return List.copyOf(tools);
+    }
+
+    private Map<String, Object> toolDescriptor(dev.vfyjxf.mcp.server.api.McpToolDefinition definition) {
+        return Map.of(
+                "name", definition.name(),
+                "title", definition.title(),
+                "description", definition.description(),
+                "inputSchema", definition.inputSchema()
         );
     }
 
@@ -95,10 +132,23 @@ public final class McpProtocolDispatcher {
             return errorResponse(id, INVALID_PARAMS, "Invalid params", Map.of("arguments", "must be object"));
         }
         var tool = server.registry().findTool(toolName);
-        if (tool.isEmpty()) {
-            return errorResponse(id, METHOD_NOT_FOUND, "Method not found", Map.of("tool", toolName));
+        if (tool.isPresent()) {
+            return handleLocalToolCall(id, tool.get().handler().handle(ToolCallContext.empty(), castMap(arguments)));
         }
-        return handleLocalToolCall(id, tool.get().handler().handle(ToolCallContext.empty(), castMap(arguments)));
+        var dynamicTool = findDynamicTool(toolName);
+        if (dynamicTool.isPresent()) {
+            return handleLocalToolCall(id, server.callScheduler().call(dynamicTool.get(), castMap(arguments)));
+        }
+        if (toolName.startsWith("moddev.")) {
+            return handleLocalToolCall(id, dev.vfyjxf.mcp.server.api.ToolResult.failure("game_not_connected"));
+        }
+        return errorResponse(id, METHOD_NOT_FOUND, "Method not found", Map.of("tool", toolName));
+    }
+
+    private Optional<RuntimeToolDescriptor> findDynamicTool(String toolName) {
+        return server.runtimeRegistry().listDynamicTools().stream()
+                .filter(tool -> tool.definition().name().equals(toolName))
+                .findFirst();
     }
 
     private Map<String, Object> handleLocalToolCall(Object id, dev.vfyjxf.mcp.server.api.ToolResult result) {
@@ -197,3 +247,4 @@ public final class McpProtocolDispatcher {
         return id;
     }
 }
+

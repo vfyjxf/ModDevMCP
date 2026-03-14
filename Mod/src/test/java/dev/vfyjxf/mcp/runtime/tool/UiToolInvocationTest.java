@@ -31,6 +31,11 @@ import dev.vfyjxf.mcp.server.api.ToolCallContext;
 import dev.vfyjxf.mcp.server.runtime.McpToolRegistry;
 import org.junit.jupiter.api.Test;
 
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -784,6 +789,7 @@ class UiToolInvocationTest {
         var server = new ModDevMcpServer(new McpToolRegistry());
         var registries = new RuntimeRegistries();
         var mod = new ModDevMCP(server, registries);
+        mod.prepareClientRuntime();
         mod.api().registerUiOffscreenCaptureProvider(new TestOffscreenCaptureProvider("offscreen-test", 500));
         new UiToolProvider(registries, new TestClientScreenProbe(
                 new ClientScreenMetrics("net.minecraft.client.gui.screens.TitleScreen", 320, 240, 854, 480)
@@ -808,6 +814,7 @@ class UiToolInvocationTest {
         var provider = new RecordingPointerOffscreenCaptureProvider("offscreen-test", 500);
         registries.uiPointerStates().update("net.minecraft.client.gui.screens.TitleScreen", "minecraft", 200, 100);
         var mod = new ModDevMCP(server, registries);
+        mod.prepareClientRuntime();
         mod.api().registerUiOffscreenCaptureProvider(provider);
         new UiToolProvider(registries, new TestClientScreenProbe(
                 new ClientScreenMetrics("net.minecraft.client.gui.screens.TitleScreen", 320, 240, 854, 480)
@@ -953,6 +960,81 @@ class UiToolInvocationTest {
 
         assertFalse(result.success());
         assertEquals("target_not_found: selector did not match any target", result.error());
+    }
+
+    @Test
+    void uiCaptureCropsStoredArtifactToExplicitTargetBounds() throws Exception {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        var mod = new ModDevMCP(server, registries);
+        mod.api().registerUiDriver(new InspectActionUiDriver("custom.InspectScreen"));
+        mod.api().registerUiOffscreenCaptureProvider(new FixedImageOffscreenCaptureProvider(
+                "offscreen-test",
+                500,
+                100,
+                100,
+                Color.WHITE
+        ));
+        mod.registerBuiltinProviders();
+
+        var tool = server.registry().findTool("moddev.ui_capture").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "screenClass", "custom.InspectScreen",
+                "source", "auto",
+                "mode", "crop",
+                "target", Map.of("id", "launch-button")
+        ));
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        @SuppressWarnings("unchecked")
+        var imageMeta = (Map<String, Object>) payload.get("imageMeta");
+        assertEquals(40, ((Number) imageMeta.get("width")).intValue());
+        assertEquals(20, ((Number) imageMeta.get("height")).intValue());
+
+        var image = ImageIO.read(Path.of((String) payload.get("imagePath")).toFile());
+        assertEquals(40, image.getWidth());
+        assertEquals(20, image.getHeight());
+    }
+
+    @Test
+    void uiCaptureMasksExcludedTargetsInStoredArtifact() throws Exception {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        var mod = new ModDevMCP(server, registries);
+        mod.api().registerUiDriver(new InspectActionUiDriver("custom.InspectScreen"));
+        mod.api().registerUiOffscreenCaptureProvider(new FixedImageOffscreenCaptureProvider(
+                "offscreen-test",
+                500,
+                100,
+                100,
+                Color.WHITE
+        ));
+        mod.registerBuiltinProviders();
+
+        var tool = server.registry().findTool("moddev.ui_capture").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "screenClass", "custom.InspectScreen",
+                "source", "auto",
+                "mode", "full",
+                "exclude", List.of(Map.of("id", "disabled-button"))
+        ));
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+
+        var image = ImageIO.read(Path.of((String) payload.get("imagePath")).toFile());
+        var includedPixel = new Color(image.getRGB(15, 25), true);
+        var excludedPixel = new Color(image.getRGB(65, 25), true);
+
+        assertEquals(255, includedPixel.getRed());
+        assertEquals(255, includedPixel.getGreen());
+        assertEquals(255, includedPixel.getBlue());
+        assertEquals(0, excludedPixel.getRed());
+        assertEquals(0, excludedPixel.getGreen());
+        assertEquals(0, excludedPixel.getBlue());
     }
 
     @Test
@@ -1981,6 +2063,60 @@ class UiToolInvocationTest {
         public UiCaptureImage capture(UiContext context, UiSnapshot snapshot, CaptureRequest request, List<UiTarget> capturedTargets, List<UiTarget> excludedTargets) {
             var bytes = new UiCaptureRenderer().render(snapshot, capturedTargets, excludedTargets);
             return new UiCaptureImage(providerId, "framebuffer", bytes, 320, 240, Map.of());
+        }
+    }
+
+    private static final class FixedImageOffscreenCaptureProvider implements UiOffscreenCaptureProvider {
+
+        private final String providerId;
+        private final int priority;
+        private final int width;
+        private final int height;
+        private final Color fill;
+
+        private FixedImageOffscreenCaptureProvider(String providerId, int priority, int width, int height, Color fill) {
+            this.providerId = providerId;
+            this.priority = priority;
+            this.width = width;
+            this.height = height;
+            this.fill = fill;
+        }
+
+        @Override
+        public String providerId() {
+            return providerId;
+        }
+
+        @Override
+        public int priority() {
+            return priority;
+        }
+
+        @Override
+        public boolean matches(UiContext context, UiSnapshot snapshot) {
+            return true;
+        }
+
+        @Override
+        public UiCaptureImage capture(UiContext context, UiSnapshot snapshot, CaptureRequest request, List<UiTarget> capturedTargets, List<UiTarget> excludedTargets) {
+            var image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            var graphics = image.createGraphics();
+            try {
+                graphics.setColor(fill);
+                graphics.fillRect(0, 0, width, height);
+            } finally {
+                graphics.dispose();
+            }
+            try {
+                var output = new ByteArrayOutputStream();
+                ImageIO.write(image, "png", output);
+                return new UiCaptureImage(providerId, "offscreen", output.toByteArray(), width, height, Map.of(
+                        "guiWidth", width,
+                        "guiHeight", height
+                ));
+            } catch (java.io.IOException exception) {
+                throw new IllegalStateException(exception);
+            }
         }
     }
 

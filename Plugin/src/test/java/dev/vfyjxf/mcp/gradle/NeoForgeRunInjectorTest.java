@@ -8,6 +8,9 @@ import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -15,33 +18,46 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class NeoForgeRunInjectorTest {
 
     @Test
-    void injectsAgentAndRuntimePropertiesIntoSelectedRuns() {
+    void injectsAgentAndRuntimePropertiesIntoSelectedRunsUsingResolvedMavenCoordinates() throws Exception {
         Project project = ProjectBuilder.builder().withProjectDir(new File("build/tmp/plugin-consumer")).build();
+        Path repoDir = Files.createTempDirectory("moddevmcp-agent-repo");
+        Path jarPath = publishFakeAgent(repoDir, "dev.vfyjxf", "moddevmcp-agent", "1.2.3");
+
+        project.getRepositories().maven(repository -> repository.setUrl(repoDir.toUri()));
         project.getPluginManager().apply("net.neoforged.moddev");
-        project.getPluginManager().apply("dev.vfyjxf.moddev-hotswap");
+        project.getPluginManager().apply("dev.vfyjxf.moddevmcp");
+
+        ModDevMcpExtension extension = project.getExtensions().getByType(ModDevMcpExtension.class);
+        extension.getAgentCoordinates().set("dev.vfyjxf:moddevmcp-agent:1.2.3");
+        extension.getMcpHost().set("127.0.0.1");
+        extension.getMcpPort().set(47653);
 
         NeoForgeExtension neoForge = project.getExtensions().getByType(NeoForgeExtension.class);
         neoForge.getRuns().create("client", RunModel::client);
+        project.getTasks().register("runClient");
         evaluate(project);
 
         RunModel run = neoForge.getRuns().getByName("client");
 
-        assertTrue(run.getJvmArguments().get().stream().anyMatch(arg -> arg.startsWith("-javaagent:")));
+        assertTrue(run.getJvmArguments().get().contains("-javaagent:" + jarPath.toFile().getAbsolutePath()));
         assertTrue(run.getSystemProperties().get().containsKey("moddevmcp.project.root"));
         assertTrue(run.getSystemProperties().get().containsKey("moddevmcp.compile.task"));
         assertTrue(run.getSystemProperties().get().containsKey("moddevmcp.class.output"));
-        assertEquals("compileJava", run.getSystemProperties().get().get("moddevmcp.compile.task"));
-        assertEquals(new File(project.getRootProject().getProjectDir(), "build/classes/java/main").getAbsolutePath(),
+        assertEquals(":Mod:compileJava", run.getSystemProperties().get().get("moddevmcp.compile.task"));
+        assertEquals(new File(project.getRootProject().getProjectDir(), "Mod/build/classes/java/main").getAbsolutePath(),
                 run.getSystemProperties().get().get("moddevmcp.class.output"));
+        assertTrue("127.0.0.1".equals(run.getSystemProperties().get().get("moddevmcp.host")));
+        assertTrue("47653".equals(String.valueOf(run.getSystemProperties().get().get("moddevmcp.port"))));
+        assertTrue(project.getTasks().getByName("runClient").getDependsOn().contains("createMcpClientFiles"));
     }
 
     @Test
     void usesConfiguredAgentJarPathOverride() {
         Project project = ProjectBuilder.builder().withProjectDir(new File("build/tmp/plugin-consumer-agent-path")).build();
         project.getPluginManager().apply("net.neoforged.moddev");
-        project.getPluginManager().apply("dev.vfyjxf.moddev-hotswap");
+        project.getPluginManager().apply("dev.vfyjxf.moddevmcp");
 
-        ModDevMcpHotswapExtension extension = project.getExtensions().getByType(ModDevMcpHotswapExtension.class);
+        ModDevMcpExtension extension = project.getExtensions().getByType(ModDevMcpExtension.class);
         extension.getAgentJarPath().set("D:/external/Agent.jar");
 
         NeoForgeExtension neoForge = project.getExtensions().getByType(NeoForgeExtension.class);
@@ -61,9 +77,9 @@ class NeoForgeRunInjectorTest {
         NeoForgeExtension neoForge = project.getExtensions().getByType(NeoForgeExtension.class);
         neoForge.getRuns().create("client", RunModel::client);
 
-        project.getPluginManager().apply("dev.vfyjxf.moddev-hotswap");
+        project.getPluginManager().apply("dev.vfyjxf.moddevmcp");
 
-        ModDevMcpHotswapExtension extension = project.getExtensions().getByType(ModDevMcpHotswapExtension.class);
+        ModDevMcpExtension extension = project.getExtensions().getByType(ModDevMcpExtension.class);
         File projectRoot = new File("D:/workspace/TestMod");
         extension.getProjectRoot().set(projectRoot);
         extension.getAgentJarPath().set("D:/external/Agent.jar");
@@ -82,5 +98,24 @@ class NeoForgeRunInjectorTest {
 
     private static void evaluate(Project project) {
         ((ProjectInternal) project).evaluate();
+    }
+
+    private static Path publishFakeAgent(Path repoDir, String group, String artifact, String version) throws IOException {
+        Path artifactDir = repoDir.resolve(group.replace('.', File.separatorChar))
+                .resolve(artifact)
+                .resolve(version);
+        Files.createDirectories(artifactDir);
+        Path jarPath = artifactDir.resolve(artifact + "-" + version + ".jar");
+        Path pomPath = artifactDir.resolve(artifact + "-" + version + ".pom");
+        Files.write(jarPath, new byte[]{0});
+        Files.writeString(pomPath, """
+                <project>
+                  <modelVersion>4.0.0</modelVersion>
+                  <groupId>%s</groupId>
+                  <artifactId>%s</artifactId>
+                  <version>%s</version>
+                </project>
+                """.formatted(group, artifact, version));
+        return jarPath;
     }
 }

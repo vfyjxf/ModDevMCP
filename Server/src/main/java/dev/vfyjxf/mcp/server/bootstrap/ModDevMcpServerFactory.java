@@ -4,11 +4,12 @@ import dev.vfyjxf.mcp.server.ModDevMcpServer;
 import dev.vfyjxf.mcp.server.api.McpResource;
 import dev.vfyjxf.mcp.server.api.ToolCallContext;
 import dev.vfyjxf.mcp.server.protocol.McpProtocolDispatcher;
+import dev.vfyjxf.mcp.server.host.transport.RuntimeHost;
 import dev.vfyjxf.mcp.server.runtime.McpToolRegistry;
 import dev.vfyjxf.mcp.server.transport.GsonMcpJsonMapper;
 import dev.vfyjxf.mcp.server.transport.McpServerTransport;
 import dev.vfyjxf.mcp.server.transport.PermissiveJsonSchemaValidator;
-import dev.vfyjxf.mcp.server.transport.SdkStdioMcpServerHost;
+import dev.vfyjxf.mcp.server.transport.StdioMcpServerHost;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
@@ -63,7 +64,22 @@ public final class ModDevMcpServerFactory {
     }
 
     public static McpServerTransport createStdioHost(ModDevMcpServer server, InputStream input, OutputStream output) {
-        return new SdkStdioMcpServerHost(server, input, output);
+        return new StdioMcpServerHost(input, output, createDispatcher(server));
+    }
+
+    public static McpServerTransport createHostAttachedStdioHost(ModDevMcpServer server, InputStream input, OutputStream output, HostEndpointConfig config) {
+        try {
+            return new HostAttachedStdioMcpServerHost(
+                    createStdioHost(server, input, output),
+                    startRuntimeHost(server, config)
+            );
+        } catch (java.io.IOException exception) {
+            throw new IllegalStateException("Failed to start runtime host", exception);
+        }
+    }
+
+    public static RuntimeHost startRuntimeHost(ModDevMcpServer server, HostEndpointConfig config) throws java.io.IOException {
+        return RuntimeHost.start(server.runtimeRegistry(), config.host(), config.port(), server.callScheduler());
     }
 
     static McpServerFeatures.SyncToolSpecification toSdkTool(McpToolRegistry.RegisteredTool registeredTool) {
@@ -182,6 +198,15 @@ public final class ModDevMcpServerFactory {
     }
 
     private static String renderToolResult(Object value) {
-        return new dev.vfyjxf.mcp.server.transport.JsonCodec().writeString(value);
+        try {
+            return JSON_MAPPER.writeValueAsString(value);
+        } catch (java.io.IOException exception) {
+            throw new IllegalStateException("Failed to render tool result", exception);
+        }
     }
 }
+
+
+
+
+
