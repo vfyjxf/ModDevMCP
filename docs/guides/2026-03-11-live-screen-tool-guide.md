@@ -1,15 +1,16 @@
-# Live Screen Tool Guide
+# 2026-03-11 Live Screen Tool Guide
 
 Date: 2026-03-11 17:20 CST
+Updated: 2026-03-15 00:05 CST
 
 ## Purpose
 
-Use `moddev.ui_get_live_screen` to cheaply ask the running Minecraft client:
+Use `moddev.ui_get_live_screen` to ask the running Minecraft client:
 
 - whether a screen is active
 - which `screenClass` is currently open
-- which UI driver would handle it
-- current GUI and framebuffer dimensions
+- which UI driver is handling it
+- the current GUI and framebuffer dimensions
 
 ## Call Shape
 
@@ -20,7 +21,7 @@ Use `moddev.ui_get_live_screen` to cheaply ask the running Minecraft client:
 }
 ```
 
-Typical response on the title screen:
+## Typical Response
 
 ```json
 {
@@ -37,9 +38,14 @@ Typical response on the title screen:
 
 ## Recommended Use
 
-1. Start the game first
-2. Connect the MCP client
-3. Call `moddev.ui_get_live_screen`
-4. Use the returned `screenClass` before issuing `ui_snapshot`, `ui_capture`, or `input_action`
+1. install the generated MCP config into your MCP client
+2. start the game
+3. connect the agent
+4. call `moddev.status`
+5. continue only if `gameConnected=true`
+6. call `moddev.ui_get_live_screen`
+7. use the returned `screenClass` before sending UI actions
 
-If the MCP connection itself fails, or this call fails immediately after connection, treat the game as not ready.
+If MCP connection fails, or either readiness check fails, treat the game as not ready.
+
+For a normal consumer setup, you do not need a `modDevMcp {}` block to use this flow.

@@ -1,21 +1,21 @@
-# 2026-03-12 Playwright-Style UI Automation Guide
+# 2026-03-12 Playwright 风格 UI 自动化指南
 
 Date: 2026-03-12 00:27 CST
 Updated: 2026-03-15 00:05 CST
 
-## Purpose
+## 用途
 
-Use the high-level UI tools in a short debug loop that feels similar to Playwright:
+用高层 UI 工具形成一条接近 Playwright 的简短调试闭环：
 
 1. inspect
 2. act
 3. wait
 4. screenshot
-5. review trace
+5. 查看 trace
 
-Use lower-level session and ref tools only when a longer same-screen flow really needs stable references.
+只有在同一 screen 上需要较长流程并且确实需要稳定引用时，才降级使用更底层的 session/ref 工具。
 
-## Preferred Tools
+## 首选工具
 
 - `moddev.ui_run_intent`
 - `moddev.ui_inspect`
@@ -24,7 +24,7 @@ Use lower-level session and ref tools only when a longer same-screen flow really
 - `moddev.ui_screenshot`
 - `moddev.ui_trace_recent`
 
-## Lower-Level Fallback Tools
+## 底层回退工具
 
 - `moddev.ui_session_open`
 - `moddev.ui_session_refresh`
@@ -37,22 +37,22 @@ Use lower-level session and ref tools only when a longer same-screen flow really
 - `moddev.ui_batch`
 - `moddev.ui_trace_get`
 
-## Recommended Flow
+## 推荐流程
 
-1. install the generated MCP config into your MCP client
-2. call `moddev.status`
-3. continue only if `gameConnected=true`
-4. call `moddev.ui_get_live_screen`
-5. call `moddev.ui_run_intent` if you need to enter a top-level screen such as `inventory`, `chat`, or `pause_menu`
-6. call `moddev.ui_inspect`
-7. call `moddev.ui_act`
-8. call `moddev.ui_wait`
-9. call `moddev.ui_screenshot` at checkpoints
-10. call `moddev.ui_trace_recent` if you need a short action history
+1. 先把生成的 MCP 配置安装到你的 MCP client
+2. 调用 `moddev.status`
+3. 只有在 `gameConnected=true` 时才继续
+4. 调用 `moddev.ui_get_live_screen`
+5. 如果需要进入顶层界面，例如 `inventory`、`chat`、`pause_menu`，调用 `moddev.ui_run_intent`
+6. 调用 `moddev.ui_inspect`
+7. 调用 `moddev.ui_act`
+8. 调用 `moddev.ui_wait`
+9. 在检查点调用 `moddev.ui_screenshot`
+10. 如果需要一段简短的动作历史，调用 `moddev.ui_trace_recent`
 
-## Minimal Example
+## 最小示例
 
-Enter a top-level screen:
+进入顶层界面：
 
 ```json
 {
@@ -63,7 +63,7 @@ Enter a top-level screen:
 }
 ```
 
-Inspect the current UI:
+检查当前 UI：
 
 ```json
 {
@@ -72,7 +72,7 @@ Inspect the current UI:
 }
 ```
 
-Click a target:
+点击目标：
 
 ```json
 {
@@ -87,7 +87,7 @@ Click a target:
 }
 ```
 
-Wait for the next visible state:
+等待下一可见状态：
 
 ```json
 {
@@ -104,7 +104,7 @@ Wait for the next visible state:
 }
 ```
 
-Capture proof:
+截取证明图：
 
 ```json
 {
@@ -119,7 +119,7 @@ Capture proof:
 }
 ```
 
-## Stable Failure Codes
+## 稳定失败码
 
 - `runtime_unavailable`
 - `screen_unavailable`
@@ -130,13 +130,13 @@ Capture proof:
 - `batch_step_failed`
 - `capture_unavailable`
 
-## Practical Rule
+## 实际规则
 
-For common UI debugging flows, do not start with a raw full snapshot unless you really need it.
+对常见 UI 调试流程来说，除非确实需要，否则不要一开始就抓原始完整 snapshot。
 
-Prefer:
+优先使用：
 
-1. install the generated MCP config
+1. 先安装生成的 MCP 配置
 2. `moddev.status`
 3. `moddev.ui_get_live_screen`
 4. `moddev.ui_run_intent`
@@ -146,4 +146,4 @@ Prefer:
 8. `moddev.ui_screenshot`
 9. `moddev.ui_trace_recent`
 
-For a normal consumer setup, you do not need a `modDevMcp {}` block to use this flow.
+普通消费者接入时，不需要为了使用这条流程而额外写 `modDevMcp {}`。

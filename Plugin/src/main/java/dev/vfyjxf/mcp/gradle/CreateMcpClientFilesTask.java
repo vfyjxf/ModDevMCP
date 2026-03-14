@@ -11,12 +11,13 @@ import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
 public abstract class CreateMcpClientFilesTask extends DefaultTask {
+
+    private static final int BACKEND_START_TIMEOUT_MS = 60000;
 
     @Input
     public abstract Property<String> getServerId();
@@ -56,7 +57,7 @@ public abstract class CreateMcpClientFilesTask extends DefaultTask {
 
         var classpath = getRuntimeClasspath().getAsPath();
         if (classpath == null || classpath.isBlank()) {
-            throw new IllegalStateException("mcpRuntimeClasspath must not be empty");
+            throw new IllegalStateException("ModDevMCP runtime classpath must not be empty");
         }
 
         var classpathFile = outputDir.resolve(McpLaunchFiles.DEFAULT_CLASSPATH_FILE_NAME);
@@ -75,7 +76,7 @@ public abstract class CreateMcpClientFilesTask extends DefaultTask {
                 "-Dmoddevmcp.backend.javaCommand=" + getJavaCommand().get(),
                 "-Dmoddevmcp.backend.argsFile=" + backendArgsFile.toAbsolutePath(),
                 "-Dmoddevmcp.backend.launcher=" + backendLauncher.toAbsolutePath(),
-                "-Dmoddevmcp.backend.startTimeoutMs=60000",
+                "-Dmoddevmcp.backend.startTimeoutMs=" + BACKEND_START_TIMEOUT_MS,
                 gatewayArgsReference
         );
 

@@ -39,30 +39,27 @@ class HotswapServiceIntegrationTest {
     }
 
     @Test
-    void reloadReportsAgentClassloaderDiagnostics() {
+    void reloadReportsInstrumentationDiagnostics() {
         HotswapService service = new HotswapService(new HotswapRuntimeConfig(Path.of("."), ":noop", Path.of(".")));
 
         var result = service.reload();
 
-        assertTrue(result.diagnostics().containsKey("modAgentClassLoader"));
-        assertTrue(result.diagnostics().containsKey("systemAgentClassLoader"));
-        assertTrue(result.diagnostics().containsKey("sameAgentClass"));
-        assertTrue(result.diagnostics().containsKey("modInstrumentationPresent"));
-        assertTrue(result.diagnostics().containsKey("systemInstrumentationPresent"));
+        assertTrue(result.diagnostics().containsKey("instrumentationPresent"));
+        assertTrue(result.diagnostics().containsKey("instrumentationProvider"));
     }
 
     @Test
-    void reloadReturnsAgentErrorWhenAgentClassIsUnavailable() {
+    void reloadReturnsInstrumentationErrorWhenUnavailable() {
         HotswapService service = new HotswapService(
                 new HotswapRuntimeConfig(Path.of("."), ":noop", Path.of(".")),
-                new ClassLoader(null) { },
-                "missing.Agent"
+                () -> null,
+                "Reflect Agents"
         );
 
         var result = service.reload();
 
-        assertEquals("HotswapAgent not loaded. Ensure -javaagent is configured.", result.errors().get("agent"));
-        assertTrue(result.diagnostics().containsKey("systemAgentLookupError"));
+        assertEquals("Instrumentation is unavailable from Reflect Agents.", result.errors().get("instrumentation"));
+        assertTrue(result.diagnostics().containsKey("instrumentationError"));
     }
 
     @Test

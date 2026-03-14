@@ -1,158 +1,139 @@
 # ModDevMCP
 
-MCP tooling for NeoForge mod development.
+MCP tooling for Minecraft NeoForge mod development.
 
-## Repository Layout
+This repository provides a host MCP server plus in-game runtime integration so agents can inspect UI state, capture screenshots, query live screens, and drive common debug workflows inside Minecraft.
 
-- `Server`: standalone MCP gateway, backend bootstrap, transport glue, host-owned tools
-- `Mod`: Minecraft runtime client, built-in game tools, UI/input/capture implementations
-- `Plugin`: Gradle plugin that injects runtime settings and generates MCP client install files
-- `TestMod`: composite-build test project for real `runClient` validation
+## Overview
 
-## Current Primary Architecture
+- add a published mod dependency to your NeoForge project
+- apply the Gradle plugin `dev.vfyjxf.moddevmcp`
+- generate MCP client config files from your own project
+- install the generated config into your MCP client
+- start your normal game run and use live MCP tools after the game is ready
 
-The repository now uses a host-first architecture with a standalone gateway and backend.
+## Architecture
 
-- agents connect only to the `Server` stdio gateway
-- the gateway can auto-start the backend if it is not already running
-- the backend is the stable state center for MCP clients and Minecraft runtime clients
-- the Minecraft client never hosts MCP directly
-- `Mod` starts a runtime client and reconnects to the backend in the background
-- runtime tools appear dynamically after the game connects
-- if the game is offline, host-owned tools still respond with explicit status such as `hostReady=true`
+- your MCP client starts the generated ModDevMCP host entry
+- the host is the stable MCP endpoint and always provides `moddev.status`
+- the game runtime connects back to the host after Minecraft starts
+- client and server runtime tools appear dynamically after their runtime is connected
 
-Default runtime endpoint:
+## Main Tools
 
-- host: `127.0.0.1`
-- backend port: `47653`
-- MCP proxy port: `47654`
+- `status / game`: `moddev.status`, `moddev.game_close`
+- `ui high-level`: `moddev.ui_get_live_screen`, `moddev.ui_run_intent`, `moddev.ui_inspect`, `moddev.ui_act`, `moddev.ui_wait`, `moddev.ui_screenshot`, `moddev.ui_trace_recent`
+- `ui low-level`: `moddev.ui_session_open`, `moddev.ui_session_refresh`, `moddev.ui_click_ref`, `moddev.ui_hover_ref`, `moddev.ui_press_key`, `moddev.ui_type_text`, `moddev.ui_wait_for`, `moddev.ui_batch`, `moddev.ui_trace_get`, `moddev.ui_switch`, `moddev.ui_close`
+- `state / capture / inventory / dev`: `moddev.ui_snapshot`, `moddev.ui_query`, `moddev.ui_capture`, `moddev.ui_action`, `moddev.ui_inspect_at`, `moddev.ui_get_tooltip`, `moddev.ui_get_interaction_state`, `moddev.ui_get_target_details`, `moddev.inventory_snapshot`, `moddev.inventory_action`, `moddev.event_poll`, `moddev.event_subscribe`, `moddev.compile`, `moddev.hotswap`
 
-Optional JVM overrides:
+## Quick Start
 
-- `moddevmcp.host`
-- `moddevmcp.port`
-- `moddevmcp.mcpPort`
-- `moddevmcp.backend.javaCommand`
-- `moddevmcp.backend.argsFile`
-- `moddevmcp.backend.launcher`
+1. Add ModDevMCP to your NeoForge project.
+2. Run `createMcpClientFiles` in your project.
+3. Install the generated config into your MCP client.
+4. Start your normal game run, for example `runClient`.
+5. Call `moddev.status`.
+6. Continue only if `gameConnected=true`.
 
-## Primary Real-Game Workflow
+## Add to Your Project
 
-1. Start the MCP gateway from `Server`.
-2. Start Minecraft from `TestMod`.
-3. Let the game reconnect to the backend automatically.
-4. Call `moddev.status` first.
-5. Only use game tools after `gameConnected=true`.
+```groovy
+plugins {
+    id 'net.neoforged.moddev' version '<moddevgradle-version>'
+    id 'dev.vfyjxf.moddevmcp' version '<moddevmcp-version>'
+}
 
-Manual gateway startup for repository debugging:
+dependencies {
+    implementation("dev.vfyjxf:moddevmcp:<version>") {
+        transitive = false
+    }
+}
 
-```powershell
-$env:GRADLE_USER_HOME='.gradle-user'
-.\gradlew.bat :Server:runStdioMcp --no-daemon
 ```
 
-That task boots the stdio gateway entry point `dev.vfyjxf.mcp.server.bootstrap.ModDevMcpStdioMain`.
+The plugin owns the default MCP wiring. For a normal client setup you do not need a `modDevMcp {}` block.
 
-Real client startup:
-
-```powershell
-cd TestMod
-$env:GRADLE_USER_HOME='..\.gradle-user'
-.\gradlew.bat runClient --no-daemon
-```
-
-What `runClient` does:
-
-- starts the standalone NeoForge client
-- loads `mod_dev_mcp`
-- initializes runtime providers inside the game process
-- reconnects to `127.0.0.1:47653` in the background
-- depends on `createMcpClientFiles`, so generated MCP configs stay in sync with the current build
-
-## Plugin Consumer Notes
-
-`modDevMcp` resolves the hotswap agent from Maven by default instead of assuming a repository-local jar path.
-
-Typical consumer configuration:
+Only add `modDevMcp {}` when you need to override defaults:
 
 ```groovy
 modDevMcp {
-    agentCoordinates = "dev.vfyjxf:moddevmcp-agent:<version>"
+    runs = ["client"]
+    requireEnhancedHotswap = false
 }
 ```
 
-Repository-local validation flow:
+## Generate MCP Client Files
+
+From your project:
 
 ```powershell
-$env:GRADLE_USER_HOME='.gradle-user'
-.\gradlew.bat :Agent:publishToMavenLocal :Plugin:publishToMavenLocal --no-daemon
-.\TestMod\gradlew.bat -p .\TestMod createMcpClientFiles --no-daemon
+.\gradlew.bat createMcpClientFiles --no-daemon
 ```
 
-Generated client files are written under:
+For a normal consumer project, that is the only MCP-specific Gradle task you need to run manually. Your selected NeoForge run tasks keep these generated files in sync automatically.
 
-- `TestMod/build/moddevmcp/mcp-clients/clients/codex.toml`
-- `TestMod/build/moddevmcp/mcp-clients/clients/mcp-servers.json`
-- `TestMod/build/moddevmcp/mcp-clients/clients/INSTALL.md`
+Generated files are written under:
 
-## MCP Client Connection
+- `build/moddevmcp/mcp-clients/clients/codex.toml`
+- `build/moddevmcp/mcp-clients/clients/mcp-servers.json`
+- `build/moddevmcp/mcp-clients/clients/claude-code.mcp.json`
+- `build/moddevmcp/mcp-clients/clients/claude-desktop.mcp.json`
+- `build/moddevmcp/mcp-clients/clients/cursor-mcp.json`
+- `build/moddevmcp/mcp-clients/clients/cline_mcp_settings.json`
+- `build/moddevmcp/mcp-clients/clients/windsurf-mcp_config.json`
+- `build/moddevmcp/mcp-clients/clients/vscode-mcp.json`
+- `build/moddevmcp/mcp-clients/clients/gemini-settings.json`
+- `build/moddevmcp/mcp-clients/clients/goose-setup.md`
+- `build/moddevmcp/mcp-clients/clients/INSTALL.md`
 
-For MCP clients such as Codex, Claude Code, Cursor, Cline, Windsurf, VS Code, Gemini CLI, or Goose, reuse the generated files from `createMcpClientFiles` instead of hand-writing a Java command.
+## Install the Generated Config
 
-Repository-local Gradle task for manual debugging:
+- merge the generated file for your MCP client into its config
+- or use the generated command and arguments with your MCP client's install command
+- use the generated files under `build/moddevmcp/mcp-clients/clients/`
 
-- `:Server:runStdioMcp`
+## Start Your Game
 
-Optional listener-only debug task:
+Start your normal NeoForge development run:
 
-- `:Server:runServer`
+```powershell
+.\gradlew.bat runClient --no-daemon
+```
 
-`runServer` starts the backend runtime listener only. It is not the stdio gateway used by agents.
+Use the generated MCP client config to start the ModDevMCP host entry. The MCP client launches the host entry for you, so you do not need a separate server task.
 
-Install and usage guides:
+## First Readiness Check
+
+Use this order:
+
+1. connect the agent to ModDevMCP
+2. call `moddev.status`
+3. continue only if `gameConnected=true`
+4. call `moddev.ui_get_live_screen`
+5. continue only if that call succeeds
+
+If MCP connection fails, or the first status/UI call fails, treat the game as not ready.
+
+## Guides
 
 - `docs/guides/2026-03-11-simple-agent-install-guide.md`
 - `docs/guides/2026-03-11-game-mcp-guide.md`
 - `docs/guides/2026-03-11-testmod-runclient-guide.md`
 - `docs/guides/2026-03-11-agent-preflight-checklist.md`
+- `docs/guides/2026-03-11-agent-prompt-templates.md`
+- `docs/guides/2026-03-11-codex-screenshot-demo-guide.md`
+- `docs/guides/2026-03-11-live-screen-tool-guide.md`
+- `docs/guides/2026-03-12-playwright-style-ui-automation-guide.md`
+- `docs/guides/2026-03-15-moddevmcp-usage-skill-install.md`
+- `README.zh.md`
+- `docs/guides/2026-03-11-simple-agent-install-guide.zh.md`
+- `docs/guides/2026-03-11-game-mcp-guide.zh.md`
+- `docs/guides/2026-03-11-testmod-runclient-guide.zh.md`
+- `docs/guides/2026-03-11-agent-preflight-checklist.zh.md`
+- `docs/guides/2026-03-11-agent-prompt-templates.zh.md`
+- `docs/guides/2026-03-11-codex-screenshot-demo-guide.zh.md`
+- `docs/guides/2026-03-11-live-screen-tool-guide.zh.md`
+- `docs/guides/2026-03-12-playwright-style-ui-automation-guide.zh.md`
+- `docs/guides/2026-03-15-moddevmcp-usage-skill-install.zh.md`
 
-## Agent Rule
 
-Use this operator rule:
-
-1. start the MCP gateway
-2. start Minecraft
-3. wait until the target UI is ready
-4. call `moddev.status`
-5. continue only if `gameConnected=true`
-6. then call `moddev.ui_get_live_screen`
-
-If status or the first UI probe fails, stop and tell the user in Chinese:
-
-- `请先启动并加载游戏，再继续使用 ModDevMCP。`
-
-## Implemented Runtime Capabilities
-
-- host-owned status reporting via `moddev.status`
-- runtime tool refresh on game connect/disconnect
-- UI snapshot/query/capture/action/wait/tooltip
-- interaction state and target details
-- live screen probe via `moddev.ui_get_live_screen`
-- high-level Playwright-style debug flow via `moddev.ui_inspect`, `moddev.ui_act`, `moddev.ui_wait`, `moddev.ui_screenshot`, `moddev.ui_trace_recent`
-- low-level session/ref automation via `moddev.ui_session_open`, `moddev.ui_session_refresh`, `moddev.ui_click_ref`, `moddev.ui_hover_ref`, `moddev.ui_switch`, `moddev.ui_press_key`, `moddev.ui_type_text`, `moddev.ui_wait_for`, `moddev.ui_batch`, `moddev.ui_trace_get`
-- inventory snapshot/action
-- in-process client input simulation
-- framebuffer and offscreen capture providers
-
-If no real capture provider matches, `moddev.ui_capture` returns a real failure instead of a fake screenshot.
-
-## Verification Notes
-
-Recent real validation covered:
-
-- gateway auto-bootstrap of backend from generated client config
-- `moddev.status` over a real Codex-equivalent MCP session
-- `TestMod` `runClient` startup with runtime reconnect logs
-- host-aware server regression tests in `Server`
-
-If Gradle dependency downloads fail, treat TLS/repository/network failures separately from code failures.

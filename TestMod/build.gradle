@@ -56,31 +56,14 @@ neoForge {
 
 configurations {
     runtimeClasspath.extendsFrom localRuntime
-    mcpClientRuntime
 }
 
 dependencies {
-    implementation("com.example.examplemod:mod_dev_mcp:0.1") {
+    implementation("dev.vfyjxf:moddevmcp:${mod_version}") {
         transitive = false
     }
-    mcpClientRuntime("io.modelcontextprotocol.sdk:mcp-core:1.0.0")
-    mcpClientRuntime("com.google.code.gson:gson:2.10.1")
-    mcpClientRuntime("org.slf4j:slf4j-api:2.0.9")
 }
 
-modDevMcp {
-    agentCoordinates = "dev.vfyjxf:moddevmcp-agent:${mod_version}"
-    projectRoot = rootProject.projectDir
-    compileTask = ":compileJava"
-    classOutputDir = "build/classes/java/main"
-    mcpRuntimeClasspath.from(
-            file("../Server/build/classes/java/main"),
-            file("../Server/build/resources/main"),
-            configurations.mcpClientRuntime
-    )
-    mcpClientFilesOutputDir = layout.buildDirectory.dir("moddevmcp/mcp-clients")
-    runs = ["client"]
-}
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
@@ -102,15 +85,6 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
 sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
 
-def serverBuild = gradle.includedBuilds.find { it.name == "ModDevMCP" }
-if (serverBuild == null) {
-    throw new GradleException("Unable to locate included ModDevMCP build for :Server classes")
-}
-
-tasks.named("createMcpClientFiles") {
-    dependsOn serverBuild.task(":Server:classes")
-}
-
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
@@ -121,3 +95,4 @@ idea {
         downloadJavadoc = true
     }
 }
+

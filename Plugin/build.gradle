@@ -4,9 +4,7 @@ plugins {
 }
 
 group = 'dev.vfyjxf'
-version = rootProject.findProperty('plugin_version')
-        ?: rootProject.findProperty('mod_version')
-        ?: '0.1'
+version = rootProject.findProperty('plugin_version') ?: '0.1'
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
@@ -15,10 +13,15 @@ repositories {
 }
 
 gradlePlugin {
+    website.set("https://github.com/vfyjxf/ModDevMCP")
+    vcsUrl.set("https://github.com/vfyjxf/ModDevMCP")
     plugins {
         modDevMcp {
             id = 'dev.vfyjxf.moddevmcp'
             implementationClass = 'dev.vfyjxf.mcp.gradle.ModDevMcpPlugin'
+            displayName = "ModDevMCP Gradle Plugin"
+            description = "Gradle plugin for configuring ModDevMCP"
+            tags.addAll("minecraft", "moddev", "mcp")
         }
     }
 }

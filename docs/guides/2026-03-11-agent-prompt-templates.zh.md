@@ -1,14 +1,14 @@
-# 2026-03-11 Agent Prompt Templates
+# 2026-03-11 Agent 提示词模板
 
 Date: 2026-03-11 17:20 CST
 Updated: 2026-03-15 00:05 CST
 
-## Purpose
+## 用途
 
-- provide copy-ready prompts for MCP-capable agents
-- keep readiness checks consistent across tools
+- 提供可直接复制的 MCP agent 提示词
+- 让不同工具的就绪检查保持一致
 
-## Universal Template
+## 通用模板
 
 ```text
 When using ModDevMCP in this workspace, follow this readiness flow:
@@ -24,7 +24,7 @@ When using ModDevMCP in this workspace, follow this readiness flow:
 9. Never infer readiness from old files, logs, or prior runs.
 ```
 
-## Codex / Claude Code Template
+## Codex / Claude Code 模板
 
 ```text
 Use ModDevMCP only after Minecraft has finished loading.
@@ -39,7 +39,7 @@ Rules:
 - Do not fabricate screenshots, UI trees, or action results.
 ```
 
-## Gemini CLI / Goose Template
+## Gemini CLI / Goose 模板
 
 ```text
 Before using ModDevMCP:
@@ -53,12 +53,12 @@ Before using ModDevMCP:
 7. Never guess the current game state from stale local files or prior runs.
 ```
 
-## Human Operator Short Form
+## 给人工操作者的简版
 
 ```text
-Install the generated MCP config.
-Start Minecraft.
-Wait until the game finishes loading.
-Then let the agent call `moddev.status` first.
-Only continue if `gameConnected=true`.
+先安装生成的 MCP 配置。
+再启动 Minecraft。
+等游戏加载完成。
+然后让 agent 先调用 `moddev.status`。
+只有在 `gameConnected=true` 时才继续。
 ```

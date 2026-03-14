@@ -1,69 +1,50 @@
-# Game MCP Guide
+# 2026-03-11 Game MCP Guide
 
 Date: 2026-03-11 17:20 CST
-Updated: 2026-03-14 14:40 CST
+Updated: 2026-03-15 00:05 CST
 
 ## Purpose
 
-- describe the current gateway/backend/game architecture
-- show how agents reach the game through the standalone server
-- keep this legacy filename, but document the current flow only
+- explain the user-facing runtime flow
+- show how the host, game, and agent fit together
+- keep the operational rule simple
 
-## Architecture
+## Runtime Shape
 
-Primary runtime shape:
-
-- `Server` starts the stdio gateway seen by MCP clients
-- the gateway auto-starts the backend when needed
-- the backend is the stable state center
-- `Mod` starts a reconnecting runtime client inside Minecraft
-- agents connect only to `:Server:runStdioMcp`
-- runtime tools are exposed dynamically after the game connects
-- `moddev.status` remains callable even with no game connected
+- for a normal consumer setup, install the plugin and published mod dependency without adding a `modDevMcp {}` block
+- generate and install MCP client config once with `createMcpClientFiles`
+- install the generated MCP client config into your MCP client
+- start your normal game run, such as `runClient`
+- let the game connect to the host automatically
+- connect through the generated MCP entry
+- use `moddev.status` before any game-specific tool
 
 ## Startup Flow
 
-Start the gateway:
+Start the game from your project:
 
 ```powershell
-$env:GRADLE_USER_HOME='.gradle-user'
-.\gradlew.bat :Server:runStdioMcp --no-daemon
-```
-
-Start the game:
-
-```powershell
-cd TestMod
-$env:GRADLE_USER_HOME='..\.gradle-user'
 .\gradlew.bat runClient --no-daemon
 ```
 
-## Generated MCP Configs
+Then connect your MCP client with the generated ModDevMCP config. The MCP client starts the host entry automatically from that config.
 
-Use the generated files from:
+## First Agent Calls
 
-- `TestMod/build/moddevmcp/mcp-clients/clients/codex.toml`
-- `TestMod/build/moddevmcp/mcp-clients/clients/mcp-servers.json`
-- `TestMod/build/moddevmcp/mcp-clients/clients/INSTALL.md`
-
-These generated configs already point at the gateway and include the backend bootstrap properties.
-
-## Verification
-
-Recommended first calls after MCP connects:
+Recommended order:
 
 1. `moddev.status`
 2. `moddev.ui_get_live_screen`
 
-Continue only after status reports `gameConnected=true`.
+Continue only if:
 
-## Readiness Rule
+- `gameConnected=true`
+- the live screen call succeeds
 
-Use this order:
+## Practical Rule
 
-1. start the gateway
-2. start the game
-3. call `moddev.status`
-4. only then use snapshot, capture, input, inventory, or UI tools
+Do not use UI, input, inventory, or capture tools before readiness is confirmed.
 
-If connection or the first tool call fails, treat the game as not ready.
+If connection fails or the first checks fail, treat the game as not ready.
+
+For a normal consumer setup, you do not need a `modDevMcp {}` block to use this runtime flow.

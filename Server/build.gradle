@@ -4,6 +4,9 @@ plugins {
     id 'idea'
 }
 
+group = 'dev.vfyjxf'
+version = rootProject.findProperty('server_version') ?: '0.1.1'
+
 dependencies {
     implementation "io.modelcontextprotocol.sdk:mcp-core:1.0.0"
     implementation "com.google.code.gson:gson:2.10.1"
@@ -16,6 +19,7 @@ publishing {
     publications {
         register('mavenJava', MavenPublication) {
             from components.java
+            artifactId = 'moddevmcp-server'
         }
     }
     repositories {

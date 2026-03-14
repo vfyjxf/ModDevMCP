@@ -1,9 +1,8 @@
-import dev.vfyjxf.gradle.ModDevClientRunFlags
-
 plugins {
     id 'java-library'
     id 'maven-publish'
     id 'net.neoforged.moddev' version '2.0.140'
+    id 'org.gradlex.extra-java-module-info' version '1.13.1'
     id 'idea'
 }
 
@@ -17,13 +16,9 @@ base {
 
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
-
-def clientRunJvmSystemProperties = ModDevClientRunFlags.resolveJvmSystemProperties(
-        System.getProperties().collectEntries { key, value -> [(String.valueOf(key)): String.valueOf(value)] },
-        project.properties.collectEntries { key, value -> [(String.valueOf(key)): String.valueOf(value)] }
-)
 def mcpCoreVersion = "1.0.0"
 def gsonVersion = "2.10.1"
+def reflectVersion = "1.6.2"
 
 neoForge {
     version = project.neo_version
@@ -36,9 +31,6 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-            clientRunJvmSystemProperties.each { key, value ->
-                systemProperty key, value
-            }
         }
 
         server {
@@ -55,8 +47,6 @@ neoForge {
         configureEach {
             systemProperty 'forge.logging.markers', 'REGISTRIES'
             logLevel = org.slf4j.event.Level.DEBUG
-            var agentJarDir = rootProject.project(":Agent").layout.buildDirectory.dir("libs")
-            jvmArgument "-javaagent:${agentJarDir.get().asFile.absolutePath}/Agent.jar"
         }
     }
 
@@ -73,34 +63,13 @@ configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
-def embeddedMcpCoreJar = configurations.detachedConfiguration(
-        dependencies.create("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
-            exclude(group: "org.slf4j")
-        }
-)
-
-def sanitizeEmbeddedMcpCoreJar = tasks.register("sanitizeEmbeddedMcpCoreJar", Jar) {
-    archiveBaseName = "mcp-core"
-    archiveVersion = mcpCoreVersion
-    archiveClassifier = "moddev-embedded"
-    destinationDirectory = layout.buildDirectory.dir("generated/embedded-libs")
-    duplicatesStrategy = org.gradle.api.file.DuplicatesStrategy.EXCLUDE
-    inputs.files(embeddedMcpCoreJar)
-    from({
-        embeddedMcpCoreJar.collect { zipTree(it) }
-    }) {
-        exclude "META-INF/MANIFEST.MF"
-        exclude "META-INF/*.SF"
-        exclude "META-INF/*.DSA"
-        exclude "META-INF/*.RSA"
-    }
-    manifest {
-        attributes(
-                "Manifest-Version": "1.0",
-                "Implementation-Title": "mcp-core",
-                "Implementation-Version": mcpCoreVersion,
-                "Automatic-Module-Name": "io.modelcontextprotocol.sdk.mcp.core"
-        )
+extraJavaModuleInfo {
+    skipLocalJars = true
+    failOnMissingModuleInfo = false
+    activate(configurations.additionalRuntimeClasspath)
+    activate(configurations.jarJar)
+    module("io.modelcontextprotocol.sdk:mcp-core", "io.modelcontextprotocol.sdk.mcp.core") {
+        overrideModuleName()
     }
 }
 
@@ -117,18 +86,24 @@ dependencies {
         exclude(group: "org.slf4j")
         transitive = false
     }
-    implementation(project(":Agent"))
     additionalRuntimeClasspath(project(":Server")) {
         exclude(group: "org.slf4j")
         transitive = false
     }
-    additionalRuntimeClasspath(project(":Agent"))
+    implementation("net.lenni0451:Reflect:${reflectVersion}")
+    additionalRuntimeClasspath("net.lenni0451:Reflect:${reflectVersion}")
+    jarJar("net.lenni0451:Reflect:${reflectVersion}")
+    additionalRuntimeClasspath("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
+        exclude(group: "org.slf4j")
+    }
+    jarJar("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
+        exclude(group: "org.slf4j")
+    }
     testRuntimeOnly("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
         exclude(group: "org.slf4j")
     }
     testRuntimeOnly("com.google.code.gson:gson:${gsonVersion}")
     testRuntimeOnly("org.slf4j:slf4j-api:2.0.9")
-    jarJar(files(sanitizeEmbeddedMcpCoreJar))
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.12.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -157,6 +132,7 @@ publishing {
     publications {
         register('mavenJava', MavenPublication) {
             from components.java
+            artifactId = 'moddevmcp'
         }
     }
     repositories {
@@ -171,9 +147,6 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.withType(Test).configureEach {
-    dependsOn(":Agent:jar")
-    var agentJar = rootProject.project(":Agent").layout.buildDirectory.file("libs/Agent.jar")
-    jvmArgs("-javaagent:${agentJar.get().asFile.absolutePath}")
 }
 
 idea {
@@ -182,4 +155,3 @@ idea {
         downloadJavadoc = true
     }
 }
-

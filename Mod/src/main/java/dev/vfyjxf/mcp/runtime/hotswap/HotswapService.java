@@ -1,10 +1,11 @@
 package dev.vfyjxf.mcp.runtime.hotswap;
 
+import net.lenni0451.reflect.Agents;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Method;
 import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.Instrumentation;
 import java.nio.file.Path;
@@ -12,25 +13,33 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public final class HotswapService {
 
-    private static final String HOTSWAP_AGENT_CLASS_NAME = "dev.vfyjxf.mcp.agent.HotswapAgent";
+    private static final String INSTRUMENTATION_PROVIDER = "Reflect Agents";
 
     private final HotswapRuntimeConfig config;
-    private final ClassLoader agentClassLoader;
-    private final String agentClassName;
+    private final Supplier<Instrumentation> instrumentationSupplier;
+    private final String instrumentationProvider;
     private Map<String, Long> baseline;
 
     public HotswapService(HotswapRuntimeConfig config) {
-        this(config, ClassLoader.getSystemClassLoader(), HOTSWAP_AGENT_CLASS_NAME);
+        this(config, () -> {
+            try {
+                return Agents.getInstrumentation();
+            } catch (IOException exception) {
+                throw new UncheckedIOException(exception);
+            }
+        }, INSTRUMENTATION_PROVIDER);
     }
 
-    HotswapService(HotswapRuntimeConfig config, ClassLoader agentClassLoader, String agentClassName) {
+    HotswapService(HotswapRuntimeConfig config, Supplier<Instrumentation> instrumentationSupplier,
+                   String instrumentationProvider) {
         this.config = config;
-        this.agentClassLoader = agentClassLoader;
-        this.agentClassName = agentClassName;
+        this.instrumentationSupplier = instrumentationSupplier;
+        this.instrumentationProvider = instrumentationProvider;
         this.baseline = new HashMap<>();
     }
 
@@ -61,12 +70,17 @@ public final class HotswapService {
     }
 
     public ReloadResult reload() {
-        Instrumentation inst = resolveAgentInstrumentation(agentClassLoader, agentClassName);
-        Map<String, Object> diagnostics = collectAgentDiagnostics(inst, agentClassLoader, agentClassName);
+        var instrumentationResolution = resolveInstrumentation();
+        Instrumentation inst = instrumentationResolution.instrumentation();
+        Map<String, Object> diagnostics = collectInstrumentationDiagnostics(
+                inst,
+                instrumentationResolution.provider(),
+                instrumentationResolution.error()
+        );
         if (inst == null) {
             return new ReloadResult(
                     List.of(), List.of(),
-                    Map.of("agent", "HotswapAgent not loaded. Ensure -javaagent is configured."),
+                    Map.of("instrumentation", "Instrumentation is unavailable from Reflect Agents."),
                     Map.of(),
                     diagnostics
             );
@@ -135,35 +149,27 @@ public final class HotswapService {
         }
     }
 
-    private static Map<String, Object> collectAgentDiagnostics(Instrumentation instrumentation,
-                                                               ClassLoader agentClassLoader,
-                                                               String agentClassName) {
-        Map<String, Object> diagnostics = new HashMap<>();
-        diagnostics.put("modAgentClassLoader", "unavailable");
-        diagnostics.put("modInstrumentationPresent", false);
-
+    private InstrumentationResolution resolveInstrumentation() {
         try {
-            Class<?> systemAgentClass = Class.forName(agentClassName, false, agentClassLoader);
-            diagnostics.put("systemAgentClassLoader", describeClassLoader(systemAgentClass.getClassLoader()));
-            diagnostics.put("sameAgentClass", false);
-            diagnostics.put("systemInstrumentationPresent", instrumentation != null);
-        } catch (ReflectiveOperationException | LinkageError exception) {
-            diagnostics.put("systemAgentClassLoader", "unavailable");
-            diagnostics.put("sameAgentClass", false);
-            diagnostics.put("systemInstrumentationPresent", false);
-            diagnostics.put("systemAgentLookupError", exception.getClass().getSimpleName() + ": " + exception.getMessage());
+            return new InstrumentationResolution(instrumentationSupplier.get(), instrumentationProvider, null);
+        } catch (RuntimeException exception) {
+            return new InstrumentationResolution(null, instrumentationProvider,
+                    exception.getClass().getSimpleName() + ": " + exception.getMessage());
         }
-
-        return Map.copyOf(diagnostics);
     }
 
-    private static Instrumentation resolveAgentInstrumentation(ClassLoader agentClassLoader, String agentClassName) {
-        try {
-            Class<?> agentClass = Class.forName(agentClassName, false, agentClassLoader);
-            return readInstrumentation(agentClass);
-        } catch (ReflectiveOperationException | LinkageError exception) {
-            return null;
+    private static Map<String, Object> collectInstrumentationDiagnostics(Instrumentation instrumentation,
+                                                                         String provider,
+                                                                         String error) {
+        Map<String, Object> diagnostics = new HashMap<>();
+        diagnostics.put("instrumentationProvider", provider);
+        diagnostics.put("instrumentationPresent", instrumentation != null);
+        if (error != null && !error.isBlank()) {
+            diagnostics.put("instrumentationError", error);
+        } else if (instrumentation == null) {
+            diagnostics.put("instrumentationError", "Instrumentation provider returned null.");
         }
+        return Map.copyOf(diagnostics);
     }
 
     private static Map<String, Object> detectCapabilities(Instrumentation instrumentation) {
@@ -187,15 +193,6 @@ public final class HotswapService {
         return dcevmVersion != null && !dcevmVersion.isEmpty();
     }
 
-    private static Instrumentation readInstrumentation(Class<?> agentClass) throws ReflectiveOperationException {
-        Method instrumentationMethod = agentClass.getMethod("instrumentation");
-        return (Instrumentation) instrumentationMethod.invoke(null);
-    }
-
-    private static String describeClassLoader(ClassLoader classLoader) {
-        if (classLoader == null) {
-            return "bootstrap";
-        }
-        return classLoader.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(classLoader));
+    private record InstrumentationResolution(Instrumentation instrumentation, String provider, String error) {
     }
 }
