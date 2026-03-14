@@ -14,13 +14,6 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-def clientRunJvmSystemProperties = [
-        'moddevmcp.devUiCapture': [
-                System.getProperty('moddevmcp.devUiCapture'),
-                project.findProperty('moddevmcp.devUiCapture')
-        ].find { it != null && !String.valueOf(it).isBlank() }
-].findAll { key, value -> value != null }
-
 repositories {
     mavenLocal()
     mavenCentral()
@@ -40,9 +33,6 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-            clientRunJvmSystemProperties.each { key, value ->
-                systemProperty key, String.valueOf(value)
-            }
         }
 
         server {

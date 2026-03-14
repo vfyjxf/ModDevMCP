@@ -143,6 +143,6 @@ Expected: valid JSON-RPC responses.
 
 **Step 4: Run real client verification**
 
-Run: `.\gradlew.bat :Mod:runClient --no-daemon -Dmoddevmcp.devUiCapture=true`
+Run: `.\gradlew.bat :Mod:runClient --no-daemon`
 
-Expected: if runtime assets/dependencies are available, the client starts and writes a dev UI capture verification report after opening a GUI. If asset download or repository access fails, report it explicitly as an environment dependency issue.
+Expected: if runtime assets/dependencies are available, the client starts successfully and MCP runtime wiring is available for later UI testing. If asset download or repository access fails, report it explicitly as an environment dependency issue.

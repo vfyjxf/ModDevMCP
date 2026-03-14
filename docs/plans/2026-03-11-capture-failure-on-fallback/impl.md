@@ -19,7 +19,7 @@ Verification:
 - `.\gradlew.bat :Mod:test --tests "*UiToolInvocationTest.uiCaptureFailsWhenOnlyPlaceholderCaptureWouldBeAvailable" --no-daemon`
 - `.\gradlew.bat :Mod:test --tests "*UiToolInvocationTest" --tests "*UiToolProviderTest" --no-daemon`
 - `.\gradlew.bat :Server:test --tests "*StableModDevMcpServerMainTest" :Mod:test --tests "*UiToolInvocationTest" --tests "*UiToolProviderTest" --tests "*ClientRuntimeBootstrapTest" --tests "*GameBackendAgentMainTest" --tests "*EmbeddedModDevMcpStdioMainTest" --no-daemon`
-- relaunched `.\gradlew.bat -Dmoddevmcp.devUiCapture=true :Mod:runClient --no-daemon`
+- relaunched `.\gradlew.bat :Mod:runClient --no-daemon`
 - real MCP probe on `127.0.0.1:47653` returned:
   - `moddev.ui_snapshot` => fallback snapshot with `screenClass=custom.UnknownScreen`
   - `moddev.ui_capture(source=framebuffer)` => `capture_unavailable`

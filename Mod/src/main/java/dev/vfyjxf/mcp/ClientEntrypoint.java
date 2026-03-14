@@ -3,7 +3,6 @@ package dev.vfyjxf.mcp;
 import dev.vfyjxf.mcp.runtime.host.HostGameClient;
 import dev.vfyjxf.mcp.runtime.host.HostReconnectLoop;
 import dev.vfyjxf.mcp.runtime.host.HostRuntimeClientConfig;
-import dev.vfyjxf.mcp.runtime.ui.ClientDevUiCaptureVerifier;
 import dev.vfyjxf.mcp.runtime.ui.ClientAutomationPauseGuard;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.Mod;
@@ -24,7 +23,6 @@ public class ClientEntrypoint extends ModDevMCP {
         this.reconnectLoop.start();
         Runtime.getRuntime().addShutdownHook(new Thread(reconnectLoop::close, "moddevmcp-client-bootstrap-shutdown"));
         new ClientAutomationPauseGuard().attach();
-        new ClientDevUiCaptureVerifier(this).attach();
     }
 }
 
