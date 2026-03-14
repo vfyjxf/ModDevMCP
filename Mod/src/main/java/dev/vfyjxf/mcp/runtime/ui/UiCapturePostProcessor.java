@@ -5,9 +5,7 @@ import dev.vfyjxf.mcp.api.ui.CaptureRequest;
 import dev.vfyjxf.mcp.api.ui.UiTarget;
 
 import javax.imageio.ImageIO;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

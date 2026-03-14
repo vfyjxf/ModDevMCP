@@ -2,10 +2,6 @@ package dev.vfyjxf.mcp.runtime.ui;
 
 import dev.vfyjxf.mcp.api.ui.UiTarget;
 
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.Objects;
-
 final class VanillaWidgetPressSupport {
 
     private VanillaWidgetPressSupport() {

@@ -1,8 +1,6 @@
 package dev.vfyjxf.mcp.server.host;
 
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public record RuntimeToolSelection(
         RuntimeSession session,

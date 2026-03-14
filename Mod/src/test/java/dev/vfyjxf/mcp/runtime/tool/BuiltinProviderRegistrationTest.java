@@ -1,9 +1,9 @@
 package dev.vfyjxf.mcp.runtime.tool;
 
 import dev.vfyjxf.mcp.ModDevMCP;
+import dev.vfyjxf.mcp.server.ModDevMcpServer;
 import dev.vfyjxf.mcp.server.api.McpToolDefinition;
 import dev.vfyjxf.mcp.server.api.ToolResult;
-import dev.vfyjxf.mcp.server.ModDevMcpServer;
 import dev.vfyjxf.mcp.server.runtime.McpToolRegistry;
 import org.junit.jupiter.api.Test;
 
@@ -11,9 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class BuiltinProviderRegistrationTest {
 

@@ -1,29 +1,14 @@
 package dev.vfyjxf.mcp.runtime.tool;
 
 import dev.vfyjxf.mcp.api.model.OperationResult;
-import dev.vfyjxf.mcp.api.runtime.ClientScreenMetrics;
-import dev.vfyjxf.mcp.api.runtime.ClientScreenProbe;
+import dev.vfyjxf.mcp.api.runtime.*;
+import dev.vfyjxf.mcp.api.ui.*;
 import dev.vfyjxf.mcp.runtime.RuntimeRegistries;
-import dev.vfyjxf.mcp.api.runtime.UiLocator;
-import dev.vfyjxf.mcp.api.runtime.UiCaptureImage;
-import dev.vfyjxf.mcp.api.runtime.UiContext;
-import dev.vfyjxf.mcp.api.runtime.UiDriver;
-import dev.vfyjxf.mcp.api.runtime.UiInspectResult;
-import dev.vfyjxf.mcp.api.runtime.UiResolveRequest;
-import dev.vfyjxf.mcp.api.runtime.UiTargetReference;
-import dev.vfyjxf.mcp.api.ui.Bounds;
-import dev.vfyjxf.mcp.api.ui.CaptureRequest;
-import dev.vfyjxf.mcp.api.ui.SnapshotOptions;
-import dev.vfyjxf.mcp.api.ui.TargetSelector;
-import dev.vfyjxf.mcp.api.ui.UiActionRequest;
-import dev.vfyjxf.mcp.api.ui.UiInteractionState;
-import dev.vfyjxf.mcp.api.ui.UiSnapshot;
-import dev.vfyjxf.mcp.api.ui.UiTarget;
+import dev.vfyjxf.mcp.runtime.ui.UiCapturePostProcessor;
 import dev.vfyjxf.mcp.server.api.McpToolDefinition;
 import dev.vfyjxf.mcp.server.api.McpToolProvider;
 import dev.vfyjxf.mcp.server.api.ToolResult;
 import dev.vfyjxf.mcp.server.runtime.McpToolRegistry;
-import dev.vfyjxf.mcp.runtime.ui.UiCapturePostProcessor;
 
 import java.util.List;
 import java.util.Map;

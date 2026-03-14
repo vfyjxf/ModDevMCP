@@ -7,12 +7,7 @@ import dev.vfyjxf.mcp.runtime.tool.GameToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.InputToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.InventoryToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.UiToolProvider;
-import dev.vfyjxf.mcp.runtime.ui.BuiltinUiCaptureProviders;
-import dev.vfyjxf.mcp.runtime.ui.BuiltinUiInteractionResolvers;
-import dev.vfyjxf.mcp.runtime.ui.FallbackRegionUiDriver;
-import dev.vfyjxf.mcp.runtime.ui.LiveClientScreenProbe;
-import dev.vfyjxf.mcp.runtime.ui.VanillaContainerUiDriver;
-import dev.vfyjxf.mcp.runtime.ui.VanillaScreenUiDriver;
+import dev.vfyjxf.mcp.runtime.ui.*;
 import dev.vfyjxf.mcp.server.ModDevMcpServer;
 
 public final class ClientRuntimeBootstrap {

@@ -1,7 +1,7 @@
 package dev.vfyjxf.mcp.server;
 
-import dev.vfyjxf.mcp.server.api.McpToolDefinition;
 import dev.vfyjxf.mcp.server.api.McpResource;
+import dev.vfyjxf.mcp.server.api.McpToolDefinition;
 import dev.vfyjxf.mcp.server.api.ToolResult;
 import dev.vfyjxf.mcp.server.runtime.McpToolRegistry;
 import org.junit.jupiter.api.Test;

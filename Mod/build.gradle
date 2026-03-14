@@ -1,21 +1,26 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'signing'
     id 'net.neoforged.moddev' version '2.0.140'
     id 'org.gradlex.extra-java-module-info' version '1.13.1'
     id 'idea'
 }
 
 version = mod_version
-group = mod_group_id
+group = 'dev.vfyjxf'
+
+def projectUrl = 'https://github.com/vfyjxf/ModDevMCP'
 
 
 base {
     archivesName = mod_id
 }
 
-
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
 def mcpCoreVersion = "1.0.0"
 def gsonVersion = "2.10.1"
 def reflectVersion = "1.6.2"
@@ -131,15 +136,51 @@ neoForge.ideSyncTask generateModMetadata
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
-            from components.java
+            groupId = 'dev.vfyjxf'
             artifactId = 'moddevmcp'
+            version = project.version
+            from components.java
+            pom {
+                name = 'ModDevMCP'
+                description = 'Minecraft runtime and NeoForge mod for ModDevMCP, providing UI inspection, capture, screenshots, interaction automation, and MCP host connectivity.'
+                url = projectUrl
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = "${projectUrl}/blob/master/LICENSE"
+                        distribution = "${projectUrl}/blob/master/LICENSE"
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'vfyjxf'
+                        name = 'vfyjxf'
+                        url = 'https://github.com/vfyjxf'
+                    }
+                    developer {
+                        id = 'Yefancy'
+                        name = 'Yefancy'
+                        url = 'https://github.com/Yefancy'
+                    }
+                }
+                scm {
+                    url = projectUrl
+                    connection = 'scm:git:git://github.com/vfyjxf/ModDevMCP.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/vfyjxf/ModDevMCP.git'
+                }
+            }
         }
     }
     repositories {
-        maven {
-            url "file://${project.projectDir}/repo"
-        }
+        mavenLocal()
+        mavenCentral()
     }
+}
+
+signing {
+    required = false
+    useGpgCmd()
+    sign(publishing.publications)
 }
 
 tasks.withType(JavaCompile).configureEach {

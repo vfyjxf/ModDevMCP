@@ -1,14 +1,13 @@
 package dev.vfyjxf.mcp.runtime.ui;
 
-import dev.vfyjxf.mcp.api.runtime.UiContext;
 import dev.vfyjxf.mcp.api.ui.Bounds;
 import dev.vfyjxf.mcp.api.ui.UiTarget;
 import dev.vfyjxf.mcp.api.ui.UiTargetState;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;

@@ -1,8 +1,8 @@
 package dev.vfyjxf.mcp.gradle.neoforge;
 
-import dev.vfyjxf.mcp.gradle.ModDevMcpExtension;
 import dev.vfyjxf.mcp.gradle.CreateMcpClientFilesTask;
 import dev.vfyjxf.mcp.gradle.ModDevMcpDefaults;
+import dev.vfyjxf.mcp.gradle.ModDevMcpExtension;
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension;
 import net.neoforged.moddevgradle.dsl.RunModel;
 import org.gradle.api.Project;

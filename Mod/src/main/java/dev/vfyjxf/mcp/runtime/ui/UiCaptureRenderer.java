@@ -4,11 +4,7 @@ import dev.vfyjxf.mcp.api.ui.UiSnapshot;
 import dev.vfyjxf.mcp.api.ui.UiTarget;
 
 import javax.imageio.ImageIO;
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

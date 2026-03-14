@@ -3,9 +3,7 @@ package dev.vfyjxf.mcp.gradle;
 import dev.vfyjxf.mcp.gradle.neoforge.NeoForgeRunInjector;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.file.Directory;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.compile.JavaCompile;
 

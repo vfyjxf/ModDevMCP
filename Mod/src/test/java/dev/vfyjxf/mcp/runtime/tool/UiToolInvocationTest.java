@@ -2,26 +2,8 @@ package dev.vfyjxf.mcp.runtime.tool;
 
 import dev.vfyjxf.mcp.ModDevMCP;
 import dev.vfyjxf.mcp.api.model.OperationResult;
-import dev.vfyjxf.mcp.api.runtime.ClientScreenMetrics;
-import dev.vfyjxf.mcp.api.runtime.ClientScreenProbe;
-import dev.vfyjxf.mcp.api.runtime.DriverDescriptor;
-import dev.vfyjxf.mcp.api.runtime.InputController;
-import dev.vfyjxf.mcp.api.runtime.UiContext;
-import dev.vfyjxf.mcp.api.runtime.UiCaptureImage;
-import dev.vfyjxf.mcp.api.runtime.UiDriver;
-import dev.vfyjxf.mcp.api.runtime.UiInspectResult;
-import dev.vfyjxf.mcp.api.runtime.UiFramebufferCaptureProvider;
-import dev.vfyjxf.mcp.api.runtime.UiInteractionStateResolver;
-import dev.vfyjxf.mcp.api.runtime.UiWaitRequest;
-import dev.vfyjxf.mcp.api.runtime.UiWaitResult;
-import dev.vfyjxf.mcp.api.runtime.UiOffscreenCaptureProvider;
-import dev.vfyjxf.mcp.api.ui.Bounds;
-import dev.vfyjxf.mcp.api.ui.UiInteractionDefaults;
-import dev.vfyjxf.mcp.api.ui.CaptureRequest;
-import dev.vfyjxf.mcp.api.ui.SnapshotOptions;
-import dev.vfyjxf.mcp.api.ui.UiSnapshot;
-import dev.vfyjxf.mcp.api.ui.UiTarget;
-import dev.vfyjxf.mcp.api.ui.UiTargetState;
+import dev.vfyjxf.mcp.api.runtime.*;
+import dev.vfyjxf.mcp.api.ui.*;
 import dev.vfyjxf.mcp.runtime.RuntimeRegistries;
 import dev.vfyjxf.mcp.runtime.ui.FallbackRegionUiDriver;
 import dev.vfyjxf.mcp.runtime.ui.UiCaptureRenderer;
@@ -32,11 +14,9 @@ import dev.vfyjxf.mcp.server.runtime.McpToolRegistry;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
-import java.awt.Color;
+import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -46,9 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class UiToolInvocationTest {
 

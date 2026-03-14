@@ -8,7 +8,6 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.Instrumentation;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

@@ -5,11 +5,7 @@ import dev.vfyjxf.mcp.server.api.McpResource;
 import dev.vfyjxf.mcp.server.api.ToolCallContext;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public final class McpProtocolDispatcher {
 

@@ -1,15 +1,6 @@
 package dev.vfyjxf.mcp.runtime.ui;
 
-import dev.vfyjxf.mcp.api.runtime.UiActionabilityResult;
-import dev.vfyjxf.mcp.api.runtime.UiContext;
-import dev.vfyjxf.mcp.api.runtime.UiDriver;
-import dev.vfyjxf.mcp.api.runtime.UiInspectResult;
-import dev.vfyjxf.mcp.api.runtime.UiLocator;
-import dev.vfyjxf.mcp.api.runtime.UiResolveRequest;
-import dev.vfyjxf.mcp.api.runtime.UiResolveResult;
-import dev.vfyjxf.mcp.api.runtime.UiTargetReference;
-import dev.vfyjxf.mcp.api.runtime.UiWaitRequest;
-import dev.vfyjxf.mcp.api.runtime.UiWaitResult;
+import dev.vfyjxf.mcp.api.runtime.*;
 import dev.vfyjxf.mcp.api.ui.SnapshotOptions;
 import dev.vfyjxf.mcp.api.ui.UiTarget;
 

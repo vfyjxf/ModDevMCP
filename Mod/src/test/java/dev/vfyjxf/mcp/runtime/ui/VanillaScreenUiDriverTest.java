@@ -1,15 +1,10 @@
 package dev.vfyjxf.mcp.runtime.ui;
 
-import dev.vfyjxf.mcp.api.runtime.UiLocator;
 import dev.vfyjxf.mcp.api.runtime.UiContext;
+import dev.vfyjxf.mcp.api.runtime.UiLocator;
 import dev.vfyjxf.mcp.api.runtime.UiResolveRequest;
 import dev.vfyjxf.mcp.api.runtime.UiTargetReference;
-import dev.vfyjxf.mcp.api.ui.UiActionRequest;
-import dev.vfyjxf.mcp.api.ui.Bounds;
-import dev.vfyjxf.mcp.api.ui.SnapshotOptions;
-import dev.vfyjxf.mcp.api.ui.TargetSelector;
-import dev.vfyjxf.mcp.api.ui.UiTarget;
-import dev.vfyjxf.mcp.api.ui.UiTargetState;
+import dev.vfyjxf.mcp.api.ui.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,10 +12,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class VanillaScreenUiDriverTest {
 

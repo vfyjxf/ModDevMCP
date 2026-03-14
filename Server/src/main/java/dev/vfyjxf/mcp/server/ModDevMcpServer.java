@@ -2,9 +2,9 @@ package dev.vfyjxf.mcp.server;
 
 import dev.vfyjxf.mcp.server.api.McpResourceProvider;
 import dev.vfyjxf.mcp.server.api.McpToolProvider;
+import dev.vfyjxf.mcp.server.host.HostStatusToolProvider;
 import dev.vfyjxf.mcp.server.host.RuntimeCallQueue;
 import dev.vfyjxf.mcp.server.host.RuntimeRegistry;
-import dev.vfyjxf.mcp.server.host.HostStatusToolProvider;
 import dev.vfyjxf.mcp.server.runtime.McpResourceRegistry;
 import dev.vfyjxf.mcp.server.runtime.McpToolRegistry;
 

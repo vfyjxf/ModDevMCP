@@ -3,11 +3,7 @@ package dev.vfyjxf.mcp.runtime;
 import dev.vfyjxf.mcp.api.runtime.InputController;
 import dev.vfyjxf.mcp.runtime.event.RuntimeEventPublisher;
 import dev.vfyjxf.mcp.runtime.tool.UiAutomationSessionManager;
-import dev.vfyjxf.mcp.runtime.ui.UiCaptureArtifactStore;
-import dev.vfyjxf.mcp.runtime.ui.UiCaptureRenderer;
-import dev.vfyjxf.mcp.runtime.ui.UiPointerStateRegistry;
-import dev.vfyjxf.mcp.runtime.ui.UiSnapshotJournal;
-import dev.vfyjxf.mcp.runtime.ui.UiSessionStateRegistry;
+import dev.vfyjxf.mcp.runtime.ui.*;
 import dev.vfyjxf.mcp.server.api.McpToolProvider;
 
 import java.util.ArrayList;

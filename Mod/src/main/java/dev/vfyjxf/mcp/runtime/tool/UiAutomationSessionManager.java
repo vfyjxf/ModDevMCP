@@ -4,11 +4,7 @@ import dev.vfyjxf.mcp.api.model.OperationResult;
 import dev.vfyjxf.mcp.api.ui.UiSnapshot;
 import dev.vfyjxf.mcp.api.ui.UiTarget;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 

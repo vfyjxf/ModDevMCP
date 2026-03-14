@@ -12,7 +12,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.neoforge.client.ClientHooks;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

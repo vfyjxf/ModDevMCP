@@ -1,7 +1,5 @@
 package dev.vfyjxf.mcp.runtime.host;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.Objects;
 
 public final class HostReconnectLoop implements AutoCloseable {

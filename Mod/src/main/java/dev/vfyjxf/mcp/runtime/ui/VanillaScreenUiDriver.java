@@ -1,41 +1,17 @@
 package dev.vfyjxf.mcp.runtime.ui;
 
 import dev.vfyjxf.mcp.api.model.OperationResult;
-import dev.vfyjxf.mcp.api.runtime.DriverDescriptor;
-import dev.vfyjxf.mcp.api.runtime.UiInspectResult;
-import dev.vfyjxf.mcp.api.runtime.UiContext;
-import dev.vfyjxf.mcp.api.runtime.UiDriver;
-import dev.vfyjxf.mcp.api.runtime.UiLocator;
-import dev.vfyjxf.mcp.api.runtime.UiResolveRequest;
-import dev.vfyjxf.mcp.api.runtime.UiResolveResult;
-import dev.vfyjxf.mcp.api.runtime.UiTargetReference;
-import dev.vfyjxf.mcp.api.ui.UiInteractionDefaults;
-import dev.vfyjxf.mcp.api.ui.Bounds;
-import dev.vfyjxf.mcp.api.ui.CaptureRequest;
-import dev.vfyjxf.mcp.api.ui.SnapshotOptions;
-import dev.vfyjxf.mcp.api.ui.TargetSelector;
-import dev.vfyjxf.mcp.api.ui.TooltipSnapshot;
-import dev.vfyjxf.mcp.api.ui.UiActionRequest;
-import dev.vfyjxf.mcp.api.ui.UiInteractionState;
-import dev.vfyjxf.mcp.api.ui.UiSnapshot;
-import dev.vfyjxf.mcp.api.ui.UiTarget;
-import dev.vfyjxf.mcp.api.ui.UiTargetState;
+import dev.vfyjxf.mcp.api.runtime.*;
+import dev.vfyjxf.mcp.api.ui.*;
 import dev.vfyjxf.mcp.runtime.UiInteractionStateResolverRegistry;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 
 public class VanillaScreenUiDriver implements UiDriver {
 
