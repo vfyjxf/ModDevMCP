@@ -12,7 +12,7 @@ public final class ModDevMcpPlugin implements Plugin<Project> {
     private static final String EXTENSION_NAME = "modDevMcp";
     private static final String RUNTIME_CONFIGURATION_NAME = "modDevMcpRuntime";
     private static final String CREATE_CLIENT_FILES_TASK_NAME = "createMcpClientFiles";
-    private static final String DEFAULT_SERVER_VERSION = "0.1.1";
+    private static final String DEFAULT_SERVER_VERSION = "0.1.2";
     private static final String DEFAULT_SERVER_COORDINATES = "dev.vfyjxf:moddevmcp-server:" + DEFAULT_SERVER_VERSION;
     private static final String DEFAULT_SERVER_ID = "moddevmcp";
     private static final String DEFAULT_GATEWAY_MAIN_CLASS = "dev.vfyjxf.mcp.server.bootstrap.ModDevMcpGatewayMain";

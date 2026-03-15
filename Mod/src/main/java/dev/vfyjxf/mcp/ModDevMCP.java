@@ -1,6 +1,16 @@
 package dev.vfyjxf.mcp;
 
 import dev.vfyjxf.mcp.api.ModMcpApi;
+import dev.vfyjxf.mcp.api.event.RegisterClientMcpToolsEvent;
+import dev.vfyjxf.mcp.api.event.RegisterCommonMcpToolsEvent;
+import dev.vfyjxf.mcp.api.event.RegisterServerMcpToolsEvent;
+import dev.vfyjxf.mcp.api.registrar.ClientMcpRegistrar;
+import dev.vfyjxf.mcp.api.registrar.ClientMcpToolRegistrar;
+import dev.vfyjxf.mcp.api.registrar.CommonMcpRegistrar;
+import dev.vfyjxf.mcp.api.registrar.CommonMcpToolRegistrar;
+import dev.vfyjxf.mcp.api.registrar.ServerMcpRegistrar;
+import dev.vfyjxf.mcp.api.registrar.ServerMcpToolRegistrar;
+import dev.vfyjxf.mcp.registrar.AnnotationMcpRegistrarLookup;
 import dev.vfyjxf.mcp.runtime.RuntimeRegistries;
 import dev.vfyjxf.mcp.runtime.event.RuntimeEventPublisher;
 import dev.vfyjxf.mcp.runtime.hotswap.HotswapRuntimeConfig;
@@ -12,9 +22,12 @@ import dev.vfyjxf.mcp.server.api.McpToolProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
+import java.util.function.Supplier;
 
 public class ModDevMCP {
     public static final Logger LOGGER = LoggerFactory.getLogger(ModDevMCP.class);
@@ -25,8 +38,12 @@ public class ModDevMCP {
     private final ModMcpApi api;
     private final McpToolProvider eventToolProvider;
     private final McpToolProvider hotswapToolProvider;
+    private final Supplier<? extends Collection<CommonMcpToolRegistrar>> commonRegistrarSupplier;
+    private final Supplier<? extends Collection<ClientMcpToolRegistrar>> clientRegistrarSupplier;
+    private final Supplier<? extends Collection<ServerMcpToolRegistrar>> serverRegistrarSupplier;
     private final Set<McpToolProvider> registeredToolProviders = Collections.newSetFromMap(new IdentityHashMap<>());
     private boolean commonRuntimeRegistered;
+    private boolean commonProvidersRegistered;
     private boolean clientRuntimeRegistered;
     private boolean clientProvidersRegistered;
     private boolean serverRuntimeRegistered;
@@ -41,11 +58,30 @@ public class ModDevMCP {
     }
 
     public ModDevMCP(ModDevMcpServer server, RuntimeRegistries registries) {
+        this(
+                server,
+                registries,
+                discoveredCommonRegistrars(),
+                discoveredClientRegistrars(),
+                discoveredServerRegistrars()
+        );
+    }
+
+    ModDevMCP(
+            ModDevMcpServer server,
+            RuntimeRegistries registries,
+            Supplier<? extends Collection<CommonMcpToolRegistrar>> commonRegistrarSupplier,
+            Supplier<? extends Collection<ClientMcpToolRegistrar>> clientRegistrarSupplier,
+            Supplier<? extends Collection<ServerMcpToolRegistrar>> serverRegistrarSupplier
+    ) {
         LOGGER.info("Initializing ModDev MCP");
         this.server = server;
         this.registries = registries;
         this.api = new ModMcpApi(registries);
         this.eventToolProvider = new EventToolProvider(registries);
+        this.commonRegistrarSupplier = commonRegistrarSupplier;
+        this.clientRegistrarSupplier = clientRegistrarSupplier;
+        this.serverRegistrarSupplier = serverRegistrarSupplier;
         HotswapService hotswapService = new HotswapService(HotswapRuntimeConfig.fromSystemProperties());
         hotswapService.snapshotTimestamps();
         this.hotswapToolProvider = new HotswapToolProvider(hotswapService);
@@ -57,9 +93,14 @@ public class ModDevMCP {
     }
 
     public synchronized void registerCommonProviders() {
+        if (commonProvidersRegistered) {
+            return;
+        }
+        commonProvidersRegistered = true;
         registerToolProvider(eventToolProvider);
         registerToolProvider(hotswapToolProvider);
         registries.toolProviders().forEach(this::registerToolProvider);
+        registerCommonRegistrarProviders();
     }
 
     public ModDevMcpServer server() {
@@ -117,7 +158,7 @@ public class ModDevMCP {
         return registries.eventPublisher();
     }
 
-    void registerToolProvider(McpToolProvider provider) {
+    synchronized void registerToolProvider(McpToolProvider provider) {
         if (registeredToolProviders.add(provider)) {
             server.registerProvider(provider);
         }
@@ -153,5 +194,38 @@ public class ModDevMCP {
         }
         serverProvidersRegistered = true;
         return true;
+    }
+
+    void registerClientRegistrarProviders() {
+        var providers = new ArrayList<McpToolProvider>();
+        var event = new RegisterClientMcpToolsEvent(providers);
+        clientRegistrarSupplier.get().forEach(registrar -> registrar.register(event));
+        providers.forEach(this::registerToolProvider);
+    }
+
+    void registerServerRegistrarProviders() {
+        var providers = new ArrayList<McpToolProvider>();
+        var event = new RegisterServerMcpToolsEvent(providers);
+        serverRegistrarSupplier.get().forEach(registrar -> registrar.register(event));
+        providers.forEach(this::registerToolProvider);
+    }
+
+    private void registerCommonRegistrarProviders() {
+        var providers = new ArrayList<McpToolProvider>();
+        var event = new RegisterCommonMcpToolsEvent(providers);
+        commonRegistrarSupplier.get().forEach(registrar -> registrar.register(event));
+        providers.forEach(this::registerToolProvider);
+    }
+
+    private static Supplier<Collection<CommonMcpToolRegistrar>> discoveredCommonRegistrars() {
+        return () -> new AnnotationMcpRegistrarLookup<>(CommonMcpToolRegistrar.class, CommonMcpRegistrar.class).findRegistrars();
+    }
+
+    private static Supplier<Collection<ClientMcpToolRegistrar>> discoveredClientRegistrars() {
+        return () -> new AnnotationMcpRegistrarLookup<>(ClientMcpToolRegistrar.class, ClientMcpRegistrar.class).findRegistrars();
+    }
+
+    private static Supplier<Collection<ServerMcpToolRegistrar>> discoveredServerRegistrars() {
+        return () -> new AnnotationMcpRegistrarLookup<>(ServerMcpToolRegistrar.class, ServerMcpRegistrar.class).findRegistrars();
     }
 }

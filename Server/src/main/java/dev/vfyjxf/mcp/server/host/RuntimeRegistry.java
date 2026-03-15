@@ -45,13 +45,13 @@ public final class RuntimeRegistry {
         if (routes.isEmpty()) {
             return RuntimeToolSelection.failure("game_not_connected");
         }
-        var requestedSide = requestedSide(arguments);
-        if (requestedSide != null) {
+        var routing = requestedRouting(arguments);
+        if (routing != null) {
             return routes.stream()
-                    .filter(route -> requestedSide.equalsIgnoreCase(route.session().runtimeSide()))
+                    .filter(route -> routing.side().equalsIgnoreCase(route.session().runtimeSide()))
                     .findFirst()
-                    .map(route -> RuntimeToolSelection.resolved(route.session(), route.descriptor()))
-                    .orElseGet(() -> RuntimeToolSelection.failure("runtime_not_connected: side=" + requestedSide));
+                    .map(route -> RuntimeToolSelection.resolved(route.session(), route.descriptor(), routing.key()))
+                    .orElseGet(() -> RuntimeToolSelection.failure("runtime_not_connected: side=" + routing.side()));
         }
         var runtimeSides = routes.stream().map(route -> route.session().runtimeSide()).distinct().toList();
         if (runtimeSides.size() > 1) {
@@ -90,11 +90,23 @@ public final class RuntimeRegistry {
         return List.copyOf(routes);
     }
 
-    private String requestedSide(Map<String, Object> arguments) {
-        if (arguments == null) {
+    private RoutingRequest requestedRouting(Map<String, Object> arguments) {
+        if (arguments == null || arguments.isEmpty()) {
             return null;
         }
-        var value = arguments.get("targetSide");
+        var runtimeSide = sideArgument(arguments, "runtimeSide");
+        if (runtimeSide != null) {
+            return new RoutingRequest("runtimeSide", runtimeSide);
+        }
+        var targetSide = sideArgument(arguments, "targetSide");
+        if (targetSide != null) {
+            return new RoutingRequest("targetSide", targetSide);
+        }
+        return null;
+    }
+
+    private String sideArgument(Map<String, Object> arguments, String key) {
+        var value = arguments.get(key);
         if (!(value instanceof String requestedSide) || requestedSide.isBlank()) {
             return null;
         }
@@ -133,5 +145,8 @@ public final class RuntimeRegistry {
     }
 
     private record Route(RuntimeSession session, RuntimeToolDescriptor descriptor) {
+    }
+
+    private record RoutingRequest(String key, String side) {
     }
 }

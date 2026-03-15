@@ -12,16 +12,20 @@ public class ClientEntrypoint extends ModDevMCP {
 
     private final HostReconnectLoop reconnectLoop;
     private final ClientRuntimeBootstrap clientBootstrap;
+    private final IntegratedServerRuntimeHost integratedServerRuntimeHost;
 
     public ClientEntrypoint() {
         this.clientBootstrap = new ClientRuntimeBootstrap(this);
         var config = HostRuntimeClientConfig.loadResolved();
+        this.integratedServerRuntimeHost = new IntegratedServerRuntimeHost(config);
         this.reconnectLoop = new HostReconnectLoop(
                 () -> new HostGameClient(clientBootstrap.prepareClientServer(), config, "client-runtime", "client").runUntilDisconnected(),
                 config.reconnectDelayMs()
         );
         this.reconnectLoop.start();
+        this.integratedServerRuntimeHost.attach();
         Runtime.getRuntime().addShutdownHook(new Thread(reconnectLoop::close, "moddevmcp-client-bootstrap-shutdown"));
+        Runtime.getRuntime().addShutdownHook(new Thread(integratedServerRuntimeHost::close, "moddevmcp-integrated-server-bootstrap-shutdown"));
         new ClientAutomationPauseGuard().attach();
     }
 }

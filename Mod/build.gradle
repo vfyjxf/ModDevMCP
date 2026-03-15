@@ -11,6 +11,7 @@ version = mod_version
 group = 'dev.vfyjxf'
 
 def projectUrl = 'https://github.com/vfyjxf/ModDevMCP'
+def publishingToMavenLocal = gradle.startParameter.taskNames.any { it.toLowerCase().contains('mavenlocal') }
 
 
 base {
@@ -79,13 +80,8 @@ extraJavaModuleInfo {
 }
 
 dependencies {
-    compileOnly(project(":Server")){
+    api(project(":Server")) {
         exclude(group: "org.slf4j")
-        transitive = false
-    }
-    testImplementation(project(":Server")){
-        exclude(group: "org.slf4j")
-        transitive = false
     }
     jarJar(project(":Server")) {
         exclude(group: "org.slf4j")
@@ -141,7 +137,9 @@ signing {
 mavenPublishing {
     coordinates('dev.vfyjxf', 'moddevmcp', project.version)
     publishToMavenCentral()
-    signAllPublications()
+    if (!publishingToMavenLocal) {
+        signAllPublications()
+    }
     pom {
         name = 'ModDevMCP'
         description = 'Minecraft runtime and NeoForge mod for ModDevMCP, providing UI inspection, capture, screenshots, interaction automation, and MCP host connectivity.'

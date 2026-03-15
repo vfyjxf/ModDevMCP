@@ -4,15 +4,15 @@ import dev.vfyjxf.mcp.server.api.McpToolProvider;
 
 import java.util.List;
 
-public final class RegisterMcpToolsEvent {
+abstract class RegisterMcpToolsEvent {
 
     private final List<McpToolProvider> providers;
 
-    public RegisterMcpToolsEvent(List<McpToolProvider> providers) {
+    protected RegisterMcpToolsEvent(List<McpToolProvider> providers) {
         this.providers = providers;
     }
 
-    public void register(McpToolProvider provider) {
+    public final void register(McpToolProvider provider) {
         providers.add(provider);
     }
 }

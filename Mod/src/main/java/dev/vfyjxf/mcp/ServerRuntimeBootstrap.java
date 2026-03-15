@@ -32,5 +32,6 @@ public final class ServerRuntimeBootstrap {
         }
         mod.registerToolProvider(new GameToolProvider(new LiveServerGameCloser()));
         mod.registerToolProvider(CommandToolProvider.serverOnly(new LiveServerCommandService()));
+        mod.registerServerRegistrarProviders();
     }
 }

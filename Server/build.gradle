@@ -9,6 +9,7 @@ group = 'dev.vfyjxf'
 version = rootProject.findProperty('server_version') ?: '0.1.1'
 
 def projectUrl = 'https://github.com/vfyjxf/ModDevMCP'
+def publishingToMavenLocal = gradle.startParameter.taskNames.any { it.toLowerCase().contains('mavenlocal') }
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -31,7 +32,9 @@ signing {
 mavenPublishing {
     coordinates('dev.vfyjxf', 'moddevmcp-server', project.version)
     publishToMavenCentral()
-    signAllPublications()
+    if (!publishingToMavenLocal) {
+        signAllPublications()
+    }
     pom {
         name = 'ModDevMCP Server'
         description = 'Standalone MCP server and gateway for ModDevMCP, providing MCP protocol handling, runtime dispatch, and game bridge integration.'

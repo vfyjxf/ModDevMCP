@@ -43,6 +43,10 @@ public final class CommandToolProvider implements McpToolProvider {
         );
     }
 
+    public static CommandToolProvider clientOnly(CommandService clientCommands) {
+        return new CommandToolProvider(Objects.requireNonNull(clientCommands, "clientCommands"), null);
+    }
+
     public static CommandToolProvider serverOnly(CommandService serverCommands) {
         return new CommandToolProvider(null, Objects.requireNonNull(serverCommands, "serverCommands"));
     }

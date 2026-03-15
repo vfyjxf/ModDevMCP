@@ -4,6 +4,8 @@ MCP tooling for Minecraft NeoForge mod development.
 
 This repository provides a host MCP server plus in-game runtime integration so agents can inspect UI state, capture screenshots, query live screens, and drive common debug workflows inside Minecraft.
 
+The project uses a host-first architecture: the stable MCP host starts first, then Minecraft connects its runtime back to that host.
+
 ## Overview
 
 - add a published mod dependency to your NeoForge project
@@ -14,7 +16,9 @@ This repository provides a host MCP server plus in-game runtime integration so a
 
 ## Architecture
 
-- your MCP client starts the generated ModDevMCP host entry
+- the primary host entry point is `ModDevMcpStdioMain`
+- you can run the host directly with `:Server:runStdioMcp`
+- generated MCP client config files start the same host entry for normal agent usage
 - the host is the stable MCP endpoint and always provides `moddev.status`
 - the game runtime connects back to the host after Minecraft starts
 - client and server runtime tools appear dynamically after their runtime is connected
@@ -34,6 +38,8 @@ This repository provides a host MCP server plus in-game runtime integration so a
 4. Start your normal game run, for example `runClient`.
 5. Call `moddev.status`.
 6. Continue only if `gameConnected=true`.
+
+If the host is already running but Minecraft has not connected yet, `moddev.status` still reports `hostReady=true`.
 
 ## Published Artifacts
 
@@ -106,7 +112,7 @@ Start your normal NeoForge development run:
 .\gradlew.bat runClient --no-daemon
 ```
 
-Use the generated MCP client config to start the ModDevMCP host entry. The MCP client launches the host entry for you, so you do not need a separate server task.
+Use the generated MCP client config to start the ModDevMCP host entry. For direct debugging you can also start the same host manually with `:Server:runStdioMcp`, which runs `ModDevMcpStdioMain`.
 
 ## First Readiness Check
 
