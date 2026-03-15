@@ -429,9 +429,7 @@ Suggested registration entrypoints:
 
 Suggested NeoForge registration events:
 
-- `RegisterUiDriversEvent`
-- `RegisterInventoryDriversEvent`
-- `RegisterMcpToolsEvent`
+- side-specific MCP registration events such as `RegisterCommonMcpToolsEvent`, `RegisterClientMcpToolsEvent`, and `RegisterServerMcpToolsEvent`
 
 ## Server Extension API
 
