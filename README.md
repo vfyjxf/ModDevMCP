@@ -138,6 +138,7 @@ If MCP connection fails, or the first status/UI call fails, treat the game as no
 - `docs/guides/2026-03-12-playwright-style-ui-automation-guide.md`
 - `docs/guides/2026-03-15-command-tools-guide.md`
 - `docs/guides/2026-03-15-local-world-tools-guide.md`
+- `docs/guides/2026-03-15-third-party-mod-integration-guide.md`
 - `docs/guides/2026-03-15-moddevmcp-usage-skill-install.md`
 - `README.zh.md`
 - `docs/guides/2026-03-11-simple-agent-install-guide.zh.md`
@@ -148,6 +149,7 @@ If MCP connection fails, or the first status/UI call fails, treat the game as no
 - `docs/guides/2026-03-11-codex-screenshot-demo-guide.zh.md`
 - `docs/guides/2026-03-11-live-screen-tool-guide.zh.md`
 - `docs/guides/2026-03-12-playwright-style-ui-automation-guide.zh.md`
+- `docs/guides/2026-03-15-third-party-mod-integration-guide.zh.md`
 - `docs/guides/2026-03-15-moddevmcp-usage-skill-install.zh.md`
 
 
