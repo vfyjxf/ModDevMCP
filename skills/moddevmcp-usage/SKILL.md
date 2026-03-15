@@ -65,6 +65,101 @@ Prefer this order for UI work:
 
 Use lower-level tools such as session/ref tools, `ui_batch`, or raw snapshot/query tools only when the higher-level flow is not enough.
 
+## Command Tool Usage
+
+Use command tools only after readiness is confirmed with `moddev.status`.
+
+Available tools:
+
+- `moddev.command_list`
+- `moddev.command_suggest`
+- `moddev.command_execute`
+
+Interpret `commandSide` strictly:
+
+- `commandSide=client` means NeoForge client commands
+- `commandSide=server` means server commands in the current runtime context
+- in a singleplayer world, `commandSide=server` may resolve to the integrated server
+- at the title screen or outside a loaded singleplayer server context, `commandSide=server` may be unavailable
+
+Prefer this order for command work:
+
+1. `moddev.command_list`
+2. `moddev.command_suggest`
+3. `moddev.command_execute`
+
+Do not guess command availability from memory when `command_list` can verify it directly.
+
+Minimal examples:
+
+```json
+{
+  "name": "moddev.command_list",
+  "arguments": {
+    "commandSide": "client",
+    "limit": 20
+  }
+}
+```
+
+```json
+{
+  "name": "moddev.command_execute",
+  "arguments": {
+    "commandSide": "server",
+    "command": "time set day"
+  }
+}
+```
+
+## Local World Tool Usage
+
+Use local world tools only for singleplayer saves on the connected client runtime.
+
+Available tools:
+
+- `moddev.world_list`
+- `moddev.world_create`
+- `moddev.world_join`
+
+Preferred flow:
+
+1. `moddev.world_list`
+2. `moddev.world_join` for an existing save
+3. `moddev.world_create` when a new local test world is needed
+
+Rules:
+
+- prefer `id` from `moddev.world_list` over visible `name`
+- treat `world_create` as client-runtime-only
+- `joinAfterCreate` currently needs to stay `true`
+- `worldType=flat` is the supported way to request a superflat world
+
+Minimal examples:
+
+```json
+{
+  "name": "moddev.world_create",
+  "arguments": {
+    "name": "Flat Build World",
+    "gameMode": "creative",
+    "allowCheats": true,
+    "worldType": "flat",
+    "difficulty": "peaceful",
+    "generateStructures": false
+  }
+}
+```
+
+```json
+{
+  "name": "moddev.world_join",
+  "arguments": {
+    "id": "dev"
+  }
+}
+```
+
 ## Screenshot And Capture Rules
 
 When the user asks for visual proof:

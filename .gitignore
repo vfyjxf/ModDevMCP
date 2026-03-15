@@ -30,3 +30,4 @@ TestMod/*.log
 /.gradle-user-home
 /.m2
 /TestMod/.gradle-user-home
+/tmp

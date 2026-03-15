@@ -36,6 +36,7 @@ Recommended order:
 1. `moddev.status`
 2. `moddev.ui_get_live_screen`
 3. `moddev.command_list` if you need command discovery on `client` or `server`
+4. `moddev.world_list` if you need local singleplayer world discovery on the client runtime
 
 Continue only if:
 
@@ -57,5 +58,15 @@ The gateway also exposes side-aware command tools:
 - `moddev.command_execute`
 
 Command tools use `commandSide` to choose client or server command context inside the runtime selected by the normal gateway routing.
+
+## Local World Tools
+
+The client runtime also exposes local-world tools:
+
+- `moddev.world_list`
+- `moddev.world_create`
+- `moddev.world_join`
+
+These tools operate on local singleplayer saves only and drive the real client into the selected world.
 
 For a normal consumer setup, you do not need a `modDevMcp {}` block to use this runtime flow.

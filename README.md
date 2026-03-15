@@ -125,6 +125,7 @@ If MCP connection fails, or the first status/UI call fails, treat the game as no
 - `docs/guides/2026-03-11-live-screen-tool-guide.md`
 - `docs/guides/2026-03-12-playwright-style-ui-automation-guide.md`
 - `docs/guides/2026-03-15-command-tools-guide.md`
+- `docs/guides/2026-03-15-local-world-tools-guide.md`
 - `docs/guides/2026-03-15-moddevmcp-usage-skill-install.md`
 - `README.zh.md`
 - `docs/guides/2026-03-11-simple-agent-install-guide.zh.md`
@@ -159,6 +160,7 @@ If status or the first UI probe fails, stop and tell the user in Chinese:
 - interaction state and target details
 - live screen probe via `moddev.ui_get_live_screen`
 - command discovery / suggestion / execution via `moddev.command_list`, `moddev.command_suggest`, `moddev.command_execute`
+- local world list / create / join via `moddev.world_list`, `moddev.world_create`, `moddev.world_join` with configurable world type, difficulty, bonus chest, and structure generation
 - high-level Playwright-style debug flow via `moddev.ui_inspect`, `moddev.ui_act`, `moddev.ui_wait`, `moddev.ui_screenshot`, `moddev.ui_trace_recent`
 - low-level session/ref automation via `moddev.ui_session_open`, `moddev.ui_session_refresh`, `moddev.ui_click_ref`, `moddev.ui_hover_ref`, `moddev.ui_switch`, `moddev.ui_press_key`, `moddev.ui_type_text`, `moddev.ui_wait_for`, `moddev.ui_batch`, `moddev.ui_trace_get`
 - inventory snapshot/action
