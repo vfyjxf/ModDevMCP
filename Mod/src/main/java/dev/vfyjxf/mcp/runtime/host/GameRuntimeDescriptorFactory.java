@@ -53,6 +53,7 @@ public final class GameRuntimeDescriptorFactory {
                 || toolName.contains("open")
                 || toolName.contains("close")
                 || toolName.contains("switch")
+                || toolName.contains("execute")
                 || toolName.contains("compile")
                 || toolName.contains("hotswap");
     }

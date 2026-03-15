@@ -35,6 +35,7 @@ Recommended order:
 
 1. `moddev.status`
 2. `moddev.ui_get_live_screen`
+3. `moddev.command_list` if you need command discovery on `client` or `server`
 
 Continue only if:
 
@@ -45,6 +46,16 @@ Continue only if:
 
 Do not use UI, input, inventory, or capture tools before readiness is confirmed.
 
-If connection fails or the first checks fail, treat the game as not ready.
+If connection or the first tool call fails, treat the game as not ready.
+
+## Command Tools
+
+The gateway also exposes side-aware command tools:
+
+- `moddev.command_list`
+- `moddev.command_suggest`
+- `moddev.command_execute`
+
+Command tools use `commandSide` to choose client or server command context inside the runtime selected by the normal gateway routing.
 
 For a normal consumer setup, you do not need a `modDevMcp {}` block to use this runtime flow.

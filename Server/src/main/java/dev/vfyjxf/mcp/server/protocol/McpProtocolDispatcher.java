@@ -136,7 +136,11 @@ public final class McpProtocolDispatcher {
         }
         var selection = server.runtimeRegistry().resolveDynamicTool(toolName, toolArguments);
         if (selection.resolved()) {
-            return handleLocalToolCall(id, server.callScheduler().call(selection.session(), selection.descriptor(), toolArguments));
+            return handleLocalToolCall(id, server.callScheduler().call(
+                    selection.session(),
+                    selection.descriptor(),
+                    selection.argumentsWithoutRoutingKeys(toolArguments)
+            ));
         }
         if (toolName.startsWith("moddev.")) {
             return handleLocalToolCall(id, dev.vfyjxf.mcp.server.api.ToolResult.failure(selection.error()));

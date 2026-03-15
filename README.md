@@ -124,6 +124,7 @@ If MCP connection fails, or the first status/UI call fails, treat the game as no
 - `docs/guides/2026-03-11-codex-screenshot-demo-guide.md`
 - `docs/guides/2026-03-11-live-screen-tool-guide.md`
 - `docs/guides/2026-03-12-playwright-style-ui-automation-guide.md`
+- `docs/guides/2026-03-15-command-tools-guide.md`
 - `docs/guides/2026-03-15-moddevmcp-usage-skill-install.md`
 - `README.zh.md`
 - `docs/guides/2026-03-11-simple-agent-install-guide.zh.md`
@@ -137,3 +138,42 @@ If MCP connection fails, or the first status/UI call fails, treat the game as no
 - `docs/guides/2026-03-15-moddevmcp-usage-skill-install.zh.md`
 
 
+Use this operator rule:
+
+1. start the MCP gateway
+2. start Minecraft
+3. wait until the target UI is ready
+4. call `moddev.status`
+5. continue only if `gameConnected=true`
+6. then call `moddev.ui_get_live_screen`
+
+If status or the first UI probe fails, stop and tell the user in Chinese:
+
+- `请先启动并加载游戏，再继续使用 ModDevMCP。`
+
+## Implemented Runtime Capabilities
+
+- host-owned status reporting via `moddev.status`
+- runtime tool refresh on game connect/disconnect
+- UI snapshot/query/capture/action/wait/tooltip
+- interaction state and target details
+- live screen probe via `moddev.ui_get_live_screen`
+- command discovery / suggestion / execution via `moddev.command_list`, `moddev.command_suggest`, `moddev.command_execute`
+- high-level Playwright-style debug flow via `moddev.ui_inspect`, `moddev.ui_act`, `moddev.ui_wait`, `moddev.ui_screenshot`, `moddev.ui_trace_recent`
+- low-level session/ref automation via `moddev.ui_session_open`, `moddev.ui_session_refresh`, `moddev.ui_click_ref`, `moddev.ui_hover_ref`, `moddev.ui_switch`, `moddev.ui_press_key`, `moddev.ui_type_text`, `moddev.ui_wait_for`, `moddev.ui_batch`, `moddev.ui_trace_get`
+- inventory snapshot/action
+- in-process client input simulation
+- framebuffer and offscreen capture providers
+
+If no real capture provider matches, `moddev.ui_capture` returns a real failure instead of a fake screenshot.
+
+## Verification Notes
+
+Recent real validation covered:
+
+- gateway auto-bootstrap of backend from generated client config
+- `moddev.status` over a real Codex-equivalent MCP session
+- `TestMod` `runClient` startup with runtime reconnect logs
+- host-aware server regression tests in `Server`
+
+If Gradle dependency downloads fail, treat TLS/repository/network failures separately from code failures.

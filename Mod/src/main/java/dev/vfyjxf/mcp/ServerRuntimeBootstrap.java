@@ -1,6 +1,8 @@
 package dev.vfyjxf.mcp;
 
+import dev.vfyjxf.mcp.runtime.command.LiveServerCommandService;
 import dev.vfyjxf.mcp.runtime.game.LiveServerGameCloser;
+import dev.vfyjxf.mcp.runtime.tool.CommandToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.GameToolProvider;
 import dev.vfyjxf.mcp.server.ModDevMcpServer;
 
@@ -29,5 +31,6 @@ public final class ServerRuntimeBootstrap {
             return;
         }
         mod.registerToolProvider(new GameToolProvider(new LiveServerGameCloser()));
+        mod.registerToolProvider(CommandToolProvider.serverOnly(new LiveServerCommandService()));
     }
 }
