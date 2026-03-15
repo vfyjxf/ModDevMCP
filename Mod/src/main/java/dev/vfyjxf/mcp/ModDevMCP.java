@@ -77,7 +77,7 @@ public class ModDevMCP {
         LOGGER.info("Initializing ModDev MCP");
         this.server = server;
         this.registries = registries;
-        this.api = new ModMcpApi(registries);
+        this.api = new ModMcpApi(registries, this::registerToolProvider);
         this.eventToolProvider = new EventToolProvider(registries);
         this.commonRegistrarSupplier = commonRegistrarSupplier;
         this.clientRegistrarSupplier = clientRegistrarSupplier;
@@ -198,21 +198,21 @@ public class ModDevMCP {
 
     void registerClientRegistrarProviders() {
         var providers = new ArrayList<McpToolProvider>();
-        var event = new RegisterClientMcpToolsEvent(providers);
+        var event = new RegisterClientMcpToolsEvent(providers, api, registries.eventPublisher());
         clientRegistrarSupplier.get().forEach(registrar -> registrar.register(event));
         providers.forEach(this::registerToolProvider);
     }
 
     void registerServerRegistrarProviders() {
         var providers = new ArrayList<McpToolProvider>();
-        var event = new RegisterServerMcpToolsEvent(providers);
+        var event = new RegisterServerMcpToolsEvent(providers, api, registries.eventPublisher());
         serverRegistrarSupplier.get().forEach(registrar -> registrar.register(event));
         providers.forEach(this::registerToolProvider);
     }
 
     private void registerCommonRegistrarProviders() {
         var providers = new ArrayList<McpToolProvider>();
-        var event = new RegisterCommonMcpToolsEvent(providers);
+        var event = new RegisterCommonMcpToolsEvent(providers, api, registries.eventPublisher());
         commonRegistrarSupplier.get().forEach(registrar -> registrar.register(event));
         providers.forEach(this::registerToolProvider);
     }

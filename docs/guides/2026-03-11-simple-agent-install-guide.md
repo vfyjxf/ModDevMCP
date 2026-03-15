@@ -99,6 +99,8 @@ Generated files are written under:
 
 The MCP client starts the generated ModDevMCP host entry from its installed config. You do not need to launch a separate MCP server task by hand.
 
+For direct debugging or troubleshooting, you can still start the same host manually with `:Server:runStdioMcp`.
+
 ## Related Guides
 
 - `docs/guides/2026-03-11-game-mcp-guide.md`

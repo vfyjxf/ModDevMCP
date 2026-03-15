@@ -1,6 +1,7 @@
 # 2026-03-15 Third-Party Mod Integration Guide
 
 Date: 2026-03-15 17:10 CST
+Updated: 2026-03-16 00:55 CST
 
 ## Purpose
 
@@ -72,6 +73,21 @@ Each registrar:
 - should implement the matching registrar interface
 - should only reference classes that are valid on that side
 
+Each side event now exposes:
+
+- direct tool registration helpers such as `register(...)` and `registerToolProvider(...)`
+- `api()` so registrar code can reach `ModMcpApi` without a direct `ModDevMCP` instance
+- `eventPublisher()` and `publishEvent(...)`
+
+The client event also exposes direct runtime adapter helpers:
+
+- `registerUiDriver(...)`
+- `registerInventoryDriver(...)`
+- `registerInputController(...)`
+- `registerUiInteractionStateResolver(...)`
+- `registerUiOffscreenCaptureProvider(...)`
+- `registerUiFramebufferCaptureProvider(...)`
+
 ### Minimal Common Tool Example
 
 ```java
@@ -93,7 +109,8 @@ public final class ExampleCommonRegistrar implements CommonMcpToolRegistrar {
 
     @Override
     public void register(RegisterCommonMcpToolsEvent event) {
-        event.register(new ExampleToolProvider());
+        event.registerToolProvider(new ExampleToolProvider());
+        event.publishEvent(new EventEnvelope("examplemod", "common-registered", System.currentTimeMillis(), Map.of()));
     }
 
     private static final class ExampleToolProvider implements McpToolProvider {
@@ -138,7 +155,8 @@ public final class ExampleClientRegistrar implements ClientMcpToolRegistrar {
 
     @Override
     public void register(RegisterClientMcpToolsEvent event) {
-        event.register(new ExampleClientToolProvider());
+        event.registerToolProvider(new ExampleClientToolProvider());
+        event.registerUiDriver(new ExampleScreenUiDriver());
     }
 }
 ```
@@ -160,6 +178,14 @@ If your tool is really a mod-specific operation, prefer a new tool instead of ov
 
 ModDevMCP also exposes runtime adapter registration through `ModMcpApi`.
 
+Inside registrar callbacks you can now reach that API from the event itself:
+
+```java
+event.api().registerToolProvider(new ExampleToolProvider());
+event.registerUiDriver(new ExampleScreenUiDriver());
+event.publishEvent(new EventEnvelope("examplemod", "registered", System.currentTimeMillis(), Map.of()));
+```
+
 Current public methods include:
 
 - `registerUiDriver(UiDriver driver)`
@@ -179,7 +205,7 @@ public final class ExampleScreenUiDriver implements UiDriver {
 
     @Override
     public DriverDescriptor descriptor() {
-        return new DriverDescriptor("examplemod:screen", "Example Screen Driver", List.of("examplemod"));
+        return new DriverDescriptor("examplemod:screen", "examplemod", 200, Set.of("snapshot", "query"));
     }
 
     @Override
@@ -237,11 +263,11 @@ public final class ExampleOffscreenCaptureProvider implements UiOffscreenCapture
 
 Tool registrars are the first-class third-party integration path today.
 
-The runtime adapter APIs exist, but they are currently instance-scoped through `ModMcpApi`. That means they are best suited to:
+Registrar events now expose the runtime adapter API, but that does not mean every runtime integration point is fully side-agnostic or automatically discoverable beyond the registrar lifecycle. Keep using:
 
-- code that runs inside ModDevMCP-owned bootstrap paths
-- tightly integrated compatibility modules
-- upstream contributions that extend the built-in runtime bootstrap
+- side-specific registrars as the main entrypoint
+- dedicated tools first for mod-specific behavior
+- runtime adapters only when the built-in UI, input, inventory, or capture flows truly need to understand your mod directly
 
 If your mod is completely external and you only need agent-facing operations, prefer a registrar plus dedicated tools first.
 

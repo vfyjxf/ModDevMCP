@@ -1,6 +1,7 @@
 # 2026-03-15 第三方 Mod 集成指南
 
 Date: 2026-03-15 17:10 CST
+Updated: 2026-03-16 00:55 CST
 
 ## 目的
 
@@ -72,6 +73,21 @@ ModDevMCP 现在把 tool 注册拆成三类 side：
 - 应该实现与注解匹配的 registrar 接口
 - 只能引用该 side 上合法的类
 
+现在每个 side event 还会直接暴露：
+
+- `register(...)`、`registerToolProvider(...)` 这类 tool 注册 helper
+- `api()`，这样 registrar 内不需要直接拿 `ModDevMCP` 实例也能访问 `ModMcpApi`
+- `eventPublisher()` 和 `publishEvent(...)`
+
+其中 client event 还会再暴露这些 runtime adapter helper：
+
+- `registerUiDriver(...)`
+- `registerInventoryDriver(...)`
+- `registerInputController(...)`
+- `registerUiInteractionStateResolver(...)`
+- `registerUiOffscreenCaptureProvider(...)`
+- `registerUiFramebufferCaptureProvider(...)`
+
 ### 最小 Common Tool 示例
 
 ```java
@@ -93,7 +109,8 @@ public final class ExampleCommonRegistrar implements CommonMcpToolRegistrar {
 
     @Override
     public void register(RegisterCommonMcpToolsEvent event) {
-        event.register(new ExampleToolProvider());
+        event.registerToolProvider(new ExampleToolProvider());
+        event.publishEvent(new EventEnvelope("examplemod", "common-registered", System.currentTimeMillis(), Map.of()));
     }
 
     private static final class ExampleToolProvider implements McpToolProvider {
@@ -138,7 +155,8 @@ public final class ExampleClientRegistrar implements ClientMcpToolRegistrar {
 
     @Override
     public void register(RegisterClientMcpToolsEvent event) {
-        event.register(new ExampleClientToolProvider());
+        event.registerToolProvider(new ExampleClientToolProvider());
+        event.registerUiDriver(new ExampleScreenUiDriver());
     }
 }
 ```
@@ -160,6 +178,14 @@ public final class ExampleClientRegistrar implements ClientMcpToolRegistrar {
 
 ModDevMCP 还通过 `ModMcpApi` 暴露了一组 runtime adapter 注册入口。
 
+现在在 registrar 回调里也可以直接从 event 拿到这层 API：
+
+```java
+event.api().registerToolProvider(new ExampleToolProvider());
+event.registerUiDriver(new ExampleScreenUiDriver());
+event.publishEvent(new EventEnvelope("examplemod", "registered", System.currentTimeMillis(), Map.of()));
+```
+
 当前公开方法包括：
 
 - `registerUiDriver(UiDriver driver)`
@@ -179,7 +205,7 @@ public final class ExampleScreenUiDriver implements UiDriver {
 
     @Override
     public DriverDescriptor descriptor() {
-        return new DriverDescriptor("examplemod:screen", "Example Screen Driver", List.of("examplemod"));
+        return new DriverDescriptor("examplemod:screen", "examplemod", 200, Set.of("snapshot", "query"));
     }
 
     @Override
@@ -237,11 +263,11 @@ public final class ExampleOffscreenCaptureProvider implements UiOffscreenCapture
 
 今天真正一等的第三方扩展路径还是 tool registrar。
 
-runtime adapter API 虽然存在，但它目前还是通过 `ModMcpApi` 这种实例级入口暴露的，因此更适合：
+虽然 registrar event 现在已经能直接暴露 runtime adapter API，但这并不代表所有 runtime 集成点都已经变成完全 side-agnostic，或者已经脱离 registrar 生命周期自动发现。当前仍然建议：
 
-- 在 ModDevMCP 自己的 bootstrap 路径里运行的代码
-- 与 ModDevMCP 紧耦合的兼容模块
-- 直接向上游补 builtin runtime bootstrap 的扩展
+- 以 side-specific registrar 作为主入口
+- mod 专属行为优先做成独立 tool
+- 只有当内置 UI、input、inventory、capture 流程确实需要直接理解你的 mod 时，再补 runtime adapter
 
 如果你的 mod 是完全外部的，而且你只是想提供给 agent 一些能力，优先走 registrar + 自定义 tool。
 

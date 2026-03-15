@@ -11,7 +11,7 @@ class TestModProjectLayoutTest {
 
     @Test
     void testModCompositeProjectExistsWithStandaloneSettings() throws Exception {
-        var repoDir = Path.of("").toAbsolutePath().normalize().resolveSibling("TestMod");
+        var repoDir = Path.of("").toAbsolutePath().normalize().getParent().resolve("TestMod");
         var settingsGradle = repoDir.resolve("settings.gradle");
         var buildGradle = repoDir.resolve("build.gradle");
         var gradleProperties = repoDir.resolve("gradle.properties");
@@ -30,6 +30,6 @@ class TestModProjectLayoutTest {
         assertTrue(Files.exists(modsToml), modsToml.toString());
         assertTrue(Files.exists(packMcmeta), packMcmeta.toString());
         assertTrue(Files.readString(settingsGradle).contains("rootProject.name = 'TestMod'"));
-        assertTrue(Files.readString(settingsGradle).contains("includeBuild(\"..\")"));
+        assertTrue(Files.readString(settingsGradle).contains("mavenLocal()"));
     }
 }
