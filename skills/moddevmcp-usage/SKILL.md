@@ -160,6 +160,41 @@ Minimal examples:
 }
 ```
 
+## Hotswap Usage
+
+Use hotswap only after readiness is confirmed with `moddev.status`.
+
+Available tools:
+
+- `moddev.compile`
+- `moddev.hotswap`
+
+Guidance:
+
+- recommend `JBR` or `DCEVM` for enhanced hotswap support
+- do not treat `JBR` as a hard requirement for basic hotswap
+- on a standard JVM, expect method-body changes to be the safest case
+- after structural changes such as fields, methods, or class hierarchy changes, expect hotswap to fail more often without enhanced hotswap support
+- if hotswap fails, prefer restarting the client over repeated blind retries
+
+Preferred flow:
+
+1. edit code
+2. call `moddev.hotswap` with compile enabled
+3. verify behavior with the smallest relevant tool
+4. if the reload fails or the change is structural, restart the client and retest
+
+Minimal example:
+
+```json
+{
+  "name": "moddev.hotswap",
+  "arguments": {
+    "compile": true
+  }
+}
+```
+
 ## Screenshot And Capture Rules
 
 When the user asks for visual proof:
