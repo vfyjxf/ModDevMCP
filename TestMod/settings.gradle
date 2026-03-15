@@ -1,5 +1,4 @@
 pluginManagement {
-    includeBuild("../Plugin")
     repositories {
         mavenLocal()
         gradlePluginPortal()
@@ -11,10 +10,3 @@ plugins {
 }
 
 rootProject.name = 'TestMod'
-
-includeBuild("..") {
-    dependencySubstitution {
-        substitute module("dev.vfyjxf:moddevmcp") using project(":Mod")
-        substitute module("dev.vfyjxf:moddevmcp-server") using project(":Server")
-    }
-}

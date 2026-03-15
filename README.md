@@ -35,6 +35,14 @@ This repository provides a host MCP server plus in-game runtime integration so a
 5. Call `moddev.status`.
 6. Continue only if `gameConnected=true`.
 
+## Published Artifacts
+
+- Mod artifact: `dev.vfyjxf:moddevmcp:<version>`
+- Server artifact: `dev.vfyjxf:moddevmcp-server:<version>`
+- Gradle plugin id: `dev.vfyjxf.moddevmcp`
+
+For a normal consumer project, declare the mod artifact and apply the plugin. The plugin resolves the server artifact for MCP host generation automatically.
+
 ## Add to Your Project
 
 ```groovy
@@ -50,6 +58,8 @@ dependencies {
 }
 
 ```
+
+You normally do not need to declare `dev.vfyjxf:moddevmcp-server:<version>` yourself.
 
 The plugin owns the default MCP wiring. For a normal client setup you do not need a `modDevMcp {}` block.
 

@@ -35,6 +35,14 @@
 5. 调用 `moddev.status`。
 6. 只有在 `gameConnected=true` 时才继续。
 
+## 已发布坐标
+
+- Mod 坐标：`dev.vfyjxf:moddevmcp:<version>`
+- Server 坐标：`dev.vfyjxf:moddevmcp-server:<version>`
+- Gradle 插件 id：`dev.vfyjxf.moddevmcp`
+
+对普通消费者工程来说，只需要声明 mod 坐标并应用插件。插件会自动解析用于 MCP host 生成的 server 依赖。
+
 ## 接入你的工程
 
 ```groovy
@@ -50,6 +58,8 @@ dependencies {
 }
 
 ```
+
+通常不需要手工声明 `dev.vfyjxf:moddevmcp-server:<version>`。
 
 插件会接管默认的 MCP 配置。普通的客户端接入不需要再写 `modDevMcp {}`。
 
