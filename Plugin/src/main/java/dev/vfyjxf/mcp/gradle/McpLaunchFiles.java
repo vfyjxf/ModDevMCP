@@ -11,7 +11,6 @@ public final class McpLaunchFiles {
     public static final String DEFAULT_GATEWAY_POSIX_SCRIPT_FILE_NAME = "run-mcp-gateway.sh";
     public static final String DEFAULT_BACKEND_WINDOWS_SCRIPT_FILE_NAME = "run-mcp-backend.bat";
     public static final String DEFAULT_BACKEND_POSIX_SCRIPT_FILE_NAME = "run-mcp-backend.sh";
-    public static final String DEFAULT_SHARED_JSON_FILE_NAME = "mcp-servers.json";
     public static final String DEFAULT_INSTALL_GUIDE_FILE_NAME = "INSTALL.md";
 
     private McpLaunchFiles() {
@@ -79,10 +78,26 @@ public final class McpLaunchFiles {
         return String.join(System.lineSeparator(), lines);
     }
 
-    public static String mcpServersJsonSnippet(String serverId, String command, List<String> args) {
+    public static String claudeCodeMcpJsonSnippet(String serverId, String command, List<String> args) {
+        return commandJsonSnippet("mcpServers", serverId, command, args);
+    }
+
+    public static String cursorMcpJsonSnippet(String serverId, String command, List<String> args) {
+        return commandJsonSnippet("mcpServers", serverId, command, args);
+    }
+
+    public static String vsCodeMcpJsonSnippet(String serverId, String command, List<String> args) {
+        return commandJsonSnippet("servers", serverId, command, args);
+    }
+
+    public static String geminiSettingsJsonSnippet(String serverId, String command, List<String> args) {
+        return commandJsonSnippet("mcpServers", serverId, command, args);
+    }
+
+    private static String commandJsonSnippet(String rootKey, String serverId, String command, List<String> args) {
         var lines = new java.util.ArrayList<String>();
         lines.add("{");
-        lines.add("  \"mcpServers\": {");
+        lines.add("  " + jsonString(rootKey) + ": {");
         lines.add("    " + jsonString(serverId) + ": {");
         lines.add("      \"command\": " + jsonString(command) + ",");
         if (args.isEmpty()) {
@@ -102,27 +117,6 @@ public final class McpLaunchFiles {
         return String.join(System.lineSeparator(), lines);
     }
 
-    public static String gooseSetupMarkdown(String serverId, String command, List<String> args) {
-        return String.join(System.lineSeparator(),
-                "# Goose MCP Setup",
-                "",
-                "Use Goose interactive MCP configuration and point it at this generated MCP launch command:",
-                "",
-                "- server id: `" + serverId + "`",
-                "- command: `" + command + "`",
-                "- args: `" + String.join(" ", args) + "`",
-                "",
-                "Example:",
-                "",
-                "```text",
-                "goose configure",
-                "```",
-                "",
-                "Then enter the command and args shown above.",
-                ""
-        );
-    }
-
     public static String agentInstallMarkdown(String serverId, String command, List<String> args) {
         var argsInline = args.stream()
                 .map(value -> "`" + markdownLiteral(value) + "`")
@@ -130,9 +124,10 @@ public final class McpLaunchFiles {
         return String.join(System.lineSeparator(),
                 "# ModDevMCP Agent Install Guide",
                 "",
-                "Generated: 2026-03-14",
+                "Generated: 2026-03-15",
                 "",
                 "Use the generated files in this directory instead of rewriting the launch command by hand.",
+                "Only clients with an officially verified config format are emitted here.",
                 "",
                 "## Shared Launch Command",
                 "",
@@ -143,15 +138,10 @@ public final class McpLaunchFiles {
                 "## Generated Files",
                 "",
                 "- `codex.toml`: snippet for Codex `~/.codex/config.toml`",
-                "- `mcp-servers.json`: shared JSON payload for clients that use `mcpServers`",
-                "- `claude-code.mcp.json`: JSON snippet for Claude Code project/user config",
-                "- `claude-desktop.mcp.json`: JSON snippet for Claude Desktop import/manual merge",
-                "- `cursor-mcp.json`: JSON snippet for Cursor `mcp.json`",
-                "- `cline_mcp_settings.json`: JSON snippet for Cline MCP settings",
-                "- `windsurf-mcp_config.json`: JSON snippet for Windsurf `mcp_config.json`",
+                "- `claude-code.mcp.json`: JSON snippet for Claude Code project `.mcp.json`",
+                "- `cursor-mcp.json`: JSON snippet for Cursor `.cursor/mcp.json`",
                 "- `vscode-mcp.json`: JSON snippet for VS Code `.vscode/mcp.json`",
-                "- `gemini-settings.json`: JSON snippet for Gemini CLI `settings.json`",
-                "- `goose-setup.md`: Goose interactive install notes",
+                "- `gemini-settings.json`: JSON snippet for Gemini CLI `.gemini/settings.json`",
                 "",
                 "## Install By Agent",
                 "",
@@ -162,24 +152,14 @@ public final class McpLaunchFiles {
                 "",
                 "### Claude Code",
                 "",
-                "1. For a shared project config, merge `claude-code.mcp.json` into `<project>/.mcp.json`.",
-                "2. For a private user/local install, add the same command with `claude mcp add --transport stdio " + serverId + " -- <command> <args...>`.",
+                "1. Merge `claude-code.mcp.json` into `<project>/.mcp.json`.",
+                "2. For a user-scoped install, add the same command with `claude mcp add --transport stdio " + serverId + " -- <command> <args...>`.",
                 "3. Verify with `claude mcp list` or `/mcp`.",
                 "",
                 "### Cursor",
                 "",
-                "1. Merge `cursor-mcp.json` into `<project>/.cursor/mcp.json` or `~/.cursor/mcp.json`.",
+                "1. Merge `cursor-mcp.json` into `<project>/.cursor/mcp.json`.",
                 "2. If the new server does not appear immediately, refresh MCP settings or restart Cursor.",
-                "",
-                "### Cline",
-                "",
-                "1. Merge `cline_mcp_settings.json` into Cline MCP settings.",
-                "2. In the extension UI, open `MCP Servers` -> `Configure` -> `Configure MCP Servers` if you prefer editing from the UI.",
-                "",
-                "### Windsurf",
-                "",
-                "1. Merge `windsurf-mcp_config.json` into `~/.codeium/windsurf/mcp_config.json`.",
-                "2. In Cascade, refresh MCP servers after saving the config.",
                 "",
                 "### VS Code",
                 "",
@@ -188,13 +168,8 @@ public final class McpLaunchFiles {
                 "",
                 "### Gemini CLI",
                 "",
-                "1. Merge `gemini-settings.json` into `~/.gemini/settings.json` or `<project>/.gemini/settings.json`.",
+                "1. Merge `gemini-settings.json` into `<project>/.gemini/settings.json` or `~/.gemini/settings.json`.",
                 "2. Or add it with `gemini mcp add` using the same command and args.",
-                "",
-                "### Goose",
-                "",
-                "1. Follow `goose-setup.md`.",
-                "2. Prefer a command-line extension that runs the generated Java command and args directly.",
                 "",
                 "## Runtime Rule For Agents",
                 "",
@@ -202,6 +177,10 @@ public final class McpLaunchFiles {
                 "2. Start Minecraft with `runClient` second.",
                 "3. Call `moddev.status` first.",
                 "4. Continue with UI tools only after `gameConnected=true`.",
+                "",
+                "## Not Generated On Purpose",
+                "",
+                "Clients without a freshly verified official config format are not emitted by this task.",
                 ""
         );
     }

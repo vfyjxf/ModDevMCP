@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CreateMcpClientFilesTaskTest {
@@ -42,14 +43,22 @@ class CreateMcpClientFilesTaskTest {
         assertTrue(Files.exists(outputDir.resolve("mcp-gateway-java.args")));
         assertTrue(Files.exists(outputDir.resolve("run-mcp-backend.bat")));
         assertTrue(Files.exists(outputDir.resolve("run-mcp-gateway.bat")));
-        assertTrue(Files.exists(outputDir.resolve("clients").resolve("mcp-servers.json")));
-        assertTrue(Files.exists(outputDir.resolve("clients").resolve("claude-desktop.mcp.json")));
+        assertTrue(Files.exists(outputDir.resolve("clients").resolve("claude-code.mcp.json")));
+        assertTrue(Files.exists(outputDir.resolve("clients").resolve("cursor-mcp.json")));
+        assertTrue(Files.exists(outputDir.resolve("clients").resolve("vscode-mcp.json")));
+        assertTrue(Files.exists(outputDir.resolve("clients").resolve("gemini-settings.json")));
+        assertFalse(Files.exists(outputDir.resolve("clients").resolve("mcp-servers.json")));
+        assertFalse(Files.exists(outputDir.resolve("clients").resolve("claude-desktop.mcp.json")));
+        assertFalse(Files.exists(outputDir.resolve("clients").resolve("cline_mcp_settings.json")));
+        assertFalse(Files.exists(outputDir.resolve("clients").resolve("windsurf-mcp_config.json")));
+        assertFalse(Files.exists(outputDir.resolve("clients").resolve("goose-setup.md")));
         assertTrue(Files.exists(outputDir.resolve("clients").resolve("INSTALL.md")));
 
         var installGuide = Files.readString(outputDir.resolve("clients").resolve("INSTALL.md"));
         assertTrue(installGuide.contains("Codex"));
         assertTrue(installGuide.contains("Claude Code"));
         assertTrue(installGuide.contains("Cursor"));
+        assertTrue(installGuide.contains("VS Code"));
         assertTrue(installGuide.contains("Gemini CLI"));
     }
 }

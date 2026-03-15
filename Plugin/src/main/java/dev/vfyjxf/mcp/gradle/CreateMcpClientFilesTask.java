@@ -49,6 +49,7 @@ public abstract class CreateMcpClientFilesTask extends DefaultTask {
         deleteLegacyOutputs(outputDir);
         var clientsDir = outputDir.resolve("clients");
         Files.createDirectories(clientsDir);
+        deleteLegacyClientOutputs(clientsDir);
 
         var classpath = getRuntimeClasspath().getAsPath();
         if (classpath == null || classpath.isBlank()) {
@@ -87,17 +88,14 @@ public abstract class CreateMcpClientFilesTask extends DefaultTask {
 
         writeClientFile(clientsDir.resolve("codex.toml"),
                 McpLaunchFiles.mcpClientTomlSnippet(getServerId().get(), getJavaCommand().get(), clientArgs));
-        var mcpServersJson = McpLaunchFiles.mcpServersJsonSnippet(getServerId().get(), getJavaCommand().get(), clientArgs);
-        writeClientFile(clientsDir.resolve(McpLaunchFiles.DEFAULT_SHARED_JSON_FILE_NAME), mcpServersJson);
-        writeClientFile(clientsDir.resolve("claude-code.mcp.json"), mcpServersJson);
-        writeClientFile(clientsDir.resolve("claude-desktop.mcp.json"), mcpServersJson);
-        writeClientFile(clientsDir.resolve("cursor-mcp.json"), mcpServersJson);
-        writeClientFile(clientsDir.resolve("cline_mcp_settings.json"), mcpServersJson);
-        writeClientFile(clientsDir.resolve("windsurf-mcp_config.json"), mcpServersJson);
-        writeClientFile(clientsDir.resolve("vscode-mcp.json"), mcpServersJson);
-        writeClientFile(clientsDir.resolve("gemini-settings.json"), mcpServersJson);
-        writeClientFile(clientsDir.resolve("goose-setup.md"),
-                McpLaunchFiles.gooseSetupMarkdown(getServerId().get(), getJavaCommand().get(), clientArgs));
+        writeClientFile(clientsDir.resolve("claude-code.mcp.json"),
+                McpLaunchFiles.claudeCodeMcpJsonSnippet(getServerId().get(), getJavaCommand().get(), clientArgs));
+        writeClientFile(clientsDir.resolve("cursor-mcp.json"),
+                McpLaunchFiles.cursorMcpJsonSnippet(getServerId().get(), getJavaCommand().get(), clientArgs));
+        writeClientFile(clientsDir.resolve("vscode-mcp.json"),
+                McpLaunchFiles.vsCodeMcpJsonSnippet(getServerId().get(), getJavaCommand().get(), clientArgs));
+        writeClientFile(clientsDir.resolve("gemini-settings.json"),
+                McpLaunchFiles.geminiSettingsJsonSnippet(getServerId().get(), getJavaCommand().get(), clientArgs));
         writeClientFile(clientsDir.resolve(McpLaunchFiles.DEFAULT_INSTALL_GUIDE_FILE_NAME),
                 McpLaunchFiles.agentInstallMarkdown(getServerId().get(), getJavaCommand().get(), clientArgs));
     }
@@ -110,6 +108,14 @@ public abstract class CreateMcpClientFilesTask extends DefaultTask {
         Files.deleteIfExists(outputDir.resolve("mcp-server-java.args"));
         Files.deleteIfExists(outputDir.resolve("run-mcp-server.bat"));
         Files.deleteIfExists(outputDir.resolve("run-mcp-server.sh"));
+    }
+
+    private static void deleteLegacyClientOutputs(java.nio.file.Path clientsDir) throws IOException {
+        Files.deleteIfExists(clientsDir.resolve("mcp-servers.json"));
+        Files.deleteIfExists(clientsDir.resolve("claude-desktop.mcp.json"));
+        Files.deleteIfExists(clientsDir.resolve("cline_mcp_settings.json"));
+        Files.deleteIfExists(clientsDir.resolve("windsurf-mcp_config.json"));
+        Files.deleteIfExists(clientsDir.resolve("goose-setup.md"));
     }
 
     private static boolean isWindows() {

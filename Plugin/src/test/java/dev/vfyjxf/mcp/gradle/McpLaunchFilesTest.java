@@ -58,8 +58,8 @@ class McpLaunchFilesTest {
     }
 
     @Test
-    void mcpServersJsonSnippetCanEmitCommandAndArgs() {
-        var snippet = McpLaunchFiles.mcpServersJsonSnippet(
+    void claudeCodeSnippetUsesMcpServersSchema() {
+        var snippet = McpLaunchFiles.claudeCodeMcpJsonSnippet(
                 "moddevmcp",
                 "java",
                 java.util.List.of("@mcp-server-java.args")
@@ -73,6 +73,50 @@ class McpLaunchFilesTest {
     }
 
     @Test
+    void cursorSnippetUsesMcpServersSchema() {
+        var snippet = McpLaunchFiles.cursorMcpJsonSnippet(
+                "moddevmcp",
+                "java",
+                java.util.List.of("@mcp-server-java.args")
+        );
+
+        assertTrue(snippet.contains("\"mcpServers\""));
+        assertTrue(snippet.contains("\"moddevmcp\""));
+        assertTrue(snippet.contains("\"command\": \"java\""));
+        assertTrue(snippet.contains("\"args\": ["));
+        assertFalse(snippet.contains("\"servers\""));
+    }
+
+    @Test
+    void vscodeSnippetUsesServersSchema() {
+        var snippet = McpLaunchFiles.vsCodeMcpJsonSnippet(
+                "moddevmcp",
+                "java",
+                java.util.List.of("@mcp-server-java.args")
+        );
+
+        assertTrue(snippet.contains("\"servers\""));
+        assertTrue(snippet.contains("\"moddevmcp\""));
+        assertTrue(snippet.contains("\"command\": \"java\""));
+        assertTrue(snippet.contains("\"args\": ["));
+        assertFalse(snippet.contains("\"mcpServers\""));
+    }
+
+    @Test
+    void geminiSnippetUsesDedicatedSettingsPayload() {
+        var snippet = McpLaunchFiles.geminiSettingsJsonSnippet(
+                "moddevmcp",
+                "java",
+                java.util.List.of("@mcp-server-java.args")
+        );
+
+        assertTrue(snippet.contains("\"mcpServers\""));
+        assertTrue(snippet.contains("\"moddevmcp\""));
+        assertTrue(snippet.contains("\"command\": \"java\""));
+        assertTrue(snippet.contains("\"args\": ["));
+    }
+
+    @Test
     void agentInstallMarkdownMentionsMainstreamClients() {
         var markdown = McpLaunchFiles.agentInstallMarkdown(
                 "moddevmcp",
@@ -83,10 +127,10 @@ class McpLaunchFilesTest {
         assertTrue(markdown.contains("Codex"));
         assertTrue(markdown.contains("Claude Code"));
         assertTrue(markdown.contains("Cursor"));
-        assertTrue(markdown.contains("Cline"));
-        assertTrue(markdown.contains("Windsurf"));
         assertTrue(markdown.contains("VS Code"));
         assertTrue(markdown.contains("Gemini CLI"));
-        assertTrue(markdown.contains("Goose"));
+        assertFalse(markdown.contains("Cline"));
+        assertFalse(markdown.contains("Windsurf"));
+        assertFalse(markdown.contains("Goose"));
     }
 }

@@ -49,15 +49,10 @@ modDevMcp {
 生成文件位于：
 
 - `build/moddevmcp/mcp-clients/clients/codex.toml`
-- `build/moddevmcp/mcp-clients/clients/mcp-servers.json`
 - `build/moddevmcp/mcp-clients/clients/claude-code.mcp.json`
-- `build/moddevmcp/mcp-clients/clients/claude-desktop.mcp.json`
 - `build/moddevmcp/mcp-clients/clients/cursor-mcp.json`
-- `build/moddevmcp/mcp-clients/clients/cline_mcp_settings.json`
-- `build/moddevmcp/mcp-clients/clients/windsurf-mcp_config.json`
 - `build/moddevmcp/mcp-clients/clients/vscode-mcp.json`
 - `build/moddevmcp/mcp-clients/clients/gemini-settings.json`
-- `build/moddevmcp/mcp-clients/clients/goose-setup.md`
 - `build/moddevmcp/mcp-clients/clients/INSTALL.md`
 
 ## 按客户端安装
@@ -76,18 +71,8 @@ modDevMcp {
 
 ### Cursor
 
-- 把 `cursor-mcp.json` 合并到 `<project>/.cursor/mcp.json` 或 `~/.cursor/mcp.json`
+- 把 `cursor-mcp.json` 合并到 `<project>/.cursor/mcp.json`
 - 如果工具列表没有立刻刷新，重新打开 MCP 设置或重启 Cursor
-
-### Cline
-
-- 把 `cline_mcp_settings.json` 合并到 Cline 的 MCP 配置文件
-- 或在扩展界面使用 `MCP Servers -> Configure -> Configure MCP Servers`
-
-### Windsurf
-
-- 把 `windsurf-mcp_config.json` 合并到 `~/.codeium/windsurf/mcp_config.json`
-- 保存后在 Cascade 里刷新 MCP servers
 
 ### VS Code
 
@@ -96,13 +81,13 @@ modDevMcp {
 
 ### Gemini CLI
 
-- 把 `gemini-settings.json` 合并到 `~/.gemini/settings.json` 或 `<project>/.gemini/settings.json`
+- 把 `gemini-settings.json` 合并到 `<project>/.gemini/settings.json` 或 `~/.gemini/settings.json`
 - 或者用生成出来的命令和参数执行 `gemini mcp add`
 
-### Goose
+## 当前不生成专用文件的客户端
 
-- 按 `goose-setup.md` 操作
-- 在 Goose 扩展配置流程里直接粘贴生成出来的命令和参数
+- 只有在重新核对过当前官方配置格式后，插件才会生成对应客户端的专用配置文件
+- 对于没有生成文件的客户端，改用 `INSTALL.md` 和生成出来的命令参数手工安装
 
 ## 启动顺序
 

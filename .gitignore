@@ -31,3 +31,4 @@ TestMod/*.log
 /.m2
 /TestMod/.gradle-user-home
 /tmp
+.vscode/

@@ -49,15 +49,10 @@ For a normal consumer project, that is the only MCP-specific Gradle task you nee
 Generated files are written under:
 
 - `build/moddevmcp/mcp-clients/clients/codex.toml`
-- `build/moddevmcp/mcp-clients/clients/mcp-servers.json`
 - `build/moddevmcp/mcp-clients/clients/claude-code.mcp.json`
-- `build/moddevmcp/mcp-clients/clients/claude-desktop.mcp.json`
 - `build/moddevmcp/mcp-clients/clients/cursor-mcp.json`
-- `build/moddevmcp/mcp-clients/clients/cline_mcp_settings.json`
-- `build/moddevmcp/mcp-clients/clients/windsurf-mcp_config.json`
 - `build/moddevmcp/mcp-clients/clients/vscode-mcp.json`
 - `build/moddevmcp/mcp-clients/clients/gemini-settings.json`
-- `build/moddevmcp/mcp-clients/clients/goose-setup.md`
 - `build/moddevmcp/mcp-clients/clients/INSTALL.md`
 
 ## Install by Client
@@ -76,18 +71,8 @@ Generated files are written under:
 
 ### Cursor
 
-- merge `cursor-mcp.json` into `<project>/.cursor/mcp.json` or `~/.cursor/mcp.json`
+- merge `cursor-mcp.json` into `<project>/.cursor/mcp.json`
 - if the tool list does not refresh immediately, reopen MCP settings or restart Cursor
-
-### Cline
-
-- merge `cline_mcp_settings.json` into the Cline MCP settings file
-- or use `MCP Servers -> Configure -> Configure MCP Servers`
-
-### Windsurf
-
-- merge `windsurf-mcp_config.json` into `~/.codeium/windsurf/mcp_config.json`
-- refresh MCP servers in Cascade after saving
 
 ### VS Code
 
@@ -96,13 +81,13 @@ Generated files are written under:
 
 ### Gemini CLI
 
-- merge `gemini-settings.json` into `~/.gemini/settings.json` or `<project>/.gemini/settings.json`
+- merge `gemini-settings.json` into `<project>/.gemini/settings.json` or `~/.gemini/settings.json`
 - or use `gemini mcp add` with the generated command and arguments
 
-### Goose
+## Unsupported Generated Targets
 
-- follow `goose-setup.md`
-- paste the generated command and arguments into the Goose extension setup flow
+- client-specific files are only emitted when their current official config format has been re-verified
+- use `INSTALL.md` plus the generated command and arguments for any client without a generated file
 
 ## Start Order
 

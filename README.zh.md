@@ -75,15 +75,10 @@ modDevMcp {
 生成的文件位于：
 
 - `build/moddevmcp/mcp-clients/clients/codex.toml`
-- `build/moddevmcp/mcp-clients/clients/mcp-servers.json`
 - `build/moddevmcp/mcp-clients/clients/claude-code.mcp.json`
-- `build/moddevmcp/mcp-clients/clients/claude-desktop.mcp.json`
 - `build/moddevmcp/mcp-clients/clients/cursor-mcp.json`
-- `build/moddevmcp/mcp-clients/clients/cline_mcp_settings.json`
-- `build/moddevmcp/mcp-clients/clients/windsurf-mcp_config.json`
 - `build/moddevmcp/mcp-clients/clients/vscode-mcp.json`
 - `build/moddevmcp/mcp-clients/clients/gemini-settings.json`
-- `build/moddevmcp/mcp-clients/clients/goose-setup.md`
 - `build/moddevmcp/mcp-clients/clients/INSTALL.md`
 
 ## 安装生成的配置
@@ -91,6 +86,7 @@ modDevMcp {
 - 把对应 MCP client 的生成文件合并到它的配置里
 - 或直接用生成出来的命令和参数执行对应客户端的安装命令
 - 使用 `build/moddevmcp/mcp-clients/clients/` 下的生成文件
+- 只有已经核对过官方格式的客户端才会生成专用配置文件
 
 ## 启动游戏
 

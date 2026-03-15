@@ -75,15 +75,10 @@ For a normal consumer project, that is the only MCP-specific Gradle task you nee
 Generated files are written under:
 
 - `build/moddevmcp/mcp-clients/clients/codex.toml`
-- `build/moddevmcp/mcp-clients/clients/mcp-servers.json`
 - `build/moddevmcp/mcp-clients/clients/claude-code.mcp.json`
-- `build/moddevmcp/mcp-clients/clients/claude-desktop.mcp.json`
 - `build/moddevmcp/mcp-clients/clients/cursor-mcp.json`
-- `build/moddevmcp/mcp-clients/clients/cline_mcp_settings.json`
-- `build/moddevmcp/mcp-clients/clients/windsurf-mcp_config.json`
 - `build/moddevmcp/mcp-clients/clients/vscode-mcp.json`
 - `build/moddevmcp/mcp-clients/clients/gemini-settings.json`
-- `build/moddevmcp/mcp-clients/clients/goose-setup.md`
 - `build/moddevmcp/mcp-clients/clients/INSTALL.md`
 
 ## Install the Generated Config
@@ -91,6 +86,7 @@ Generated files are written under:
 - merge the generated file for your MCP client into its config
 - or use the generated command and arguments with your MCP client's install command
 - use the generated files under `build/moddevmcp/mcp-clients/clients/`
+- only officially verified client formats are generated
 
 ## Start Your Game
 
