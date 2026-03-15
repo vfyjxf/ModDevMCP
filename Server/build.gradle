@@ -1,11 +1,19 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'signing'
     id 'idea'
 }
 
 group = 'dev.vfyjxf'
 version = rootProject.findProperty('server_version') ?: '0.1.1'
+
+def projectUrl = 'https://github.com/vfyjxf/ModDevMCP'
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
 
 dependencies {
     implementation "io.modelcontextprotocol.sdk:mcp-core:1.0.0"
@@ -18,15 +26,51 @@ dependencies {
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
+            groupId = 'dev.vfyjxf'
+            version = project.version
             from components.java
             artifactId = 'moddevmcp-server'
+            pom {
+                name = 'ModDevMCP Server'
+                description = 'Standalone MCP server and gateway for ModDevMCP, providing MCP protocol handling, runtime dispatch, and game bridge integration.'
+                url = projectUrl
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = "${projectUrl}/blob/master/LICENSE"
+                        distribution = "${projectUrl}/blob/master/LICENSE"
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'vfyjxf'
+                        name = 'vfyjxf'
+                        url = 'https://github.com/vfyjxf'
+                    }
+                    developer {
+                        id = 'Yefancy'
+                        name = 'Yefancy'
+                        url = 'https://github.com/Yefancy'
+                    }
+                }
+                scm {
+                    url = projectUrl
+                    connection = 'scm:git:git://github.com/vfyjxf/ModDevMCP.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/vfyjxf/ModDevMCP.git'
+                }
+            }
         }
     }
     repositories {
-        maven {
-            url "file://${project.projectDir}/repo"
-        }
+        mavenLocal()
+        mavenCentral()
     }
+}
+
+signing {
+    required = false
+    useGpgCmd()
+    sign(publishing.publications)
 }
 
 tasks.register('runServer', JavaExec) {
