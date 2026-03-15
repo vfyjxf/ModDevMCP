@@ -32,6 +32,7 @@ class BuiltinProviderRegistrationTest {
         assertTrue(server.registry().findTool("moddev.world_list").isPresent());
         assertTrue(server.registry().findTool("moddev.world_create").isPresent());
         assertTrue(server.registry().findTool("moddev.world_join").isPresent());
+        assertTrue(server.registry().findTool("moddev.pause_on_lost_focus").isPresent());
         assertTrue(server.registry().findTool("moddev.compile").isPresent());
         assertTrue(server.registry().findTool("moddev.hotswap").isPresent());
     }
@@ -114,6 +115,7 @@ class BuiltinProviderRegistrationTest {
         assertTrue(server.registry().findTool("moddev.world_list").isPresent());
         assertTrue(server.registry().findTool("moddev.world_create").isPresent());
         assertTrue(server.registry().findTool("moddev.world_join").isPresent());
+        assertTrue(server.registry().findTool("moddev.pause_on_lost_focus").isPresent());
     }
 
     @Test
@@ -131,6 +133,7 @@ class BuiltinProviderRegistrationTest {
         assertTrue(server.registry().findTool("moddev.ui_get_live_screen").isEmpty());
         assertTrue(server.registry().findTool("moddev.input_action").isEmpty());
         assertTrue(server.registry().findTool("moddev.inventory_snapshot").isEmpty());
+        assertTrue(server.registry().findTool("moddev.pause_on_lost_focus").isEmpty());
         assertTrue(server.registry().findTool("moddev.world_list").isEmpty());
         assertTrue(server.registry().findTool("moddev.world_create").isEmpty());
         assertTrue(server.registry().findTool("moddev.world_join").isEmpty());

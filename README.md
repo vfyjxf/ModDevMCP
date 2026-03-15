@@ -161,6 +161,7 @@ If status or the first UI probe fails, stop and tell the user in Chinese:
 - live screen probe via `moddev.ui_get_live_screen`
 - command discovery / suggestion / execution via `moddev.command_list`, `moddev.command_suggest`, `moddev.command_execute`
 - local world list / create / join via `moddev.world_list`, `moddev.world_create`, `moddev.world_join` with configurable world type, difficulty, bonus chest, and structure generation
+- client option control via `moddev.pause_on_lost_focus`
 - high-level Playwright-style debug flow via `moddev.ui_inspect`, `moddev.ui_act`, `moddev.ui_wait`, `moddev.ui_screenshot`, `moddev.ui_trace_recent`
 - low-level session/ref automation via `moddev.ui_session_open`, `moddev.ui_session_refresh`, `moddev.ui_click_ref`, `moddev.ui_hover_ref`, `moddev.ui_switch`, `moddev.ui_press_key`, `moddev.ui_type_text`, `moddev.ui_wait_for`, `moddev.ui_batch`, `moddev.ui_trace_get`
 - inventory snapshot/action

@@ -65,6 +65,8 @@ Prefer this order for UI work:
 
 Use lower-level tools such as session/ref tools, `ui_batch`, or raw snapshot/query tools only when the higher-level flow is not enough.
 
+If the task depends on the game staying active while the window loses focus, query or set `moddev.pause_on_lost_focus` early and prefer `enabled=false` before long-running UI automation.
+
 ## Command Tool Usage
 
 Use command tools only after readiness is confirmed with `moddev.status`.

@@ -37,6 +37,7 @@ Recommended order:
 2. `moddev.ui_get_live_screen`
 3. `moddev.command_list` if you need command discovery on `client` or `server`
 4. `moddev.world_list` if you need local singleplayer world discovery on the client runtime
+5. `moddev.pause_on_lost_focus` if you need to query or persist the focus-pause setting
 
 Continue only if:
 
@@ -68,5 +69,13 @@ The client runtime also exposes local-world tools:
 - `moddev.world_join`
 
 These tools operate on local singleplayer saves only and drive the real client into the selected world.
+
+## Client Option Tool
+
+The client runtime also exposes a focused client-option tool:
+
+- `moddev.pause_on_lost_focus`
+
+Call it without `enabled` to query the current value, or with `enabled=true|false` to update the setting and persist it to the client's options file.
 
 For a normal consumer setup, you do not need a `modDevMcp {}` block to use this runtime flow.
