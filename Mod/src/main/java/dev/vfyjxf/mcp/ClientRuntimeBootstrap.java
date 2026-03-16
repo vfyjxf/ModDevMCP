@@ -3,13 +3,11 @@ package dev.vfyjxf.mcp;
 import dev.vfyjxf.mcp.runtime.game.LiveClientGameCloser;
 import dev.vfyjxf.mcp.runtime.command.LiveClientCommandService;
 import dev.vfyjxf.mcp.runtime.input.MinecraftInputController;
-import dev.vfyjxf.mcp.runtime.inventory.VanillaInventoryDriver;
 import dev.vfyjxf.mcp.runtime.game.LiveClientPauseOnLostFocusService;
 import dev.vfyjxf.mcp.runtime.world.LiveClientWorldService;
 import dev.vfyjxf.mcp.runtime.tool.CommandToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.GameToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.InputToolProvider;
-import dev.vfyjxf.mcp.runtime.tool.InventoryToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.PauseOnLostFocusToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.UiToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.WorldToolProvider;
@@ -43,7 +41,6 @@ public final class ClientRuntimeBootstrap {
         api.registerUiDriver(new VanillaContainerUiDriver(registries.uiSessionStates(), registries.uiInteractionResolvers()));
         api.registerUiDriver(new VanillaScreenUiDriver(registries.uiSessionStates(), registries.uiInteractionResolvers()));
         api.registerUiDriver(new FallbackRegionUiDriver(registries.uiSessionStates(), registries.uiInteractionResolvers()));
-        api.registerInventoryDriver(new VanillaInventoryDriver());
         api.registerInputController(new MinecraftInputController(registries.uiPointerStates()));
     }
 
@@ -54,7 +51,6 @@ public final class ClientRuntimeBootstrap {
         var registries = mod.registries();
         mod.registerToolProvider(new UiToolProvider(registries, new LiveClientScreenProbe()));
         mod.registerToolProvider(new InputToolProvider(registries));
-        mod.registerToolProvider(new InventoryToolProvider(registries));
         mod.registerToolProvider(new GameToolProvider(new LiveClientGameCloser()));
         mod.registerToolProvider(new PauseOnLostFocusToolProvider(new LiveClientPauseOnLostFocusService()));
         mod.registerToolProvider(CommandToolProvider.clientOnly(new LiveClientCommandService()));

@@ -1,5 +1,8 @@
 package dev.vfyjxf.mcp.api.ui;
 
+/**
+ * State flags associated with a single {@link UiTarget}.
+ */
 public record UiTargetState(
         boolean visible,
         boolean enabled,

@@ -2,6 +2,9 @@ package dev.vfyjxf.mcp.api.event;
 
 import java.util.Map;
 
+/**
+ * Immutable event payload published by runtime integrations and registrars.
+ */
 public record EventEnvelope(
         String domain,
         String type,

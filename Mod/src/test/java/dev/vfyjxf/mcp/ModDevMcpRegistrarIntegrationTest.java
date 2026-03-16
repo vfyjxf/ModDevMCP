@@ -4,7 +4,6 @@ import dev.vfyjxf.mcp.api.event.EventEnvelope;
 import dev.vfyjxf.mcp.api.event.RegisterClientMcpToolsEvent;
 import dev.vfyjxf.mcp.api.event.RegisterCommonMcpToolsEvent;
 import dev.vfyjxf.mcp.api.event.RegisterServerMcpToolsEvent;
-import dev.vfyjxf.mcp.api.inventory.InventorySnapshot;
 import dev.vfyjxf.mcp.api.model.OperationResult;
 import dev.vfyjxf.mcp.api.runtime.*;
 import dev.vfyjxf.mcp.api.ui.CaptureRequest;
@@ -86,9 +85,6 @@ class ModDevMcpRegistrarIntegrationTest {
         assertEquals(1, mod.registries().uiDrivers().all().stream()
                 .filter(driver -> "demo.client.driver".equals(driver.descriptor().id()))
                 .count());
-        assertEquals(1, mod.registries().inventoryDrivers().all().stream()
-                .filter(driver -> "demo.client.inventory".equals(driver.descriptor().id()))
-                .count());
         assertEquals(2, mod.registries().inputControllers().size());
         var uiContext = new TestUiContext("custom.ClientScreen");
         var uiSnapshot = new UiSnapshot("screen", uiContext.screenClass(), "demo.client.driver", List.of(), List.of(), null, null, null, null, Map.of());
@@ -167,7 +163,6 @@ class ModDevMcpRegistrarIntegrationTest {
             event.registerToolProvider(tool("demo.client"));
             event.api().registerToolProvider(tool("demo.client.api"));
             event.registerUiDriver(new TestUiDriver("demo.client.driver"));
-            event.registerInventoryDriver(new TestInventoryDriver("demo.client.inventory"));
             event.registerInputController((action, arguments) -> OperationResult.success(null));
             event.registerUiInteractionStateResolver(new TestUiInteractionResolver("demo.client.driver"));
             event.registerUiOffscreenCaptureProvider(new TestOffscreenCaptureProvider("demo.client.offscreen"));
@@ -202,29 +197,6 @@ class ModDevMcpRegistrarIntegrationTest {
         @Override
         public List<UiTarget> query(UiContext context, TargetSelector selector) {
             return List.of();
-        }
-    }
-
-    private static final class TestInventoryDriver implements InventoryDriver {
-        private final DriverDescriptor descriptor;
-
-        private TestInventoryDriver(String id) {
-            this.descriptor = new DriverDescriptor(id, "inventory", 10, Set.of("inventory"));
-        }
-
-        @Override
-        public DriverDescriptor descriptor() {
-            return descriptor;
-        }
-
-        @Override
-        public boolean matches(InventoryContext context) {
-            return true;
-        }
-
-        @Override
-        public InventorySnapshot snapshot(InventoryContext context) {
-            return new InventorySnapshot(descriptor.id(), "inventory", "inventory", List.of(), Map.of(), 0, Map.of());
         }
     }
 

@@ -2,6 +2,9 @@ package dev.vfyjxf.mcp.api.ui;
 
 import java.util.List;
 
+/**
+ * Declarative selector used to find matching targets inside a UI snapshot.
+ */
 public record TargetSelector(
         String scope,
         String screen,
@@ -21,6 +24,9 @@ public record TargetSelector(
         return new Builder();
     }
 
+    /**
+     * Builder for assembling a {@link TargetSelector} incrementally.
+     */
     public static final class Builder {
         private String scope;
         private String screen;

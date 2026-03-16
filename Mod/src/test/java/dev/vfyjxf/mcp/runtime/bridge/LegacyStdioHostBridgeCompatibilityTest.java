@@ -32,8 +32,7 @@ class LegacyStdioHostBridgeCompatibilityTest {
 
         var raw = output.toString(StandardCharsets.UTF_8);
         assertTrue(raw.contains("\"moddev.ui_snapshot\""), raw);
-        assertTrue(raw.contains("\"moddev.inventory_snapshot\""), raw);
-        assertTrue(raw.contains("\"moddev.event_subscribe\""), raw);
+        assertTrue(raw.contains("\"moddev.hotswap\""), raw);
     }
 
     private static byte[] frame(String json) {

@@ -4,6 +4,9 @@ import dev.vfyjxf.mcp.api.ui.UiTarget;
 
 import java.util.Map;
 
+/**
+ * Result returned by a driver wait operation.
+ */
 public record UiWaitResult(
         boolean matched,
         long elapsedMs,

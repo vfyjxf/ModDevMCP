@@ -2,6 +2,9 @@ package dev.vfyjxf.mcp.api.runtime;
 
 import java.util.Set;
 
+/**
+ * Static metadata describing a runtime adapter or UI driver.
+ */
 public record DriverDescriptor(
         String id,
         String modId,

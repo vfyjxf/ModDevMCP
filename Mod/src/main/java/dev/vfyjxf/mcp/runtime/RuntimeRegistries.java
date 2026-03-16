@@ -12,7 +12,6 @@ import java.util.List;
 public final class RuntimeRegistries {
 
     private final UiDriverRegistry uiDrivers = new UiDriverRegistry();
-    private final InventoryDriverRegistry inventoryDrivers = new InventoryDriverRegistry();
     private final List<InputController> inputControllers = new ArrayList<>();
     private final List<McpToolProvider> toolProviders = new ArrayList<>();
     private final RuntimeEventPublisher eventPublisher = new RuntimeEventPublisher();
@@ -28,10 +27,6 @@ public final class RuntimeRegistries {
 
     public UiDriverRegistry uiDrivers() {
         return uiDrivers;
-    }
-
-    public InventoryDriverRegistry inventoryDrivers() {
-        return inventoryDrivers;
     }
 
     public List<InputController> inputControllers() {

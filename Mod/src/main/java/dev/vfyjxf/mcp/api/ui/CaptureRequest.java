@@ -2,6 +2,9 @@ package dev.vfyjxf.mcp.api.ui;
 
 import java.util.List;
 
+/**
+ * High-level request describing what a capture operation should include or exclude.
+ */
 public record CaptureRequest(
         String mode,
         List<TargetSelector> target,

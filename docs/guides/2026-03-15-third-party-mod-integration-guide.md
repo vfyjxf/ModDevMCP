@@ -24,7 +24,7 @@ Typical cases:
 Use this rule first:
 
 - add a tool registrar when you want to expose new MCP tools
-- add runtime adapters when you need ModDevMCP's existing UI, inventory, input, or capture tools to understand your mod's runtime objects
+- add runtime adapters when you need ModDevMCP's existing UI, input, or capture tools to understand your mod's runtime objects
 
 Current recommendation:
 
@@ -82,7 +82,6 @@ Each side event now exposes:
 The client event also exposes direct runtime adapter helpers:
 
 - `registerUiDriver(...)`
-- `registerInventoryDriver(...)`
 - `registerInputController(...)`
 - `registerUiInteractionStateResolver(...)`
 - `registerUiOffscreenCaptureProvider(...)`
@@ -189,7 +188,6 @@ event.publishEvent(new EventEnvelope("examplemod", "registered", System.currentT
 Current public methods include:
 
 - `registerUiDriver(UiDriver driver)`
-- `registerInventoryDriver(InventoryDriver driver)`
 - `registerInputController(InputController controller)`
 - `registerToolProvider(McpToolProvider provider)`
 - `registerUiInteractionStateResolver(UiInteractionStateResolver resolver)`
@@ -210,7 +208,7 @@ public final class ExampleScreenUiDriver implements UiDriver {
 
     @Override
     public boolean matches(UiContext context) {
-        return context.screen() instanceof ExampleScreen;
+        return context.screenHandle() instanceof ExampleScreen;
     }
 
     @Override
@@ -225,6 +223,14 @@ public final class ExampleScreenUiDriver implements UiDriver {
     }
 }
 ```
+
+`UiContext.screenHandle()` is optional:
+
+- in a real client runtime it should usually be the active live `Screen`
+- it may be `null` in metadata-only or test contexts
+- custom drivers should treat it as a weakly typed runtime handle, not a guaranteed concrete type
+
+If your UI library can attach to arbitrary screen classes, prefer matching by inspecting `screenHandle()` instead of relying only on `screenClass()`.
 
 ### Minimal Capture Provider Shape
 
@@ -243,7 +249,7 @@ public final class ExampleOffscreenCaptureProvider implements UiOffscreenCapture
 
     @Override
     public boolean matches(UiContext context, UiSnapshot snapshot) {
-        return context.screen() instanceof ExampleScreen;
+        return context.screenHandle() instanceof ExampleScreen;
     }
 
     @Override
@@ -267,7 +273,7 @@ Registrar events now expose the runtime adapter API, but that does not mean ever
 
 - side-specific registrars as the main entrypoint
 - dedicated tools first for mod-specific behavior
-- runtime adapters only when the built-in UI, input, inventory, or capture flows truly need to understand your mod directly
+- runtime adapters only when the built-in UI, input, or capture flows truly need to understand your mod directly
 
 If your mod is completely external and you only need agent-facing operations, prefer a registrar plus dedicated tools first.
 

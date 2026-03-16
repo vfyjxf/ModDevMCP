@@ -5,6 +5,9 @@ import dev.vfyjxf.mcp.api.ui.UiTarget;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Result of resolving a UI reference or locator into concrete targets.
+ */
 public record UiResolveResult(
         String status,
         List<UiTarget> matches,

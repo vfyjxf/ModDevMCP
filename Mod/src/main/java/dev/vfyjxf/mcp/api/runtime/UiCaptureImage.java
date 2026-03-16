@@ -2,6 +2,9 @@ package dev.vfyjxf.mcp.api.runtime;
 
 import java.util.Map;
 
+/**
+ * Immutable image payload returned by a capture provider.
+ */
 public record UiCaptureImage(
         String providerId,
         String source,

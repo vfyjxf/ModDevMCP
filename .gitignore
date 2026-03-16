@@ -32,3 +32,4 @@ TestMod/*.log
 /TestMod/.gradle-user-home
 /tmp
 .vscode/
+/.codex

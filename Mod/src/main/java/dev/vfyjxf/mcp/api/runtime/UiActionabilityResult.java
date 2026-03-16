@@ -2,6 +2,9 @@ package dev.vfyjxf.mcp.api.runtime;
 
 import java.util.Map;
 
+/**
+ * Result of checking whether a target can accept a specific action.
+ */
 public record UiActionabilityResult(
         boolean actionable,
         boolean visible,

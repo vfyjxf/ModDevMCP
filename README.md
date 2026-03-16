@@ -28,7 +28,7 @@ The project uses a host-first architecture: the stable MCP host starts first, th
 - `status / game`: `moddev.status`, `moddev.game_close`
 - `ui high-level`: `moddev.ui_get_live_screen`, `moddev.ui_run_intent`, `moddev.ui_inspect`, `moddev.ui_act`, `moddev.ui_wait`, `moddev.ui_screenshot`, `moddev.ui_trace_recent`
 - `ui low-level`: `moddev.ui_session_open`, `moddev.ui_session_refresh`, `moddev.ui_click_ref`, `moddev.ui_hover_ref`, `moddev.ui_press_key`, `moddev.ui_type_text`, `moddev.ui_wait_for`, `moddev.ui_batch`, `moddev.ui_trace_get`, `moddev.ui_switch`, `moddev.ui_close`
-- `state / capture / inventory / dev`: `moddev.ui_snapshot`, `moddev.ui_query`, `moddev.ui_capture`, `moddev.ui_action`, `moddev.ui_inspect_at`, `moddev.ui_get_tooltip`, `moddev.ui_get_interaction_state`, `moddev.ui_get_target_details`, `moddev.inventory_snapshot`, `moddev.inventory_action`, `moddev.event_poll`, `moddev.event_subscribe`, `moddev.compile`, `moddev.hotswap`
+- `state / capture / dev`: `moddev.ui_snapshot`, `moddev.ui_query`, `moddev.ui_capture`, `moddev.ui_action`, `moddev.ui_inspect_at`, `moddev.ui_get_tooltip`, `moddev.ui_get_interaction_state`, `moddev.ui_get_target_details`, `moddev.compile`, `moddev.hotswap`
 
 ## Quick Start
 
@@ -178,7 +178,6 @@ If status or the first UI probe fails, stop and tell the user in Chinese:
 - client option control via `moddev.pause_on_lost_focus`
 - high-level Playwright-style debug flow via `moddev.ui_inspect`, `moddev.ui_act`, `moddev.ui_wait`, `moddev.ui_screenshot`, `moddev.ui_trace_recent`
 - low-level session/ref automation via `moddev.ui_session_open`, `moddev.ui_session_refresh`, `moddev.ui_click_ref`, `moddev.ui_hover_ref`, `moddev.ui_switch`, `moddev.ui_press_key`, `moddev.ui_type_text`, `moddev.ui_wait_for`, `moddev.ui_batch`, `moddev.ui_trace_get`
-- inventory snapshot/action
 - in-process client input simulation
 - framebuffer and offscreen capture providers
 

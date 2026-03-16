@@ -6,6 +6,9 @@ import dev.vfyjxf.mcp.api.ui.UiTarget;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Concise driver inspection payload returned by high-level inspect flows.
+ */
 public record UiInspectResult(
         String screen,
         String screenId,

@@ -1,5 +1,8 @@
 package dev.vfyjxf.mcp.api.runtime;
 
+/**
+ * Canonical reference used to point at a target across inspect, act, and wait flows.
+ */
 public record UiTargetReference(
         String ref,
         UiLocator locator,

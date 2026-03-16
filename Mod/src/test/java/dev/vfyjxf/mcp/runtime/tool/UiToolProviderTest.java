@@ -1,19 +1,26 @@
 package dev.vfyjxf.mcp.runtime.tool;
 
+import dev.vfyjxf.mcp.api.runtime.ClientScreenMetrics;
+import dev.vfyjxf.mcp.api.runtime.ClientScreenProbe;
+import dev.vfyjxf.mcp.api.runtime.UiContext;
 import dev.vfyjxf.mcp.runtime.RuntimeRegistries;
 import dev.vfyjxf.mcp.server.runtime.McpToolRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UiToolProviderTest {
 
     @Test
-    void uiProviderRegistersExpectedToolNames() {
+    void uiProviderRegistersSelectedToolNames() {
         var registry = new McpToolRegistry();
         new UiToolProvider(new RuntimeRegistries()).register(registry);
 
@@ -67,7 +74,10 @@ class UiToolProviderTest {
 
         assertEquals("object", wait.inputSchema().get("type"));
         assertTrue(((Map<?, ?>) wait.inputSchema().get("properties")).containsKey("condition"));
-        assertEquals(List.of("driverId", "matched", "timedOut", "elapsedMs", "targets"), wait.outputSchema().get("required"));
+        assertEquals(
+                java.util.Set.of("driverId", "matched", "timedOut", "elapsedMs", "targets"),
+                java.util.Set.copyOf((List<?>) wait.outputSchema().get("required"))
+        );
 
         assertEquals("object", inspectAt.inputSchema().get("type"));
         assertTrue(((Map<?, ?>) inspectAt.inputSchema().get("properties")).containsKey("x"));
@@ -134,5 +144,55 @@ class UiToolProviderTest {
         assertEquals("object", uiSwitch.inputSchema().get("type"));
         assertTrue(((Map<?, ?>) uiSwitch.inputSchema().get("properties")).containsKey("target"));
         assertTrue(((Map<?, ?>) uiSwitch.outputSchema().get("properties")).containsKey("wait"));
+    }
+
+    @Test
+    void liveScreenUiContextPropagatesMatchingCurrentScreenHandle() throws ReflectiveOperationException {
+        var registries = new RuntimeRegistries();
+        var currentScreen = new SyntheticLiveScreen();
+        var provider = new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics(SyntheticLiveScreen.class.getName(), 320, 240, 854, 480)
+        ), () -> currentScreen);
+
+        var context = invokeUiContext(provider, Map.of());
+
+        assertEquals(SyntheticLiveScreen.class.getName(), context.screenClass());
+        assertSame(currentScreen, screenHandleOrNull(context));
+    }
+
+    @Test
+    void liveScreenUiContextDropsMismatchedCurrentScreenHandle() throws ReflectiveOperationException {
+        var registries = new RuntimeRegistries();
+        var provider = new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics(SyntheticLiveScreen.class.getName(), 320, 240, 854, 480)
+        ), MismatchedLiveScreen::new);
+
+        var context = invokeUiContext(provider, Map.of());
+
+        assertEquals(SyntheticLiveScreen.class.getName(), context.screenClass());
+        assertNull(screenHandleOrNull(context));
+    }
+
+    private record TestClientScreenProbe(ClientScreenMetrics metrics) implements ClientScreenProbe {
+    }
+
+    private static final class SyntheticLiveScreen {
+    }
+
+    private static final class MismatchedLiveScreen {
+    }
+
+    private static UiContext invokeUiContext(UiToolProvider provider, Map<String, Object> arguments) throws ReflectiveOperationException {
+        var method = UiToolProvider.class.getDeclaredMethod("uiContext", Map.class);
+        method.setAccessible(true);
+        return (UiContext) method.invoke(provider, arguments);
+    }
+
+    private static Object screenHandleOrNull(UiContext context) {
+        try {
+            return context.getClass().getMethod("screenHandle").invoke(context);
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
     }
 }

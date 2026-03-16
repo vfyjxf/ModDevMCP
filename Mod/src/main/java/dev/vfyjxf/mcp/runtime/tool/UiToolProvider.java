@@ -12,21 +12,28 @@ import dev.vfyjxf.mcp.server.runtime.McpToolRegistry;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public final class UiToolProvider implements McpToolProvider {
 
     private final RuntimeRegistries registries;
     private final ClientScreenProbe screenProbe;
     private final InputActionDispatcher inputActionDispatcher;
+    private final Supplier<Object> currentScreenSupplier;
 
     public UiToolProvider(RuntimeRegistries registries) {
-        this(registries, () -> new ClientScreenMetrics(null, 0, 0, 0, 0));
+        this(registries, () -> new ClientScreenMetrics(null, 0, 0, 0, 0), UiToolProvider::currentClientScreen);
     }
 
     public UiToolProvider(RuntimeRegistries registries, ClientScreenProbe screenProbe) {
+        this(registries, screenProbe, UiToolProvider::currentClientScreen);
+    }
+
+    UiToolProvider(RuntimeRegistries registries, ClientScreenProbe screenProbe, Supplier<Object> currentScreenSupplier) {
         this.registries = registries;
         this.screenProbe = screenProbe;
         this.inputActionDispatcher = new InputActionDispatcher(registries);
+        this.currentScreenSupplier = currentScreenSupplier;
     }
 
     @Override
@@ -1155,11 +1162,13 @@ public final class UiToolProvider implements McpToolProvider {
         var screenClass = stringArgument(arguments.get("screenClass"));
         var modId = stringArgument(arguments.get("modId"));
         ClientScreenMetrics metrics = null;
+        Object screenHandle = null;
         if (screenClass == null || screenClass.isBlank()) {
             metrics = screenProbe.metrics();
         }
         if ((screenClass == null || screenClass.isBlank()) && metrics != null) {
             screenClass = metrics.screenClass();
+            screenHandle = liveScreenHandle(metrics);
         }
         if (screenClass == null || screenClass.isBlank()) {
             screenClass = "custom.UnknownScreen";
@@ -1178,8 +1187,33 @@ public final class UiToolProvider implements McpToolProvider {
                 screenClass,
                 modId,
                 mouseX,
-                mouseY
+                mouseY,
+                screenHandle
         );
+    }
+
+    private Object liveScreenHandle(ClientScreenMetrics metrics) {
+        if (metrics == null || metrics.screenClass() == null || metrics.screenClass().isBlank()) {
+            return null;
+        }
+        var liveScreen = currentScreenSupplier.get();
+        if (liveScreen != null && metrics.screenClass().equals(liveScreen.getClass().getName())) {
+            return liveScreen;
+        }
+        return null;
+    }
+
+    private static Object currentClientScreen() {
+        try {
+            var minecraftClass = Class.forName("net.minecraft.client.Minecraft");
+            var minecraft = minecraftClass.getMethod("getInstance").invoke(null);
+            if (minecraft == null) {
+                return null;
+            }
+            return minecraftClass.getField("screen").get(minecraft);
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            return null;
+        }
     }
 
     private ToolResult unavailableScreenResult(Map<String, Object> arguments) {
@@ -2306,7 +2340,13 @@ public final class UiToolProvider implements McpToolProvider {
         var driverId = "";
         if (active) {
             driverId = registries.uiDrivers()
-                    .select(new MapBackedUiContext(metrics.screenClass(), "minecraft", 0, 0))
+                    .select(new MapBackedUiContext(
+                            metrics.screenClass(),
+                            "minecraft",
+                            0,
+                            0,
+                            liveScreenHandle(metrics)
+                    ))
                     .map(driver -> driver.descriptor().id())
                     .orElse("");
         }
@@ -2355,7 +2395,8 @@ public final class UiToolProvider implements McpToolProvider {
             String screenClass,
             String modId,
             int mouseX,
-            int mouseY
+            int mouseY,
+            Object screenHandle
     ) implements UiContext {
     }
 

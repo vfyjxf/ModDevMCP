@@ -15,7 +15,6 @@ import dev.vfyjxf.mcp.runtime.RuntimeRegistries;
 import dev.vfyjxf.mcp.runtime.event.RuntimeEventPublisher;
 import dev.vfyjxf.mcp.runtime.hotswap.HotswapRuntimeConfig;
 import dev.vfyjxf.mcp.runtime.hotswap.HotswapService;
-import dev.vfyjxf.mcp.runtime.tool.EventToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.HotswapToolProvider;
 import dev.vfyjxf.mcp.server.ModDevMcpServer;
 import dev.vfyjxf.mcp.server.api.McpToolProvider;
@@ -36,7 +35,6 @@ public class ModDevMCP {
     private final ModDevMcpServer server;
     private final RuntimeRegistries registries;
     private final ModMcpApi api;
-    private final McpToolProvider eventToolProvider;
     private final McpToolProvider hotswapToolProvider;
     private final Supplier<? extends Collection<CommonMcpToolRegistrar>> commonRegistrarSupplier;
     private final Supplier<? extends Collection<ClientMcpToolRegistrar>> clientRegistrarSupplier;
@@ -78,7 +76,6 @@ public class ModDevMCP {
         this.server = server;
         this.registries = registries;
         this.api = new ModMcpApi(registries, this::registerToolProvider);
-        this.eventToolProvider = new EventToolProvider(registries);
         this.commonRegistrarSupplier = commonRegistrarSupplier;
         this.clientRegistrarSupplier = clientRegistrarSupplier;
         this.serverRegistrarSupplier = serverRegistrarSupplier;
@@ -97,7 +94,6 @@ public class ModDevMCP {
             return;
         }
         commonProvidersRegistered = true;
-        registerToolProvider(eventToolProvider);
         registerToolProvider(hotswapToolProvider);
         registries.toolProviders().forEach(this::registerToolProvider);
         registerCommonRegistrarProviders();

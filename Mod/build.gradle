@@ -180,6 +180,7 @@ tasks.named('jarJar').configure {
 }
 
 tasks.withType(Test).configureEach {
+    dependsOn(project(':Server').tasks.named('jar'))
 }
 
 idea {

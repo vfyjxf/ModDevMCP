@@ -24,7 +24,7 @@ Updated: 2026-03-16 00:55 CST
 先按这个规则判断：
 
 - 如果你是要暴露新的 MCP tool，用 tool registrar
-- 如果你是要让 ModDevMCP 现有的 UI、inventory、input、capture 工具直接理解你的 runtime 对象，用 runtime adapter
+- 如果你是要让 ModDevMCP 现有的 UI、input、capture 工具直接理解你的 runtime 对象，用 runtime adapter
 
 当前推荐：
 
@@ -82,7 +82,6 @@ ModDevMCP 现在把 tool 注册拆成三类 side：
 其中 client event 还会再暴露这些 runtime adapter helper：
 
 - `registerUiDriver(...)`
-- `registerInventoryDriver(...)`
 - `registerInputController(...)`
 - `registerUiInteractionStateResolver(...)`
 - `registerUiOffscreenCaptureProvider(...)`
@@ -189,7 +188,6 @@ event.publishEvent(new EventEnvelope("examplemod", "registered", System.currentT
 当前公开方法包括：
 
 - `registerUiDriver(UiDriver driver)`
-- `registerInventoryDriver(InventoryDriver driver)`
 - `registerInputController(InputController controller)`
 - `registerToolProvider(McpToolProvider provider)`
 - `registerUiInteractionStateResolver(UiInteractionStateResolver resolver)`
@@ -267,7 +265,7 @@ public final class ExampleOffscreenCaptureProvider implements UiOffscreenCapture
 
 - 以 side-specific registrar 作为主入口
 - mod 专属行为优先做成独立 tool
-- 只有当内置 UI、input、inventory、capture 流程确实需要直接理解你的 mod 时，再补 runtime adapter
+- 只有当内置 UI、input、capture 流程确实需要直接理解你的 mod 时，再补 runtime adapter
 
 如果你的 mod 是完全外部的，而且你只是想提供给 agent 一些能力，优先走 registrar + 自定义 tool。
 

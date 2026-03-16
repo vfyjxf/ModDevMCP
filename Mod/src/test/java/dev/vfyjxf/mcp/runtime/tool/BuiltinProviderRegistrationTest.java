@@ -24,7 +24,6 @@ class BuiltinProviderRegistrationTest {
 
         assertTrue(server.registry().findTool("moddev.ui_snapshot").isPresent());
         assertTrue(server.registry().findTool("moddev.ui_get_live_screen").isPresent());
-        assertTrue(server.registry().findTool("moddev.inventory_snapshot").isPresent());
         assertTrue(server.registry().findTool("moddev.game_close").isPresent());
         assertTrue(server.registry().findTool("moddev.command_list").isPresent());
         assertTrue(server.registry().findTool("moddev.command_suggest").isPresent());
@@ -45,7 +44,6 @@ class BuiltinProviderRegistrationTest {
         assertEquals(0, mod.registries().uiOffscreenCaptureProviders().size());
         assertEquals(0, mod.registries().uiFramebufferCaptureProviders().size());
         assertEquals(0, mod.registries().uiDrivers().size());
-        assertEquals(0, mod.registries().inventoryDrivers().size());
         assertEquals(0, mod.registries().inputControllers().size());
     }
 
@@ -59,7 +57,6 @@ class BuiltinProviderRegistrationTest {
         assertEquals(1, mod.registries().uiOffscreenCaptureProviders().size());
         assertEquals(1, mod.registries().uiFramebufferCaptureProviders().size());
         assertEquals(3, mod.registries().uiDrivers().size());
-        assertEquals(1, mod.registries().inventoryDrivers().size());
         assertEquals(1, mod.registries().inputControllers().size());
     }
 
@@ -88,12 +85,10 @@ class BuiltinProviderRegistrationTest {
 
         mod.prepareCommonServer();
 
-        assertTrue(server.registry().findTool("moddev.event_subscribe").isPresent());
         assertTrue(server.registry().findTool("moddev.hotswap").isPresent());
         assertTrue(server.registry().findTool("moddev.ui_snapshot").isEmpty());
         assertTrue(server.registry().findTool("moddev.ui_get_live_screen").isEmpty());
         assertTrue(server.registry().findTool("moddev.input_action").isEmpty());
-        assertTrue(server.registry().findTool("moddev.inventory_snapshot").isEmpty());
         assertTrue(server.registry().findTool("moddev.game_close").isEmpty());
     }
 
@@ -107,7 +102,6 @@ class BuiltinProviderRegistrationTest {
         assertTrue(server.registry().findTool("moddev.ui_snapshot").isPresent());
         assertTrue(server.registry().findTool("moddev.ui_get_live_screen").isPresent());
         assertTrue(server.registry().findTool("moddev.input_action").isPresent());
-        assertTrue(server.registry().findTool("moddev.inventory_snapshot").isPresent());
         assertTrue(server.registry().findTool("moddev.game_close").isPresent());
         assertTrue(server.registry().findTool("moddev.command_list").isPresent());
         assertTrue(server.registry().findTool("moddev.command_suggest").isPresent());
@@ -132,7 +126,6 @@ class BuiltinProviderRegistrationTest {
         assertTrue(server.registry().findTool("moddev.ui_snapshot").isEmpty());
         assertTrue(server.registry().findTool("moddev.ui_get_live_screen").isEmpty());
         assertTrue(server.registry().findTool("moddev.input_action").isEmpty());
-        assertTrue(server.registry().findTool("moddev.inventory_snapshot").isEmpty());
         assertTrue(server.registry().findTool("moddev.pause_on_lost_focus").isEmpty());
         assertTrue(server.registry().findTool("moddev.world_list").isEmpty());
         assertTrue(server.registry().findTool("moddev.world_create").isEmpty());

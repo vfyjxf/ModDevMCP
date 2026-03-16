@@ -3,6 +3,9 @@ package dev.vfyjxf.mcp.api.ui;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Snapshot of the current screen as understood by a selected UI driver.
+ */
 public record UiSnapshot(
         String screenId,
         String screenClass,
