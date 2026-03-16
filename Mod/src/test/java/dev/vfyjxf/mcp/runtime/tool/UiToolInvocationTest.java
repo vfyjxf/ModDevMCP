@@ -1234,6 +1234,24 @@ class UiToolInvocationTest {
     }
 
     @Test
+    void uiGetTargetDetailsAcceptsTargetTargetId() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var mod = new ModDevMCP(server);
+        mod.registerBuiltinProviders();
+
+        var tool = server.registry().findTool("moddev.ui_get_target_details").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "screenClass", "net.minecraft.client.gui.screens.inventory.InventoryScreen",
+                "target", Map.of("targetId", "slot-0")
+        ));
+
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("slot-0", ((Map<?, ?>) payload.get("target")).get("targetId"));
+        assertEquals(List.of("container-root", "slot-0"), payload.get("hierarchyPath"));
+    }
+
+    @Test
     void uiGetTargetDetailsReturnsFailureWhenTargetIsMissing() {
         var server = new ModDevMcpServer(new McpToolRegistry());
         var mod = new ModDevMCP(server);

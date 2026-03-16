@@ -1825,6 +1825,8 @@ public final class UiToolProvider implements McpToolProvider {
         }
         if (map.get("id") instanceof String id) {
             builder.id(id);
+        } else if (map.get("targetId") instanceof String targetId) {
+            builder.id(targetId);
         }
         if (map.get("bounds") instanceof Map<?, ?> rawBounds) {
             var bounds = (Map<String, Object>) rawBounds;
