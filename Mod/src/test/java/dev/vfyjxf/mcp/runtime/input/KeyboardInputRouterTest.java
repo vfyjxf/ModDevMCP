@@ -26,8 +26,8 @@ class KeyboardInputRouterTest {
         );
 
         assertTrue(result.accepted());
-        assertEquals(1, screen.keyPressedCalls);
-        assertEquals(1, screen.keyReleasedCalls);
+        assertEquals(0, screen.keyPressedCalls);
+        assertEquals(0, screen.keyReleasedCalls);
         assertEquals(List.of("down:69", "up:69"), fallback.events);
     }
 
@@ -55,7 +55,7 @@ class KeyboardInputRouterTest {
     }
 
     @Test
-    void keyPressWithModifiersUsesScreenHandlingBeforeFallback() {
+    void keyPressWithModifiersUsesCanonicalDispatcherEvenWhenScreenWouldConsumePress() {
         var screen = new RecordingScreenInput(true, false, false);
         var fallback = new RecordingFallbackInput();
 
@@ -66,9 +66,17 @@ class KeyboardInputRouterTest {
         );
 
         assertTrue(result.accepted());
-        assertEquals(1, screen.keyPressedCalls);
+        assertEquals(0, screen.keyPressedCalls);
         assertEquals(0, screen.keyReleasedCalls);
-        assertEquals(List.of(), fallback.events);
+        assertEquals(
+                List.of(
+                        "down:" + KEY_LEFT_CONTROL,
+                        "down:" + KEY_A,
+                        "up:" + KEY_A,
+                        "up:" + KEY_LEFT_CONTROL
+                ),
+                fallback.events
+        );
     }
 
     private static final class RecordingScreenInput implements KeyboardInputRouter.ScreenInput {

@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.neoforged.neoforge.client.ClientHooks;
 import org.lwjgl.glfw.GLFW;
 
 import java.lang.reflect.Field;
@@ -161,21 +162,31 @@ final class LiveClientInputBridge implements ClientInputBridge {
     private static final class MinecraftKeyboardInput implements KeyboardInputRouter.FallbackInput {
 
         private final Minecraft minecraft;
+        private final ModifiedKeybindingDispatch modifiedKeybindingDispatch;
 
         private MinecraftKeyboardInput(Minecraft minecraft) {
+            this(minecraft, ModifiedKeybindingDispatch.live());
+        }
+
+        private MinecraftKeyboardInput(Minecraft minecraft, ModifiedKeybindingDispatch modifiedKeybindingDispatch) {
             this.minecraft = minecraft;
+            this.modifiedKeybindingDispatch = modifiedKeybindingDispatch;
         }
 
         @Override
         public void dispatchKeyDown(int keyCode, int scanCode, int modifiers) {
             var windowHandle = minecraft.getWindow().getWindow();
             minecraft.keyboardHandler.keyPress(windowHandle, keyCode, scanCode, GLFW.GLFW_PRESS, modifiers);
+            modifiedKeybindingDispatch.dispatch(keyCode, modifiers,
+                    () -> ClientHooks.onKeyInput(keyCode, scanCode, GLFW.GLFW_PRESS, modifiers));
         }
 
         @Override
         public void dispatchKeyUp(int keyCode, int scanCode, int modifiers) {
             var windowHandle = minecraft.getWindow().getWindow();
             minecraft.keyboardHandler.keyPress(windowHandle, keyCode, scanCode, GLFW.GLFW_RELEASE, modifiers);
+            modifiedKeybindingDispatch.dispatch(keyCode, modifiers,
+                    () -> ClientHooks.onKeyInput(keyCode, scanCode, GLFW.GLFW_RELEASE, modifiers));
         }
     }
 
