@@ -29,9 +29,11 @@ public final class NeoForgeRunInjector {
         }
 
         File projectRoot = defaults.projectDirectory().getAsFile();
+        File gradleRoot = project.getRootProject().getProjectDir();
         File classOutput = defaults.classOutputDir().get().getAsFile();
 
         run.systemProperty("moddevmcp.project.root", projectRoot.getAbsolutePath());
+        run.systemProperty("moddevmcp.gradle.root", gradleRoot.getAbsolutePath());
         run.systemProperty("moddevmcp.compile.task", defaults.compileTaskPath().get());
         run.systemProperty("moddevmcp.class.output", classOutput.getAbsolutePath());
         run.systemProperty("moddevmcp.host", defaults.host().get());

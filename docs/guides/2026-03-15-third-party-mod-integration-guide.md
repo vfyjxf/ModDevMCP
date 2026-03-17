@@ -31,6 +31,17 @@ Current recommendation:
 - for most downstream mods, start with tool registrars
 - use runtime adapters only when you need deep integration with `ui_snapshot`, `ui_query`, `ui_capture`, `ui_action`, or related tools
 
+## Consumer Project Layout
+
+When your mod consumes ModDevMCP from a Gradle multi-project build:
+
+- keep `projectRoot` on the actual mod subproject
+- keep `gradleRoot` on the directory that owns `gradlew(.bat)` and `settings.gradle`
+- keep `classOutputDir` on the mod subproject output, usually `build/classes/java/main`
+- keep `compileTask` on the subproject task path, for example `:my-mod:compileJava`
+
+This matters because hotswap compiles from the real Gradle root, but still reloads class files from the mod subproject.
+
 ## Side Model
 
 ModDevMCP now splits tool registration by side:

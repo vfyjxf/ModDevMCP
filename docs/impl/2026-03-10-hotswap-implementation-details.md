@@ -38,7 +38,7 @@ Detects runtime capabilities:
 
 ```java
 ProcessBuilder pb = new ProcessBuilder(gradleCommand, ":Mod:compileJava");
-pb.directory(projectRoot.toFile());
+pb.directory(gradleRoot.toFile());
 pb.redirectErrorStream(false);
 Process process = pb.start();
 ```
@@ -46,6 +46,7 @@ Process process = pb.start();
 - Captures stdout/stderr separately for reporting
 - Returns exit code for success/failure detection
 - Uses platform-appropriate gradle wrapper (`gradlew` vs `gradlew.bat`)
+- Uses the real Gradle root as the process working directory, which is required when the game mod lives in a subproject
 
 ## DCEVM/JBR Behavior Differences
 

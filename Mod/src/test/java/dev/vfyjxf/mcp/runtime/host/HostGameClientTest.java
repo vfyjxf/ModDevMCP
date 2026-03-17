@@ -86,6 +86,56 @@ class HostGameClientTest {
     }
 
     @Test
+    void runtimeExceptionsAreReturnedAsToolErrorsInsteadOfDisconnecting() throws Exception {
+        try (var relaySocket = new ServerSocket(0);
+             var executor = Executors.newSingleThreadExecutor()) {
+            var server = new ModDevMcpServer(new McpToolRegistry());
+            server.registry().registerTool(
+                    new McpToolDefinition(
+                            "moddev.hotswap",
+                            "moddev.hotswap",
+                            "Hotswap",
+                            Map.of("type", "object"),
+                            Map.of("type", "object"),
+                            List.of("hotswap"),
+                            "client",
+                            false,
+                            false,
+                            "runtime",
+                            "runtime"
+                    ),
+                    (context, arguments) -> {
+                        throw new IllegalStateException("hotswap_failed");
+                    }
+            );
+            var client = new HostGameClient(server, new HostRuntimeClientConfig("127.0.0.1", relaySocket.getLocalPort(), 50L), "runtime-1", "client");
+
+            var runFuture = executor.submit(() -> { client.runUntilDisconnected(); return null; });
+            try (var socket = relaySocket.accept();
+                 var reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+                 var writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8))) {
+                readJsonLine(reader);
+                writeLine(writer, "{\"status\":\"ok\"}");
+                writeLine(writer, "{" +
+                        "\"type\":\"runtime.call\"," +
+                        "\"callId\":\"call-2\"," +
+                        "\"toolName\":\"moddev.hotswap\"," +
+                        "\"arguments\":{}}"
+                );
+
+                var result = readJsonLine(reader);
+                assertEquals("runtime.result", result.get("type"));
+                assertEquals("call-2", result.get("callId"));
+                assertEquals(Boolean.FALSE, result.get("success"));
+                assertEquals("hotswap_failed", result.get("error"));
+            }
+
+            runFuture.get(5, TimeUnit.SECONDS);
+            client.close();
+        }
+    }
+
+    @Test
     void serverRuntimeAdvertisesServerSupportedScopeInHello() throws Exception {
         try (var relaySocket = new ServerSocket(0);
              var executor = Executors.newSingleThreadExecutor()) {
@@ -193,4 +243,3 @@ class HostGameClientTest {
         throw new AssertionError("Timed out waiting for JSON line");
     }
 }
-

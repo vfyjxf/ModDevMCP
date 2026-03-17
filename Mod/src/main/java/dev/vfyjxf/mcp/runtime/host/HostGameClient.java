@@ -87,9 +87,14 @@ public final class HostGameClient implements AutoCloseable {
         var toolName = message.get("toolName") instanceof String value ? value : "";
         var arguments = message.get("arguments") instanceof Map<?, ?> map ? (Map<String, Object>) map : Map.<String, Object>of();
         var tool = server.registry().findTool(toolName);
-        ToolResult result = tool
-                .map(registeredTool -> registeredTool.handler().handle(new ToolCallContext(runtimeSide, Map.of("runtimeId", runtimeId)), Map.copyOf(arguments)))
-                .orElseGet(() -> ToolResult.failure("tool_not_found"));
+        ToolResult result;
+        try {
+            result = tool
+                    .map(registeredTool -> registeredTool.handler().handle(new ToolCallContext(runtimeSide, Map.of("runtimeId", runtimeId)), Map.copyOf(arguments)))
+                    .orElseGet(() -> ToolResult.failure("tool_not_found"));
+        } catch (Exception exception) {
+            result = ToolResult.failure(runtimeError(exception));
+        }
         if (result.success()) {
             write(writer, Map.of(
                     "type", "runtime.result",
@@ -105,6 +110,23 @@ public final class HostGameClient implements AutoCloseable {
                 "success", false,
                 "error", result.error() == null ? "runtime_protocol_error" : result.error()
         ));
+    }
+
+    private static String runtimeError(Exception exception) {
+        var message = firstNonBlankMessage(exception);
+        return message == null ? "runtime_tool_failed" : message;
+    }
+
+    private static String firstNonBlankMessage(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            var message = current.getMessage();
+            if (message != null && !message.isBlank()) {
+                return message;
+            }
+            current = current.getCause();
+        }
+        return null;
     }
 
     private List<String> supportedScopes() {

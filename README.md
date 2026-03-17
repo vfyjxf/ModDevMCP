@@ -48,6 +48,11 @@ If the host is already running but Minecraft has not connected yet, `moddev.stat
 - Gradle plugin id: `dev.vfyjxf.moddevmcp`
 
 For a normal consumer project, declare the mod artifact and apply the plugin. The plugin resolves the server artifact for MCP host generation automatically.
+It uses this precedence for `moddevmcp-server`:
+
+1. `modDevMcp.serverVersion`
+2. the published `dev.vfyjxf:moddevmcp:<version>` dependency declared by your project
+3. the plugin's own packaged/default version metadata
 
 ## Add to Your Project
 
@@ -75,8 +80,13 @@ Only add `modDevMcp {}` when you need to override defaults:
 modDevMcp {
     runs = ["client"]
     requireEnhancedHotswap = false
+    // Optional: override the server artifact version used for host generation.
+    // serverVersion = "<moddevmcp-server-version>"
 }
 ```
+
+If your game mod is a Gradle subproject, keep the mod project itself as `projectRoot` and keep the real Gradle root as `gradleRoot`.
+In that layout, `gradlew(.bat)` and `settings.gradle` belong to the Gradle root, while hotswap class output still belongs to the mod subproject.
 
 ## Generate MCP Client Files
 

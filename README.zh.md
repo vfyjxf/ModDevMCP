@@ -42,6 +42,11 @@
 - Gradle 插件 id：`dev.vfyjxf.moddevmcp`
 
 对普通消费者工程来说，只需要声明 mod 坐标并应用插件。插件会自动解析用于 MCP host 生成的 server 依赖。
+`moddevmcp-server` 的版本解析优先级如下：
+
+1. `modDevMcp.serverVersion`
+2. 你的工程里声明的已发布 `dev.vfyjxf:moddevmcp:<version>` 依赖
+3. 插件自身打包携带的默认版本元数据
 
 ## 接入你的工程
 
@@ -69,8 +74,13 @@ dependencies {
 modDevMcp {
     runs = ["client"]
     requireEnhancedHotswap = false
+    // 可选：覆盖用于生成 host 的 server 依赖版本。
+    // serverVersion = "<moddevmcp-server-version>"
 }
 ```
+
+如果你的游戏 mod 本身是一个 Gradle subproject，要继续把 mod 子工程目录视为 `projectRoot`，同时把真正持有 `gradlew(.bat)` 和 `settings.gradle` 的 Gradle 根目录视为 `gradleRoot`。
+这种布局下，hotswap 的 class 输出目录仍然属于 mod 子工程，但编译命令必须从真正的 Gradle root 启动。
 
 ## 生成 MCP Client 配置
 

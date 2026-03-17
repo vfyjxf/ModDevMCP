@@ -80,7 +80,7 @@ extraJavaModuleInfo {
 }
 
 dependencies {
-    api(project(":Server")) {
+    compileOnlyApi(project(":Server")) {
         exclude(group: "org.slf4j")
     }
     jarJar(project(":Server")) {
@@ -88,6 +88,10 @@ dependencies {
         transitive = false
     }
     additionalRuntimeClasspath(project(":Server")) {
+        exclude(group: "org.slf4j")
+        transitive = false
+    }
+    testRuntimeOnly(project(":Server")) {
         exclude(group: "org.slf4j")
         transitive = false
     }
@@ -131,7 +135,6 @@ neoForge.ideSyncTask generateModMetadata
 
 signing {
     useGpgCmd()
-    required = false
 }
 
 mavenPublishing {

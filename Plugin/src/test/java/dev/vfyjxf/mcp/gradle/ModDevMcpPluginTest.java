@@ -27,25 +27,44 @@ class ModDevMcpPluginTest {
     }
 
     @Test
-    void pluginDefaultsMcpRuntimeClasspathFromPublishedServerArtifact() throws Exception {
+    void pluginPrefersPublishedModDependencyVersionForServerArtifact() throws Exception {
         Project project = ProjectBuilder.builder().withProjectDir(new File("build/tmp/plugin-consumer-runtime")).build();
         Path repoDir = Files.createTempDirectory("moddevmcp-server-repo");
         Path runtimeLibJar = publishFakeModule(repoDir, "example", "runtime-lib", "9.0", List.of());
+        publishFakeModule(repoDir, "dev.vfyjxf", "moddevmcp", "2.4.6", List.of());
         Path serverJar = publishFakeModule(
                 repoDir,
                 "dev.vfyjxf",
                 "moddevmcp-server",
-                "0.1.1",
+                "2.4.6",
                 List.of(new ModuleDependency("example", "runtime-lib", "9.0"))
         );
 
         project.getRepositories().maven(repository -> repository.setUrl(repoDir.toUri()));
+        project.getConfigurations().create("implementation");
+        project.getDependencies().add("implementation", "dev.vfyjxf:moddevmcp:2.4.6");
         project.getPluginManager().apply("dev.vfyjxf.moddevmcp");
 
         CreateMcpClientFilesTask task = (CreateMcpClientFilesTask) project.getTasks().getByName("createMcpClientFiles");
 
         assertTrue(task.getRuntimeClasspath().getFiles().contains(serverJar.toFile()));
         assertTrue(task.getRuntimeClasspath().getFiles().contains(runtimeLibJar.toFile()));
+    }
+
+    @Test
+    void pluginExtensionCanOverrideServerVersion() throws Exception {
+        Project project = ProjectBuilder.builder().withProjectDir(new File("build/tmp/plugin-server-version-override")).build();
+        Path repoDir = Files.createTempDirectory("moddevmcp-server-override-repo");
+        Path serverJar = publishFakeModule(repoDir, "dev.vfyjxf", "moddevmcp-server", "7.0.1", List.of());
+
+        project.getRepositories().maven(repository -> repository.setUrl(repoDir.toUri()));
+        project.getPluginManager().apply("dev.vfyjxf.moddevmcp");
+        ModDevMcpExtension extension = project.getExtensions().getByType(ModDevMcpExtension.class);
+        extension.getServerVersion().set("7.0.1");
+
+        CreateMcpClientFilesTask task = (CreateMcpClientFilesTask) project.getTasks().getByName("createMcpClientFiles");
+
+        assertTrue(task.getRuntimeClasspath().getFiles().contains(serverJar.toFile()));
     }
 
     @Test
@@ -58,6 +77,7 @@ class ModDevMcpPluginTest {
         assertTrue(getterNames.contains("getEnabled"));
         assertTrue(getterNames.contains("getRuns"));
         assertTrue(getterNames.contains("getRequireEnhancedHotswap"));
+        assertTrue(getterNames.contains("getServerVersion"));
 
         assertTrue(!getterNames.contains("getAgentVersion"));
         assertTrue(!getterNames.contains("getAgentJarPath"));

@@ -59,11 +59,12 @@ public final class HotswapToolProvider implements McpToolProvider {
                                                 "type", "boolean",
                                                 "description", "Whether to compile before attempting hotswap. Defaults to true."
                                         )
-                                )
+                                ),
+                                "required", List.of()
                         ),
                         Map.of(),
                         List.of("hotswap", "reload"),
-                        "client",
+                        "common",
                         false,
                         false,
                         "public",
@@ -103,7 +104,7 @@ public final class HotswapToolProvider implements McpToolProvider {
         return Map.of(
                 "type", "string",
                 "enum", List.of("client", "server"),
-                "description", "Optional runtime routing hint when both client and server runtimes are connected to the same gateway."
+                "description", "Optional runtime routing hint. Only needed when both client and server runtimes are connected to the same gateway."
         );
     }
 }

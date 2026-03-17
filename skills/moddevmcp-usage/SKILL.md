@@ -175,9 +175,11 @@ Guidance:
 
 - recommend `JBR` or `DCEVM` for enhanced hotswap support
 - do not treat `JBR` as a hard requirement for basic hotswap
+- if the game mod lives in a Gradle subproject, keep `projectRoot` pointed at the mod project and set `gradleRoot` to the directory that actually owns `gradlew(.bat)` and `settings.gradle`, even when that Gradle root is outside the subproject tree
 - on a standard JVM, expect method-body changes to be the safest case
 - after structural changes such as fields, methods, or class hierarchy changes, expect hotswap to fail more often without enhanced hotswap support
 - if hotswap fails, prefer restarting the client over repeated blind retries
+- after plugin/server/generated MCP client file changes, regenerate MCP client files, reinstall or update the MCP config in the MCP client, and refresh or restart the MCP client before trusting the tool list
 
 Preferred flow:
 

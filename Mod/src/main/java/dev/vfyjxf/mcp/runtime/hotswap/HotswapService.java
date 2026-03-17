@@ -53,7 +53,7 @@ public final class HotswapService {
     public CompileResult compile() {
         String gradleCommand = resolveGradleCommand();
         ProcessBuilder pb = new ProcessBuilder(gradleCommand, config.compileTask());
-        pb.directory(config.projectRoot().toFile());
+        pb.directory(config.gradleRoot().toFile());
         try {
             Process process = pb.start();
             String stdout = readStream(process.getInputStream());
@@ -136,7 +136,7 @@ public final class HotswapService {
     }
 
     private String resolveGradleCommand() {
-        return config.projectRoot()
+        return config.gradleRoot()
                 .resolve(isWindows() ? "gradlew.bat" : "gradlew")
                 .toAbsolutePath()
                 .toString();

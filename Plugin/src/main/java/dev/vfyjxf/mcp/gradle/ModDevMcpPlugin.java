@@ -3,6 +3,7 @@ package dev.vfyjxf.mcp.gradle;
 import dev.vfyjxf.mcp.gradle.neoforge.NeoForgeRunInjector;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -12,8 +13,9 @@ public final class ModDevMcpPlugin implements Plugin<Project> {
     private static final String EXTENSION_NAME = "modDevMcp";
     private static final String RUNTIME_CONFIGURATION_NAME = "modDevMcpRuntime";
     private static final String CREATE_CLIENT_FILES_TASK_NAME = "createMcpClientFiles";
-    private static final String DEFAULT_SERVER_VERSION = "0.1.3";
-    private static final String DEFAULT_SERVER_COORDINATES = "dev.vfyjxf:moddevmcp-server:" + DEFAULT_SERVER_VERSION;
+    private static final String MODDEVMCP_GROUP = "dev.vfyjxf";
+    private static final String MODDEVMCP_ARTIFACT = "moddevmcp";
+    private static final String SERVER_ARTIFACT = "moddevmcp-server";
     private static final String DEFAULT_SERVER_ID = "moddevmcp";
     private static final String DEFAULT_GATEWAY_MAIN_CLASS = "dev.vfyjxf.mcp.server.bootstrap.ModDevMcpGatewayMain";
     private static final String DEFAULT_BACKEND_MAIN_CLASS = "dev.vfyjxf.mcp.server.bootstrap.ModDevMcpBackendMain";
@@ -23,17 +25,17 @@ public final class ModDevMcpPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
+        ModDevMcpExtension extension =
+                project.getExtensions().create(EXTENSION_NAME, ModDevMcpExtension.class);
         var runtimeClasspathConfiguration = project.getConfigurations().maybeCreate(RUNTIME_CONFIGURATION_NAME);
         runtimeClasspathConfiguration.setCanBeConsumed(false);
         runtimeClasspathConfiguration.setCanBeResolved(true);
         runtimeClasspathConfiguration.setVisible(false);
         runtimeClasspathConfiguration.defaultDependencies(dependencies ->
-                dependencies.add(project.getDependencies().create(DEFAULT_SERVER_COORDINATES))
+                dependencies.add(project.getDependencies().create(resolveServerCoordinates(project, extension)))
         );
 
         ModDevMcpDefaults defaults = buildDefaults(project, runtimeClasspathConfiguration);
-        ModDevMcpExtension extension =
-                project.getExtensions().create(EXTENSION_NAME, ModDevMcpExtension.class);
 
         TaskProvider<CreateMcpClientFilesTask> createClientFilesTask =
                 registerCreateClientFilesTask(project, defaults);
@@ -102,5 +104,62 @@ public final class ModDevMcpPlugin implements Plugin<Project> {
 
     private static boolean isWindows() {
         return System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT).contains("win");
+    }
+
+    private static String resolveServerCoordinates(Project project, ModDevMcpExtension extension) {
+        return MODDEVMCP_GROUP + ":" + SERVER_ARTIFACT + ":" + resolveServerVersion(project, extension);
+    }
+
+    private static String resolveServerVersion(Project project, ModDevMcpExtension extension) {
+        var configuredVersion = trimToNull(extension.getServerVersion().getOrNull());
+        if (configuredVersion != null) {
+            return configuredVersion;
+        }
+        var dependencyVersion = findPublishedModDependencyVersion(project);
+        if (dependencyVersion != null) {
+            return dependencyVersion;
+        }
+        var implementationVersion = trimToNull(ModDevMcpPlugin.class.getPackage().getImplementationVersion());
+        if (implementationVersion != null) {
+            return implementationVersion;
+        }
+        var projectServerVersion = projectProperty(project, "server_version");
+        if (projectServerVersion != null) {
+            return projectServerVersion;
+        }
+        var projectPluginVersion = projectProperty(project, "plugin_version");
+        if (projectPluginVersion != null) {
+            return projectPluginVersion;
+        }
+        throw new IllegalStateException(
+                "Unable to determine moddevmcp-server version. Set modDevMcp.serverVersion or declare dev.vfyjxf:moddevmcp:<version>."
+        );
+    }
+
+    private static String findPublishedModDependencyVersion(Project project) {
+        for (var configuration : project.getConfigurations()) {
+            for (Dependency dependency : configuration.getDependencies()) {
+                if (MODDEVMCP_GROUP.equals(dependency.getGroup()) && MODDEVMCP_ARTIFACT.equals(dependency.getName())) {
+                    var version = trimToNull(dependency.getVersion());
+                    if (version != null) {
+                        return version;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private static String projectProperty(Project project, String name) {
+        var value = project.findProperty(name);
+        return value == null ? null : trimToNull(value.toString());
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        var trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

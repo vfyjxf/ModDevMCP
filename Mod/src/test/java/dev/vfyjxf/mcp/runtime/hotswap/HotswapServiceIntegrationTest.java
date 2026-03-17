@@ -30,7 +30,7 @@ class HotswapServiceIntegrationTest {
                 exit /b 0
                 """, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
 
-        HotswapService service = new HotswapService(new HotswapRuntimeConfig(tempDir, "compileJava", tempDir));
+        HotswapService service = new HotswapService(new HotswapRuntimeConfig(tempDir, tempDir, "compileJava", tempDir));
 
         var result = service.compile();
 
@@ -39,8 +39,81 @@ class HotswapServiceIntegrationTest {
     }
 
     @Test
+    void compileUsesWrapperFromConfiguredGradleRootOnWindows() throws IOException {
+        if (!System.getProperty("os.name", "").toLowerCase().contains("win")) {
+            return;
+        }
+
+        String originalProjectRoot = System.getProperty("moddevmcp.project.root");
+        String originalGradleRoot = System.getProperty("moddevmcp.gradle.root");
+        String originalCompileTask = System.getProperty("moddevmcp.compile.task");
+        String originalClassOutput = System.getProperty("moddevmcp.class.output");
+        try {
+            Path gradleRoot = Files.createTempDirectory("hotswap-gradle-root-");
+            Path projectRoot = gradleRoot.resolve("subproject");
+            Files.createDirectories(projectRoot);
+            Path wrapper = gradleRoot.resolve("gradlew.bat");
+            Files.writeString(wrapper, """
+                    @echo off
+                    echo wrapper-ok
+                    exit /b 0
+                    """, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+
+            System.setProperty("moddevmcp.project.root", projectRoot.toString());
+            System.setProperty("moddevmcp.gradle.root", gradleRoot.toString());
+            System.setProperty("moddevmcp.compile.task", ":subproject:compileJava");
+            System.setProperty("moddevmcp.class.output", projectRoot.resolve("build/classes/java/main").toString());
+
+            HotswapService service = new HotswapService(HotswapRuntimeConfig.fromSystemProperties());
+
+            var result = service.compile();
+
+            assertEquals(0, result.exitCode(), () -> "Expected wrapper to be executable from gradle root but stderr was: " + result.stderr());
+            assertTrue(result.stdout().contains("wrapper-ok"), () -> "Expected wrapper output but got: " + result.stdout());
+        } finally {
+            restoreProperty("moddevmcp.project.root", originalProjectRoot);
+            restoreProperty("moddevmcp.gradle.root", originalGradleRoot);
+            restoreProperty("moddevmcp.compile.task", originalCompileTask);
+            restoreProperty("moddevmcp.class.output", originalClassOutput);
+        }
+    }
+
+    @Test
+    void compileRunsFromConfiguredGradleRootWhenGradleRootIsOutsideProjectTreeOnWindows() throws IOException {
+        if (!System.getProperty("os.name", "").toLowerCase().contains("win")) {
+            return;
+        }
+
+        Path tempDir = Files.createTempDirectory("hotswap-external-gradle-root-it-");
+        Path gradleRoot = tempDir.resolve("gradle-root");
+        Path projectRoot = tempDir.resolve("project-root");
+        Files.createDirectories(gradleRoot);
+        Files.createDirectories(projectRoot);
+        Files.writeString(gradleRoot.resolve("settings.gradle"), "rootProject.name = 'consumer'");
+        Files.writeString(gradleRoot.resolve("gradlew.bat"), """
+                @echo off
+                if exist settings.gradle (
+                  echo gradle-root-ok
+                  exit /b 0
+                )
+                echo wrong-working-dir=%cd%
+                exit /b 7
+                """, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+
+        HotswapService service = new HotswapService(
+                new HotswapRuntimeConfig(projectRoot, gradleRoot, ":subproject:compileJava", projectRoot)
+        );
+
+        var result = service.compile();
+
+        assertEquals(0, result.exitCode(), () -> "Expected compile to run from gradle root but stderr was: " + result.stderr()
+                + " stdout was: " + result.stdout());
+        assertTrue(result.stdout().contains("gradle-root-ok"), () -> "Expected gradle root marker but got: " + result.stdout());
+    }
+
+    @Test
     void reloadReportsInstrumentationDiagnostics() {
-        HotswapService service = new HotswapService(new HotswapRuntimeConfig(Path.of("."), ":noop", Path.of(".")));
+        HotswapService service = new HotswapService(new HotswapRuntimeConfig(Path.of("."), Path.of("."), ":noop", Path.of(".")));
 
         var result = service.reload();
 
@@ -51,7 +124,7 @@ class HotswapServiceIntegrationTest {
     @Test
     void reloadReturnsInstrumentationErrorWhenUnavailable() {
         HotswapService service = new HotswapService(
-                new HotswapRuntimeConfig(Path.of("."), ":noop", Path.of(".")),
+                new HotswapRuntimeConfig(Path.of("."), Path.of("."), ":noop", Path.of(".")),
                 () -> null,
                 "Reflect Agents"
         );
@@ -85,7 +158,7 @@ class HotswapServiceIntegrationTest {
 
             assertEquals(3, invokeOp(calculatorClass, calculator, 1, 2));
 
-            HotswapService service = new HotswapService(new HotswapRuntimeConfig(tempDir, ":noop", classesDir));
+            HotswapService service = new HotswapService(new HotswapRuntimeConfig(tempDir, tempDir, ":noop", classesDir));
             service.snapshotTimestamps();
 
             Thread.sleep(50L);
@@ -128,6 +201,14 @@ class HotswapServiceIntegrationTest {
                 sourceFile.toString());
         if (exitCode != 0) {
             throw new IllegalStateException("Compilation failed with exit code " + exitCode);
+        }
+    }
+
+    private static void restoreProperty(String key, String value) {
+        if (value == null) {
+            System.clearProperty(key);
+        } else {
+            System.setProperty(key, value);
         }
     }
 }

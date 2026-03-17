@@ -31,6 +31,17 @@ Updated: 2026-03-16 00:55 CST
 - 大多数下游 mod，先从 tool registrar 开始
 - 只有在你确实要接入 `ui_snapshot`、`ui_query`、`ui_capture`、`ui_action` 等现有 UI 工具时，再去做 runtime adapter
 
+## 消费方工程布局
+
+如果你的 mod 是在一个 Gradle 多工程里消费 ModDevMCP：
+
+- `projectRoot` 继续指向真正的 mod 子工程目录
+- `gradleRoot` 指向真正持有 `gradlew(.bat)` 和 `settings.gradle` 的目录
+- `classOutputDir` 继续指向 mod 子工程自己的输出目录，通常是 `build/classes/java/main`
+- `compileTask` 继续使用子工程任务路径，例如 `:my-mod:compileJava`
+
+原因是 hotswap 编译必须从真正的 Gradle root 发起，但重载的 `.class` 文件仍然来自 mod 子工程。
+
 ## Side 模型
 
 ModDevMCP 现在把 tool 注册拆成三类 side：
