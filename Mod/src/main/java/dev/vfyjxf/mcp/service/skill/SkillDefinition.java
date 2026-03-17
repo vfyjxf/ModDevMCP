@@ -20,9 +20,11 @@ public record SkillDefinition(
         if (skillId == null || skillId.isBlank()) {
             throw new IllegalArgumentException("skillId must not be blank");
         }
+        ensureNoPadding(skillId, "skillId");
         if (categoryId == null || categoryId.isBlank()) {
             throw new IllegalArgumentException("categoryId must not be blank");
         }
+        ensureNoPadding(categoryId, "categoryId");
         if (kind == null) {
             throw new IllegalArgumentException("kind must not be null");
         }
@@ -62,7 +64,8 @@ public record SkillDefinition(
         if (value == null || value.isBlank()) {
             return null;
         }
-        return value.trim();
+        ensureNoPadding(value, "operationId");
+        return value;
     }
 
     private static void validateTagMembers(Set<String> tags) {
@@ -70,6 +73,12 @@ public record SkillDefinition(
             if (tag == null || tag.isBlank()) {
                 throw new IllegalArgumentException("tags must not contain null or blank members");
             }
+        }
+    }
+
+    private static void ensureNoPadding(String value, String fieldName) {
+        if (!value.equals(value.trim())) {
+            throw new IllegalArgumentException(fieldName + " must not include leading or trailing whitespace");
         }
     }
 }

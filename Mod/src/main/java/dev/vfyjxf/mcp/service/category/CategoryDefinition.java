@@ -14,6 +14,7 @@ public record CategoryDefinition(
         if (categoryId == null || categoryId.isBlank()) {
             throw new IllegalArgumentException("categoryId must not be blank");
         }
+        ensureNoPadding(categoryId, "categoryId");
         if (title == null || title.isBlank()) {
             throw new IllegalArgumentException("title must not be blank");
         }
@@ -39,6 +40,7 @@ public record CategoryDefinition(
             if (value == null || value.isBlank()) {
                 throw new IllegalArgumentException(fieldName + " must not contain null or blank members");
             }
+            ensureNoPadding(value, fieldName);
         }
     }
 
@@ -48,6 +50,12 @@ public record CategoryDefinition(
             if (!seen.add(value)) {
                 throw new IllegalArgumentException(fieldName + " must not contain duplicates");
             }
+        }
+    }
+
+    private static void ensureNoPadding(String value, String fieldName) {
+        if (!value.equals(value.trim())) {
+            throw new IllegalArgumentException(fieldName + " must not contain padded identifiers");
         }
     }
 }

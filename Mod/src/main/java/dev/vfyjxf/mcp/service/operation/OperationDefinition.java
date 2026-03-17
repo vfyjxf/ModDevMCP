@@ -25,9 +25,11 @@ public record OperationDefinition(
         if (operationId == null || operationId.isBlank()) {
             throw new IllegalArgumentException("operationId must not be blank");
         }
+        ensureNoPadding(operationId, "operationId");
         if (categoryId == null || categoryId.isBlank()) {
             throw new IllegalArgumentException("categoryId must not be blank");
         }
+        ensureNoPadding(categoryId, "categoryId");
         if (title == null || title.isBlank()) {
             throw new IllegalArgumentException("title must not be blank");
         }
@@ -174,8 +176,8 @@ public record OperationDefinition(
 
         if (source.containsKey("requestId")) {
             var requestIdValue = source.get("requestId");
-            if (!(requestIdValue instanceof String)) {
-                throw new IllegalArgumentException("exampleRequest.requestId must be a string");
+            if (!(requestIdValue instanceof String requestIdString) || requestIdString.isBlank()) {
+                throw new IllegalArgumentException("exampleRequest.requestId must be a non-blank string");
             }
         }
 
@@ -184,6 +186,12 @@ public record OperationDefinition(
             if (!(inputValue instanceof Map<?, ?>)) {
                 throw new IllegalArgumentException("exampleRequest.input must be an object");
             }
+        }
+    }
+
+    private static void ensureNoPadding(String value, String fieldName) {
+        if (!value.equals(value.trim())) {
+            throw new IllegalArgumentException(fieldName + " must not include leading or trailing whitespace");
         }
     }
 }

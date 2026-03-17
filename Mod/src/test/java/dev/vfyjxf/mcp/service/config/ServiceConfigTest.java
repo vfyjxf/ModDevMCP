@@ -44,14 +44,22 @@ class ServiceConfigTest {
 
     @Test
     void loadResolvedTrimsNonBlankOverrideValues() {
-        withProperty("moddev.service.host", " 0.0.0.0 ", () ->
+        withProperty("moddev.service.host", " localhost ", () ->
                 withProperty("moddev.service.port", " 47813 ", () ->
                         withProperty("moddev.skill.exportRoot", "  build/skills  ", () -> {
                             var config = ServiceConfig.loadResolved();
-                            assertEquals("0.0.0.0", config.host());
+                            assertEquals("localhost", config.host());
                             assertEquals(47813, config.port());
                             assertEquals(Path.of("build/skills").toAbsolutePath().normalize(), config.exportRoot());
                         })));
+    }
+
+    @Test
+    void loadResolvedRejectsNonLoopbackHostOverride() {
+        withProperty("moddev.service.host", " 0.0.0.0 ", () ->
+                withClearedProperty("moddev.service.port", () ->
+                        withClearedProperty("moddev.skill.exportRoot", () ->
+                                org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, ServiceConfig::loadResolved))));
     }
 
     private static void withClearedProperty(String key, Runnable testBody) {

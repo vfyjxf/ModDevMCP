@@ -1,6 +1,7 @@
 package dev.vfyjxf.mcp.service.skill;
 
 import dev.vfyjxf.mcp.service.category.CategoryDefinition;
+import dev.vfyjxf.mcp.service.operation.OperationRegistry;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -55,16 +56,12 @@ public final class SkillRegistry {
     }
 
     public Optional<SkillDefinition> findById(String skillId) {
-        if (skillId == null || skillId.isBlank()) {
-            throw new IllegalArgumentException("skillId must not be blank");
-        }
+        validateLookupId(skillId, "skillId");
         return Optional.ofNullable(byId.get(skillId));
     }
 
     public List<SkillDefinition> findByCategoryId(String categoryId) {
-        if (categoryId == null || categoryId.isBlank()) {
-            throw new IllegalArgumentException("categoryId must not be blank");
-        }
+        validateLookupId(categoryId, "categoryId");
         return byCategoryId.getOrDefault(categoryId, List.of());
     }
 
@@ -73,9 +70,7 @@ public final class SkillRegistry {
             throw new IllegalArgumentException("categoryDefinition must not be null");
         }
         var categoryId = categoryDefinition.categoryId();
-        if (categoryId == null || categoryId.isBlank()) {
-            throw new IllegalArgumentException("categoryDefinition.categoryId must not be blank");
-        }
+        validateLookupId(categoryId, "categoryDefinition.categoryId");
         var expectedSkillIds = byCategoryId
                 .getOrDefault(categoryId, List.of())
                 .stream()
@@ -83,6 +78,31 @@ public final class SkillRegistry {
                 .toList();
         if (!expectedSkillIds.equals(List.copyOf(categoryDefinition.skillIds()))) {
             throw new IllegalArgumentException("skill ownership mismatch for categoryId: " + categoryId);
+        }
+    }
+
+    public void validateOperationBindings(OperationRegistry operationRegistry) {
+        if (operationRegistry == null) {
+            throw new IllegalArgumentException("operationRegistry must not be null");
+        }
+        for (var skill : all) {
+            if (skill.kind() == SkillKind.GUIDANCE) {
+                continue;
+            }
+            var operation = operationRegistry.findById(skill.operationId())
+                    .orElseThrow(() -> new IllegalArgumentException("missing operationId for skillId: " + skill.skillId()));
+            if (!operation.categoryId().equals(skill.categoryId())) {
+                throw new IllegalArgumentException("operation category mismatch for skillId: " + skill.skillId());
+            }
+        }
+    }
+
+    private static void validateLookupId(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " must not be blank");
+        }
+        if (!value.equals(value.trim())) {
+            throw new IllegalArgumentException(fieldName + " must not include leading or trailing whitespace");
         }
     }
 }

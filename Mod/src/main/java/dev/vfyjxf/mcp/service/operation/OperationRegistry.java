@@ -46,16 +46,12 @@ public final class OperationRegistry {
     }
 
     public Optional<OperationDefinition> findById(String operationId) {
-        if (operationId == null || operationId.isBlank()) {
-            throw new IllegalArgumentException("operationId must not be blank");
-        }
+        validateLookupId(operationId, "operationId");
         return Optional.ofNullable(byId.get(operationId));
     }
 
     public List<OperationDefinition> findByCategoryId(String categoryId) {
-        if (categoryId == null || categoryId.isBlank()) {
-            throw new IllegalArgumentException("categoryId must not be blank");
-        }
+        validateLookupId(categoryId, "categoryId");
         return byCategoryId.getOrDefault(categoryId, List.of());
     }
 
@@ -64,9 +60,7 @@ public final class OperationRegistry {
             throw new IllegalArgumentException("categoryDefinition must not be null");
         }
         var categoryId = categoryDefinition.categoryId();
-        if (categoryId == null || categoryId.isBlank()) {
-            throw new IllegalArgumentException("categoryDefinition.categoryId must not be blank");
-        }
+        validateLookupId(categoryId, "categoryDefinition.categoryId");
         var expectedOperationIds = byCategoryId
                 .getOrDefault(categoryId, List.of())
                 .stream()
@@ -74,6 +68,15 @@ public final class OperationRegistry {
                 .toList();
         if (!expectedOperationIds.equals(List.copyOf(categoryDefinition.operationIds()))) {
             throw new IllegalArgumentException("operation ownership mismatch for categoryId: " + categoryId);
+        }
+    }
+
+    private static void validateLookupId(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " must not be blank");
+        }
+        if (!value.equals(value.trim())) {
+            throw new IllegalArgumentException(fieldName + " must not include leading or trailing whitespace");
         }
     }
 }

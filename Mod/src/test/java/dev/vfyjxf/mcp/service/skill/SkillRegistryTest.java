@@ -1,6 +1,8 @@
 package dev.vfyjxf.mcp.service.skill;
 
 import dev.vfyjxf.mcp.service.category.CategoryDefinition;
+import dev.vfyjxf.mcp.service.operation.OperationDefinition;
+import dev.vfyjxf.mcp.service.operation.OperationRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -99,8 +101,10 @@ class SkillRegistryTest {
 
         assertThrows(IllegalArgumentException.class, () -> registry.findById(null));
         assertThrows(IllegalArgumentException.class, () -> registry.findById(" "));
+        assertThrows(IllegalArgumentException.class, () -> registry.findById(" moddev-entry "));
         assertThrows(IllegalArgumentException.class, () -> registry.findByCategoryId(null));
         assertThrows(IllegalArgumentException.class, () -> registry.findByCategoryId(" "));
+        assertThrows(IllegalArgumentException.class, () -> registry.findByCategoryId(" status "));
         assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(null));
     }
 
@@ -315,5 +319,113 @@ class SkillRegistryTest {
         );
 
         assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(category));
+    }
+
+    @Test
+    void validateOperationBindingsRejectsMissingOperationReference() {
+        var entry = new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of("entry"),
+                false,
+                "This is the entry skill."
+        );
+        var action = new SkillDefinition(
+                "ui-snapshot",
+                "ui",
+                SkillKind.ACTION,
+                "UI Snapshot",
+                "Capture UI metadata.",
+                "ui.snapshot",
+                Set.of("ui"),
+                true,
+                "Capture UI metadata."
+        );
+        var skillRegistry = new SkillRegistry(List.of(entry, action));
+        var operationRegistry = new OperationRegistry(List.of());
+
+        assertThrows(IllegalArgumentException.class, () -> skillRegistry.validateOperationBindings(operationRegistry));
+    }
+
+    @Test
+    void validateOperationBindingsRejectsCrossCategoryReference() {
+        var entry = new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of("entry"),
+                false,
+                "This is the entry skill."
+        );
+        var action = new SkillDefinition(
+                "ui-snapshot",
+                "ui",
+                SkillKind.ACTION,
+                "UI Snapshot",
+                "Capture UI metadata.",
+                "ui.snapshot",
+                Set.of("ui"),
+                true,
+                "Capture UI metadata."
+        );
+        var skillRegistry = new SkillRegistry(List.of(entry, action));
+        var operationRegistry = new OperationRegistry(List.of(
+                new OperationDefinition(
+                        "ui.snapshot",
+                        "status",
+                        "UI Snapshot",
+                        "Capture UI metadata.",
+                        true,
+                        Set.of("client"),
+                        java.util.Map.of(),
+                        java.util.Map.of()
+                )
+        ));
+
+        assertThrows(IllegalArgumentException.class, () -> skillRegistry.validateOperationBindings(operationRegistry));
+    }
+
+    @Test
+    void skillDefinitionRejectsPaddedIdentifiers() {
+        assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
+                " moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of("entry"),
+                false,
+                "This is the entry skill."
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
+                "moddev-entry",
+                " status ",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of("entry"),
+                false,
+                "This is the entry skill."
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
+                "ui-snapshot",
+                "ui",
+                SkillKind.ACTION,
+                "UI Snapshot",
+                "Capture UI metadata.",
+                " ui.snapshot ",
+                Set.of("ui"),
+                true,
+                "Capture UI metadata."
+        ));
     }
 }

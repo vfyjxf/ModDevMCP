@@ -64,8 +64,10 @@ class OperationRegistryTest {
 
         assertThrows(IllegalArgumentException.class, () -> registry.findById(null));
         assertThrows(IllegalArgumentException.class, () -> registry.findById(" "));
+        assertThrows(IllegalArgumentException.class, () -> registry.findById(" ui.snapshot "));
         assertThrows(IllegalArgumentException.class, () -> registry.findByCategoryId(null));
         assertThrows(IllegalArgumentException.class, () -> registry.findByCategoryId(" "));
+        assertThrows(IllegalArgumentException.class, () -> registry.findByCategoryId(" ui "));
         assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(null));
     }
 
@@ -87,6 +89,20 @@ class OperationRegistryTest {
                 "Screen and interaction tools.",
                 List.of("ui-snapshot"),
                 operationIds
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new CategoryDefinition(
+                " ui ",
+                "UI",
+                "Screen and interaction tools.",
+                List.of("ui-snapshot"),
+                List.of("ui.snapshot")
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new CategoryDefinition(
+                "ui",
+                "UI",
+                "Screen and interaction tools.",
+                List.of(" ui-snapshot "),
+                List.of("ui.snapshot")
         ));
         assertThrows(IllegalArgumentException.class, () -> new CategoryDefinition(
                 "ui",
@@ -519,6 +535,20 @@ class OperationRegistryTest {
     }
 
     @Test
+    void exampleRequestRejectsBlankRequestId() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of("operationId", "ui.snapshot", "requestId", " ")
+        ));
+    }
+
+    @Test
     void exampleRequestRejectsNonMapInput() {
         assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
                 "ui.snapshot",
@@ -553,6 +583,30 @@ class OperationRegistryTest {
                 Set.of("client"),
                 Map.of(),
                 Map.of("operationId", "ui.snapshot", "input", Map.of("threshold", Double.POSITIVE_INFINITY))
+        ));
+    }
+
+    @Test
+    void operationDefinitionRejectsPaddedIdentifiers() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                " ui.snapshot ",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                " ui ",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of()
         ));
     }
 

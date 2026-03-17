@@ -1,5 +1,7 @@
 package dev.vfyjxf.mcp.service.config;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 
 public record ServiceConfig(
@@ -18,6 +20,7 @@ public record ServiceConfig(
         if (host == null || host.isBlank()) {
             throw new IllegalArgumentException("host must not be blank");
         }
+        ensureLoopbackHost(host);
         if (port < 1 || port > 65535) {
             throw new IllegalArgumentException("port must be between 1 and 65535");
         }
@@ -53,5 +56,15 @@ public record ServiceConfig(
 
     private static Path defaultExportRoot() {
         return Path.of(System.getProperty("user.home"), ".moddev", "skills");
+    }
+
+    private static void ensureLoopbackHost(String host) {
+        try {
+            if (!InetAddress.getByName(host).isLoopbackAddress()) {
+                throw new IllegalArgumentException("host must be loopback-only");
+            }
+        } catch (UnknownHostException exception) {
+            throw new IllegalArgumentException("host must resolve to a loopback address", exception);
+        }
     }
 }
