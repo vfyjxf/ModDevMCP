@@ -112,8 +112,8 @@ class SkillRegistryTest {
     void guidanceSkillDoesNotRequireOperationId() {
         var markdown = "  # Entry Skill\n";
         var tags = new java.util.LinkedHashSet<String>();
-        tags.add("entry");
         tags.add("guide");
+        tags.add("entry");
         var definition = new SkillDefinition(
                 "moddev-entry",
                 "status",

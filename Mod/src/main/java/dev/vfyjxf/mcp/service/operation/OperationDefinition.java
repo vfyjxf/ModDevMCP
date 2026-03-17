@@ -1,5 +1,7 @@
 package dev.vfyjxf.mcp.service.operation;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Map;
 import java.util.Set;
 import java.util.List;
@@ -75,7 +77,13 @@ public record OperationDefinition(
                 throw new IllegalArgumentException("availableTargetSides contains unsupported value: " + side);
             }
         }
-        return Collections.unmodifiableSet(new LinkedHashSet<>(source));
+        var ordered = new LinkedHashSet<String>();
+        for (var side : List.of("client", "server")) {
+            if (source.contains(side)) {
+                ordered.add(side);
+            }
+        }
+        return Collections.unmodifiableSet(ordered);
     }
 
     private static List<Object> freezeList(List<?> source) {
@@ -94,6 +102,16 @@ public record OperationDefinition(
             return value;
         }
         if (value instanceof Number numberValue) {
+            if (!(numberValue instanceof Byte
+                    || numberValue instanceof Short
+                    || numberValue instanceof Integer
+                    || numberValue instanceof Long
+                    || numberValue instanceof Float
+                    || numberValue instanceof Double
+                    || numberValue instanceof BigInteger
+                    || numberValue instanceof BigDecimal)) {
+                throw new IllegalArgumentException("metadata numeric values must use immutable JSON-friendly number types");
+            }
             if (numberValue instanceof Double doubleValue && !Double.isFinite(doubleValue)) {
                 throw new IllegalArgumentException("metadata numeric values must be finite");
             }

@@ -3,6 +3,7 @@ package dev.vfyjxf.mcp.service.skill;
 import java.util.Set;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.ArrayList;
 
 public record SkillDefinition(
         String skillId,
@@ -57,7 +58,7 @@ public record SkillDefinition(
         }
 
         operationId = normalizedOperationId;
-        tags = Collections.unmodifiableSet(new LinkedHashSet<>(tags));
+        tags = freezeTags(tags);
     }
 
     private static String normalize(String value) {
@@ -74,6 +75,12 @@ public record SkillDefinition(
                 throw new IllegalArgumentException("tags must not contain null or blank members");
             }
         }
+    }
+
+    private static Set<String> freezeTags(Set<String> tags) {
+        var ordered = new ArrayList<>(tags);
+        Collections.sort(ordered);
+        return Collections.unmodifiableSet(new LinkedHashSet<>(ordered));
     }
 
     private static void ensureNoPadding(String value, String fieldName) {

@@ -123,8 +123,8 @@ class OperationRegistryTest {
     @Test
     void metadataIncludesTargetSideAndCategoryOwnership() {
         var availableTargetSides = new java.util.LinkedHashSet<String>();
-        availableTargetSides.add("client");
         availableTargetSides.add("server");
+        availableTargetSides.add("client");
         var definition = new OperationDefinition(
                 "ui.snapshot",
                 "ui",
@@ -609,6 +609,20 @@ class OperationRegistryTest {
                 Set.of("client"),
                 Map.of(),
                 Map.of("operationId", "ui.snapshot", "input", Map.of("threshold", Double.POSITIVE_INFINITY))
+        ));
+    }
+
+    @Test
+    void metadataRejectsUnsupportedNumberSubtype() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of("value", new java.util.concurrent.atomic.AtomicInteger(1)),
+                Map.of()
         ));
     }
 
