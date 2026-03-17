@@ -55,7 +55,8 @@ public record OperationDefinition(
         }
         var copy = new LinkedHashMap<String, Object>();
         for (var entry : source.entrySet()) {
-            copy.put(entry.getKey(), freezeValue(entry.getValue()));
+            var key = validateMapKey(entry.getKey());
+            copy.put(key, freezeValue(entry.getValue()));
         }
         return Collections.unmodifiableMap(copy);
     }
@@ -75,17 +76,6 @@ public record OperationDefinition(
         return Collections.unmodifiableSet(new LinkedHashSet<>(source));
     }
 
-    private static Set<Object> freezeGenericSet(Set<?> source) {
-        if (source.isEmpty()) {
-            return Set.of();
-        }
-        var copy = new LinkedHashSet<Object>();
-        for (var value : source) {
-            copy.add(freezeValue(value));
-        }
-        return Collections.unmodifiableSet(copy);
-    }
-
     private static List<Object> freezeList(List<?> source) {
         if (source.isEmpty()) {
             return List.of();
@@ -98,12 +88,13 @@ public record OperationDefinition(
     }
 
     private static Object freezeValue(Object value) {
+        if (value == null || value instanceof String || value instanceof Number || value instanceof Boolean) {
+            return value;
+        }
         if (value instanceof Map<?, ?> mapValue) {
             var nested = new LinkedHashMap<String, Object>();
             for (var entry : mapValue.entrySet()) {
-                if (!(entry.getKey() instanceof String key)) {
-                    throw new IllegalArgumentException("nested map keys must be non-null strings");
-                }
+                var key = validateMapKey(entry.getKey());
                 nested.put(key, freezeValue(entry.getValue()));
             }
             return Collections.unmodifiableMap(nested);
@@ -111,10 +102,17 @@ public record OperationDefinition(
         if (value instanceof List<?> listValue) {
             return freezeList(listValue);
         }
-        if (value instanceof Set<?> setValue) {
-            return freezeGenericSet(setValue);
+        if (value instanceof Set<?>) {
+            throw new IllegalArgumentException("metadata values must not contain sets");
         }
-        return value;
+        throw new IllegalArgumentException("metadata values must be JSON-safe primitives, maps, lists, or null");
+    }
+
+    private static String validateMapKey(Object key) {
+        if (!(key instanceof String stringKey) || stringKey.isBlank()) {
+            throw new IllegalArgumentException("metadata map keys must be non-null, non-blank strings");
+        }
+        return stringKey;
     }
 
     private static void validateExampleRequestKeys(Map<String, Object> source) {

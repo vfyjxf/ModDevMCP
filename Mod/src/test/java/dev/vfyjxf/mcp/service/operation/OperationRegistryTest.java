@@ -130,17 +130,14 @@ class OperationRegistryTest {
     }
 
     @Test
-    void nestedSetInExampleRequestIsDeeplyImmutableAndSourceIsolated() {
-        var tags = new java.util.LinkedHashSet<String>();
-        tags.add("first");
-        tags.add("second");
+    void metadataRejectsNestedSetValue() {
         var input = new LinkedHashMap<String, Object>();
-        input.put("tags", tags);
+        input.put("tags", Set.of("first", "second"));
         var request = new LinkedHashMap<String, Object>();
         request.put("operationId", "ui.snapshot");
         request.put("input", input);
 
-        var definition = new OperationDefinition(
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
                 "ui.snapshot",
                 "ui",
                 "UI Snapshot",
@@ -149,14 +146,56 @@ class OperationRegistryTest {
                 Set.of("client"),
                 Map.of(),
                 request
-        );
+        ));
+    }
 
-        var frozenTags = (Set<String>) ((Map<String, Object>) definition.exampleRequest().get("input")).get("tags");
-        assertEquals(List.of("first", "second"), List.copyOf(frozenTags));
-        assertThrows(UnsupportedOperationException.class, () -> frozenTags.add("third"));
+    @Test
+    void metadataRejectsNonJsonLeafValue() {
+        var schema = new LinkedHashMap<String, Object>();
+        schema.put("type", "object");
+        schema.put("custom", new Object());
 
-        tags.add("third");
-        assertEquals(List.of("first", "second"), List.copyOf(frozenTags));
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                schema,
+                Map.of()
+        ));
+    }
+
+    @Test
+    void metadataRejectsBlankMapKeys() {
+        var schemaWithBlankKey = new LinkedHashMap<String, Object>();
+        schemaWithBlankKey.put(" ", "x");
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                schemaWithBlankKey,
+                Map.of()
+        ));
+
+        var nested = new LinkedHashMap<String, Object>();
+        nested.put(" ", 1);
+        var schemaWithNestedBlank = new LinkedHashMap<String, Object>();
+        schemaWithNestedBlank.put("props", nested);
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                schemaWithNestedBlank,
+                Map.of()
+        ));
     }
 
     @Test
