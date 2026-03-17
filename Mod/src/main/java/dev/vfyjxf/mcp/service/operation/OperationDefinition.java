@@ -101,7 +101,10 @@ public record OperationDefinition(
         if (value instanceof Map<?, ?> mapValue) {
             var nested = new LinkedHashMap<String, Object>();
             for (var entry : mapValue.entrySet()) {
-                nested.put(String.valueOf(entry.getKey()), freezeValue(entry.getValue()));
+                if (!(entry.getKey() instanceof String key)) {
+                    throw new IllegalArgumentException("nested map keys must be non-null strings");
+                }
+                nested.put(key, freezeValue(entry.getValue()));
             }
             return Collections.unmodifiableMap(nested);
         }

@@ -30,6 +30,25 @@ class SkillRegistryTest {
     }
 
     @Test
+    void registryRejectsNullDefinitionsCollectionAndNullMembers() {
+        assertThrows(IllegalArgumentException.class, () -> new SkillRegistry(null));
+        var withNullMember = new java.util.ArrayList<SkillDefinition>();
+        withNullMember.add(new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of("entry"),
+                false,
+                "This is the entry skill."
+        ));
+        withNullMember.add(null);
+        assertThrows(IllegalArgumentException.class, () -> new SkillRegistry(withNullMember));
+    }
+
+    @Test
     void guidanceSkillDoesNotRequireOperationId() {
         var markdown = "  # Entry Skill\n";
         var tags = new java.util.LinkedHashSet<String>();
@@ -203,5 +222,44 @@ class SkillRegistryTest {
         );
 
         assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(brokenCategory));
+    }
+
+    @Test
+    void validateCategoryOwnershipRejectsMismatchedOrdering() {
+        var entry = new SkillDefinition(
+                "moddev-entry",
+                "ui",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of("entry"),
+                false,
+                "This is the entry skill."
+        );
+        var action = new SkillDefinition(
+                "ui-snapshot",
+                "ui",
+                SkillKind.ACTION,
+                "UI Snapshot",
+                "Capture UI metadata.",
+                "ui.snapshot",
+                Set.of("ui"),
+                true,
+                "Capture UI metadata."
+        );
+        var registry = new SkillRegistry(List.of(entry, action));
+        var reversedSkillIds = new java.util.LinkedHashSet<String>();
+        reversedSkillIds.add("ui-snapshot");
+        reversedSkillIds.add("moddev-entry");
+        var category = new CategoryDefinition(
+                "ui",
+                "UI",
+                "Screen and interaction tools.",
+                reversedSkillIds,
+                Set.of("ui.snapshot")
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(category));
     }
 }

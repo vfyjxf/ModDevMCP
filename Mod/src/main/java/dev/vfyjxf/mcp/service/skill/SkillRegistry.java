@@ -8,7 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 public final class SkillRegistry {
 
@@ -19,18 +19,22 @@ public final class SkillRegistry {
     private final Map<String, List<SkillDefinition>> byCategoryId;
 
     public SkillRegistry(Collection<SkillDefinition> definitions) {
+        if (definitions == null) {
+            throw new IllegalArgumentException("definitions must not be null");
+        }
         var idMap = new LinkedHashMap<String, SkillDefinition>();
         var categoryMap = new LinkedHashMap<String, List<SkillDefinition>>();
         var ordered = new ArrayList<SkillDefinition>();
-        if (definitions != null) {
-            for (var definition : definitions) {
-                var previous = idMap.putIfAbsent(definition.skillId(), definition);
-                if (previous != null) {
-                    throw new IllegalArgumentException("duplicate skillId: " + definition.skillId());
-                }
-                ordered.add(definition);
-                categoryMap.computeIfAbsent(definition.categoryId(), ignored -> new ArrayList<>()).add(definition);
+        for (var definition : definitions) {
+            if (definition == null) {
+                throw new IllegalArgumentException("definitions must not contain null members");
             }
+            var previous = idMap.putIfAbsent(definition.skillId(), definition);
+            if (previous != null) {
+                throw new IllegalArgumentException("duplicate skillId: " + definition.skillId());
+            }
+            ordered.add(definition);
+            categoryMap.computeIfAbsent(definition.categoryId(), ignored -> new ArrayList<>()).add(definition);
         }
         if (!idMap.containsKey(ENTRY_SKILL_ID)) {
             throw new IllegalArgumentException("required skill missing: " + ENTRY_SKILL_ID);
@@ -57,12 +61,13 @@ public final class SkillRegistry {
     }
 
     public void validateCategoryOwnership(CategoryDefinition categoryDefinition) {
+        Objects.requireNonNull(categoryDefinition, "categoryDefinition");
         var expectedSkillIds = byCategoryId
                 .getOrDefault(categoryDefinition.categoryId(), List.of())
                 .stream()
                 .map(SkillDefinition::skillId)
-                .collect(Collectors.toSet());
-        if (!expectedSkillIds.equals(categoryDefinition.skillIds())) {
+                .toList();
+        if (!expectedSkillIds.equals(List.copyOf(categoryDefinition.skillIds()))) {
             throw new IllegalArgumentException("skill ownership mismatch for categoryId: " + categoryDefinition.categoryId());
         }
     }

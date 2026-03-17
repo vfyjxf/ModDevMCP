@@ -8,7 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 public final class OperationRegistry {
 
@@ -17,18 +17,22 @@ public final class OperationRegistry {
     private final Map<String, List<OperationDefinition>> byCategoryId;
 
     public OperationRegistry(Collection<OperationDefinition> definitions) {
+        if (definitions == null) {
+            throw new IllegalArgumentException("definitions must not be null");
+        }
         var idMap = new LinkedHashMap<String, OperationDefinition>();
         var categoryMap = new LinkedHashMap<String, List<OperationDefinition>>();
         var ordered = new ArrayList<OperationDefinition>();
-        if (definitions != null) {
-            for (var definition : definitions) {
-                var previous = idMap.putIfAbsent(definition.operationId(), definition);
-                if (previous != null) {
-                    throw new IllegalArgumentException("duplicate operationId: " + definition.operationId());
-                }
-                ordered.add(definition);
-                categoryMap.computeIfAbsent(definition.categoryId(), ignored -> new ArrayList<>()).add(definition);
+        for (var definition : definitions) {
+            if (definition == null) {
+                throw new IllegalArgumentException("definitions must not contain null members");
             }
+            var previous = idMap.putIfAbsent(definition.operationId(), definition);
+            if (previous != null) {
+                throw new IllegalArgumentException("duplicate operationId: " + definition.operationId());
+            }
+            ordered.add(definition);
+            categoryMap.computeIfAbsent(definition.categoryId(), ignored -> new ArrayList<>()).add(definition);
         }
         this.all = List.copyOf(ordered);
         this.byId = Map.copyOf(idMap);
@@ -52,12 +56,13 @@ public final class OperationRegistry {
     }
 
     public void validateCategoryOwnership(CategoryDefinition categoryDefinition) {
+        Objects.requireNonNull(categoryDefinition, "categoryDefinition");
         var expectedOperationIds = byCategoryId
                 .getOrDefault(categoryDefinition.categoryId(), List.of())
                 .stream()
                 .map(OperationDefinition::operationId)
-                .collect(Collectors.toSet());
-        if (!expectedOperationIds.equals(categoryDefinition.operationIds())) {
+                .toList();
+        if (!expectedOperationIds.equals(List.copyOf(categoryDefinition.operationIds()))) {
             throw new IllegalArgumentException("operation ownership mismatch for categoryId: " + categoryDefinition.categoryId());
         }
     }

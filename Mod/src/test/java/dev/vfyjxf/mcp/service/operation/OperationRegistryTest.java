@@ -35,6 +35,24 @@ class OperationRegistryTest {
     }
 
     @Test
+    void registryRejectsNullDefinitionsCollectionAndNullMembers() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationRegistry(null));
+        var withNullMember = new java.util.ArrayList<OperationDefinition>();
+        withNullMember.add(new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of()
+        ));
+        withNullMember.add(null);
+        assertThrows(IllegalArgumentException.class, () -> new OperationRegistry(withNullMember));
+    }
+
+    @Test
     void categoryDefinitionRejectsBlankOrNullMembers() {
         assertThrows(IllegalArgumentException.class, () -> new CategoryDefinition(
                 "ui",
@@ -139,6 +157,41 @@ class OperationRegistryTest {
 
         tags.add("third");
         assertEquals(List.of("first", "second"), List.copyOf(frozenTags));
+    }
+
+    @Test
+    void exampleRequestRejectsNestedMapWithNonStringOrNullKey() {
+        var badInput = new java.util.LinkedHashMap<Object, Object>();
+        badInput.put(1, "bad");
+        var badRequest = new LinkedHashMap<String, Object>();
+        badRequest.put("operationId", "ui.snapshot");
+        badRequest.put("input", badInput);
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                badRequest
+        ));
+
+        var nullKeyInput = new java.util.LinkedHashMap<Object, Object>();
+        nullKeyInput.put(null, "bad");
+        var nullKeyRequest = new LinkedHashMap<String, Object>();
+        nullKeyRequest.put("operationId", "ui.snapshot");
+        nullKeyRequest.put("input", nullKeyInput);
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                nullKeyRequest
+        ));
     }
 
     @Test
@@ -403,5 +456,42 @@ class OperationRegistryTest {
         );
 
         assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(brokenCategory));
+    }
+
+    @Test
+    void validateCategoryOwnershipRejectsMismatchedOrdering() {
+        var first = new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of()
+        );
+        var second = new OperationDefinition(
+                "ui.query",
+                "ui",
+                "UI Query",
+                "Query UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of()
+        );
+        var registry = new OperationRegistry(List.of(first, second));
+        var reversedOperationIds = new java.util.LinkedHashSet<String>();
+        reversedOperationIds.add("ui.query");
+        reversedOperationIds.add("ui.snapshot");
+        var category = new CategoryDefinition(
+                "ui",
+                "UI",
+                "Screen and interaction tools.",
+                Set.of("ui-snapshot"),
+                reversedOperationIds
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(category));
     }
 }
