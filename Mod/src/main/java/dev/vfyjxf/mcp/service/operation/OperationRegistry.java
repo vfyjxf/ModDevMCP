@@ -3,12 +3,10 @@ package dev.vfyjxf.mcp.service.operation;
 import dev.vfyjxf.mcp.service.category.CategoryDefinition;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Objects;
 
 public final class OperationRegistry {
 
@@ -16,7 +14,7 @@ public final class OperationRegistry {
     private final Map<String, OperationDefinition> byId;
     private final Map<String, List<OperationDefinition>> byCategoryId;
 
-    public OperationRegistry(Collection<OperationDefinition> definitions) {
+    public OperationRegistry(List<OperationDefinition> definitions) {
         if (definitions == null) {
             throw new IllegalArgumentException("definitions must not be null");
         }
@@ -48,22 +46,34 @@ public final class OperationRegistry {
     }
 
     public Optional<OperationDefinition> findById(String operationId) {
+        if (operationId == null || operationId.isBlank()) {
+            throw new IllegalArgumentException("operationId must not be blank");
+        }
         return Optional.ofNullable(byId.get(operationId));
     }
 
     public List<OperationDefinition> findByCategoryId(String categoryId) {
+        if (categoryId == null || categoryId.isBlank()) {
+            throw new IllegalArgumentException("categoryId must not be blank");
+        }
         return byCategoryId.getOrDefault(categoryId, List.of());
     }
 
     public void validateCategoryOwnership(CategoryDefinition categoryDefinition) {
-        Objects.requireNonNull(categoryDefinition, "categoryDefinition");
+        if (categoryDefinition == null) {
+            throw new IllegalArgumentException("categoryDefinition must not be null");
+        }
+        var categoryId = categoryDefinition.categoryId();
+        if (categoryId == null || categoryId.isBlank()) {
+            throw new IllegalArgumentException("categoryDefinition.categoryId must not be blank");
+        }
         var expectedOperationIds = byCategoryId
-                .getOrDefault(categoryDefinition.categoryId(), List.of())
+                .getOrDefault(categoryId, List.of())
                 .stream()
                 .map(OperationDefinition::operationId)
                 .toList();
         if (!expectedOperationIds.equals(List.copyOf(categoryDefinition.operationIds()))) {
-            throw new IllegalArgumentException("operation ownership mismatch for categoryId: " + categoryDefinition.categoryId());
+            throw new IllegalArgumentException("operation ownership mismatch for categoryId: " + categoryId);
         }
     }
 }

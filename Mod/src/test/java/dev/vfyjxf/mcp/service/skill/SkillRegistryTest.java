@@ -49,6 +49,28 @@ class SkillRegistryTest {
     }
 
     @Test
+    void registryApiRejectsBlankIdsAndNullCategoryValidationInput() {
+        var entry = new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of("entry"),
+                false,
+                "This is the entry skill."
+        );
+        var registry = new SkillRegistry(List.of(entry));
+
+        assertThrows(IllegalArgumentException.class, () -> registry.findById(null));
+        assertThrows(IllegalArgumentException.class, () -> registry.findById(" "));
+        assertThrows(IllegalArgumentException.class, () -> registry.findByCategoryId(null));
+        assertThrows(IllegalArgumentException.class, () -> registry.findByCategoryId(" "));
+        assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(null));
+    }
+
+    @Test
     void guidanceSkillDoesNotRequireOperationId() {
         var markdown = "  # Entry Skill\n";
         var tags = new java.util.LinkedHashSet<String>();

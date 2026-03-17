@@ -3,12 +3,10 @@ package dev.vfyjxf.mcp.service.skill;
 import dev.vfyjxf.mcp.service.category.CategoryDefinition;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Objects;
 
 public final class SkillRegistry {
 
@@ -18,7 +16,7 @@ public final class SkillRegistry {
     private final Map<String, SkillDefinition> byId;
     private final Map<String, List<SkillDefinition>> byCategoryId;
 
-    public SkillRegistry(Collection<SkillDefinition> definitions) {
+    public SkillRegistry(List<SkillDefinition> definitions) {
         if (definitions == null) {
             throw new IllegalArgumentException("definitions must not be null");
         }
@@ -53,22 +51,34 @@ public final class SkillRegistry {
     }
 
     public Optional<SkillDefinition> findById(String skillId) {
+        if (skillId == null || skillId.isBlank()) {
+            throw new IllegalArgumentException("skillId must not be blank");
+        }
         return Optional.ofNullable(byId.get(skillId));
     }
 
     public List<SkillDefinition> findByCategoryId(String categoryId) {
+        if (categoryId == null || categoryId.isBlank()) {
+            throw new IllegalArgumentException("categoryId must not be blank");
+        }
         return byCategoryId.getOrDefault(categoryId, List.of());
     }
 
     public void validateCategoryOwnership(CategoryDefinition categoryDefinition) {
-        Objects.requireNonNull(categoryDefinition, "categoryDefinition");
+        if (categoryDefinition == null) {
+            throw new IllegalArgumentException("categoryDefinition must not be null");
+        }
+        var categoryId = categoryDefinition.categoryId();
+        if (categoryId == null || categoryId.isBlank()) {
+            throw new IllegalArgumentException("categoryDefinition.categoryId must not be blank");
+        }
         var expectedSkillIds = byCategoryId
-                .getOrDefault(categoryDefinition.categoryId(), List.of())
+                .getOrDefault(categoryId, List.of())
                 .stream()
                 .map(SkillDefinition::skillId)
                 .toList();
         if (!expectedSkillIds.equals(List.copyOf(categoryDefinition.skillIds()))) {
-            throw new IllegalArgumentException("skill ownership mismatch for categoryId: " + categoryDefinition.categoryId());
+            throw new IllegalArgumentException("skill ownership mismatch for categoryId: " + categoryId);
         }
     }
 }

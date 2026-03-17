@@ -49,6 +49,27 @@ class OperationRegistryTest {
     }
 
     @Test
+    void registryApiRejectsBlankIdsAndNullCategoryValidationInput() {
+        var snapshot = new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of()
+        );
+        var registry = new OperationRegistry(List.of(snapshot));
+
+        assertThrows(IllegalArgumentException.class, () -> registry.findById(null));
+        assertThrows(IllegalArgumentException.class, () -> registry.findById(" "));
+        assertThrows(IllegalArgumentException.class, () -> registry.findByCategoryId(null));
+        assertThrows(IllegalArgumentException.class, () -> registry.findByCategoryId(" "));
+        assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(null));
+    }
+
+    @Test
     void categoryDefinitionRejectsBlankOrNullMembers() {
         assertThrows(IllegalArgumentException.class, () -> new CategoryDefinition(
                 "ui",
@@ -66,6 +87,20 @@ class OperationRegistryTest {
                 "Screen and interaction tools.",
                 List.of("ui-snapshot"),
                 operationIds
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new CategoryDefinition(
+                "ui",
+                "UI",
+                "Screen and interaction tools.",
+                List.of("ui-snapshot", "ui-snapshot"),
+                List.of("ui.snapshot")
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new CategoryDefinition(
+                "ui",
+                "UI",
+                "Screen and interaction tools.",
+                List.of("ui-snapshot"),
+                List.of("ui.snapshot", "ui.snapshot")
         ));
     }
 

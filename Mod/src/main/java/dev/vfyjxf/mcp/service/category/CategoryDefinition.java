@@ -28,6 +28,8 @@ public record CategoryDefinition(
         }
         validateMembers(skillIds, "skillIds");
         validateMembers(operationIds, "operationIds");
+        validateNoDuplicates(skillIds, "skillIds");
+        validateNoDuplicates(operationIds, "operationIds");
         skillIds = List.copyOf(skillIds);
         operationIds = List.copyOf(operationIds);
     }
@@ -36,6 +38,15 @@ public record CategoryDefinition(
         for (var value : values) {
             if (value == null || value.isBlank()) {
                 throw new IllegalArgumentException(fieldName + " must not contain null or blank members");
+            }
+        }
+    }
+
+    private static void validateNoDuplicates(List<String> values, String fieldName) {
+        var seen = new java.util.HashSet<String>();
+        for (var value : values) {
+            if (!seen.add(value)) {
+                throw new IllegalArgumentException(fieldName + " must not contain duplicates");
             }
         }
     }
