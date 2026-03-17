@@ -101,17 +101,20 @@ public final class SkillRegistry {
         if (categories == null) {
             throw new IllegalArgumentException("categories must not be null");
         }
-        var declared = new java.util.HashSet<String>();
+        var declaredById = new java.util.LinkedHashMap<String, CategoryDefinition>();
         for (var category : categories) {
             if (category == null) {
                 throw new IllegalArgumentException("categories must not contain null members");
             }
-            if (!declared.add(category.categoryId())) {
+            if (declaredById.putIfAbsent(category.categoryId(), category) != null) {
                 throw new IllegalArgumentException("duplicate declared categoryId: " + category.categoryId());
             }
         }
+        for (var category : declaredById.values()) {
+            validateCategoryOwnership(category);
+        }
         for (var skill : all) {
-            if (!declared.contains(skill.categoryId())) {
+            if (!declaredById.containsKey(skill.categoryId())) {
                 throw new IllegalArgumentException("orphan skill categoryId: " + skill.categoryId());
             }
         }

@@ -190,6 +190,8 @@ public record OperationDefinition(
             if (!availableTargetSides.contains(targetSideString)) {
                 throw new IllegalArgumentException("exampleRequest.targetSide must be one of availableTargetSides");
             }
+        } else if (supportsTargetSide && availableTargetSides.size() > 1) {
+            throw new IllegalArgumentException("exampleRequest.targetSide is required when multiple target sides are available");
         }
 
         if (source.containsKey("requestId")) {

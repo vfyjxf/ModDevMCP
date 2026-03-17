@@ -215,6 +215,17 @@ class SkillRegistryTest {
                 false,
                 "This is the entry skill."
         ));
+        assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of(" entry "),
+                false,
+                "This is the entry skill."
+        ));
     }
 
     @Test
@@ -424,6 +435,39 @@ class SkillRegistryTest {
                 List.of("moddev-entry"),
                 List.of()
         ));
+
+        assertThrows(IllegalArgumentException.class, () -> registry.validateDeclaredCategories(categories));
+    }
+
+    @Test
+    void validateDeclaredCategoriesRejectsOwnershipMismatchWithoutSeparateCall() {
+        var entry = new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of("entry"),
+                false,
+                "This is the entry skill."
+        );
+        var action = new SkillDefinition(
+                "ui-snapshot",
+                "ui",
+                SkillKind.ACTION,
+                "UI Snapshot",
+                "Capture UI metadata.",
+                "ui.snapshot",
+                Set.of("ui"),
+                true,
+                "Capture UI metadata."
+        );
+        var registry = new SkillRegistry(List.of(entry, action));
+        var categories = List.of(
+                new CategoryDefinition("status", "Status", "Service status.", List.of("moddev-entry"), List.of()),
+                new CategoryDefinition("ui", "UI", "Screen tools.", List.of("moddev-entry"), List.of("ui.snapshot"))
+        );
 
         assertThrows(IllegalArgumentException.class, () -> registry.validateDeclaredCategories(categories));
     }

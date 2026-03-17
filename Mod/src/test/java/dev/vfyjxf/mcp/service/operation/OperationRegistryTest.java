@@ -133,7 +133,7 @@ class OperationRegistryTest {
                 true,
                 availableTargetSides,
                 Map.of("type", "object"),
-                Map.of("operationId", "ui.snapshot")
+                Map.of("operationId", "ui.snapshot", "targetSide", "client")
         );
 
         assertEquals("ui.snapshot", definition.operationId());
@@ -748,6 +748,40 @@ class OperationRegistryTest {
     }
 
     @Test
+    void validateDeclaredCategoriesRejectsOwnershipMismatchWithoutSeparateCall() {
+        var first = new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of()
+        );
+        var second = new OperationDefinition(
+                "ui.query",
+                "ui",
+                "UI Query",
+                "Query UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of()
+        );
+        var registry = new OperationRegistry(List.of(first, second));
+        var categories = List.of(new CategoryDefinition(
+                "ui",
+                "UI",
+                "Screen tools.",
+                List.of("ui-snapshot"),
+                List.of("ui.snapshot")
+        ));
+
+        assertThrows(IllegalArgumentException.class, () -> registry.validateDeclaredCategories(categories));
+    }
+
+    @Test
     void validateDeclaredCategoriesRejectsDuplicateCategoryIds() {
         var operation = new OperationDefinition(
                 "ui.snapshot",
@@ -766,5 +800,19 @@ class OperationRegistryTest {
         );
 
         assertThrows(IllegalArgumentException.class, () -> registry.validateDeclaredCategories(categories));
+    }
+
+    @Test
+    void exampleRequestRequiresTargetSideWhenOperationSupportsMultipleSides() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client", "server"),
+                Map.of(),
+                Map.of("operationId", "ui.snapshot")
+        ));
     }
 }

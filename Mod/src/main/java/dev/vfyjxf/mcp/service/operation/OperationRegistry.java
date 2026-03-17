@@ -75,17 +75,20 @@ public final class OperationRegistry {
         if (categories == null) {
             throw new IllegalArgumentException("categories must not be null");
         }
-        var declared = new java.util.HashSet<String>();
+        var declaredById = new java.util.LinkedHashMap<String, CategoryDefinition>();
         for (var category : categories) {
             if (category == null) {
                 throw new IllegalArgumentException("categories must not contain null members");
             }
-            if (!declared.add(category.categoryId())) {
+            if (declaredById.putIfAbsent(category.categoryId(), category) != null) {
                 throw new IllegalArgumentException("duplicate declared categoryId: " + category.categoryId());
             }
         }
+        for (var category : declaredById.values()) {
+            validateCategoryOwnership(category);
+        }
         for (var operation : all) {
-            if (!declared.contains(operation.categoryId())) {
+            if (!declaredById.containsKey(operation.categoryId())) {
                 throw new IllegalArgumentException("orphan operation categoryId: " + operation.categoryId());
             }
         }

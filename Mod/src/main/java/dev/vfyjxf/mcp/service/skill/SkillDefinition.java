@@ -74,6 +74,9 @@ public record SkillDefinition(
             if (tag == null || tag.isBlank()) {
                 throw new IllegalArgumentException("tags must not contain null or blank members");
             }
+            if (!tag.equals(tag.trim())) {
+                throw new IllegalArgumentException("tags must not contain padded members");
+            }
         }
     }
 
