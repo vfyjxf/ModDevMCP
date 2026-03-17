@@ -18,6 +18,7 @@ public record OperationDefinition(
         Map<String, Object> inputSchema,
         Map<String, Object> exampleRequest
 ) {
+    private static final Set<String> ALLOWED_EXAMPLE_REQUEST_KEYS = Set.of("requestId", "operationId", "targetSide", "input");
 
     public OperationDefinition {
         if (operationId == null || operationId.isBlank()) {
@@ -35,6 +36,7 @@ public record OperationDefinition(
 
         availableTargetSides = freezeSet(availableTargetSides);
         inputSchema = freezeMap(inputSchema);
+        validateExampleRequestKeys(exampleRequest);
         exampleRequest = freezeMap(exampleRequest);
 
         if (supportsTargetSide && availableTargetSides.isEmpty()) {
@@ -63,6 +65,17 @@ public record OperationDefinition(
         return Collections.unmodifiableSet(new LinkedHashSet<>(source));
     }
 
+    private static Set<Object> freezeGenericSet(Set<?> source) {
+        if (source.isEmpty()) {
+            return Set.of();
+        }
+        var copy = new LinkedHashSet<Object>();
+        for (var value : source) {
+            copy.add(freezeValue(value));
+        }
+        return Collections.unmodifiableSet(copy);
+    }
+
     private static List<Object> freezeList(List<?> source) {
         if (source.isEmpty()) {
             return List.of();
@@ -85,6 +98,20 @@ public record OperationDefinition(
         if (value instanceof List<?> listValue) {
             return freezeList(listValue);
         }
+        if (value instanceof Set<?> setValue) {
+            return freezeGenericSet(setValue);
+        }
         return value;
+    }
+
+    private static void validateExampleRequestKeys(Map<String, Object> source) {
+        if (source == null || source.isEmpty()) {
+            return;
+        }
+        for (var key : source.keySet()) {
+            if (!ALLOWED_EXAMPLE_REQUEST_KEYS.contains(key)) {
+                throw new IllegalArgumentException("exampleRequest contains unsupported key: " + key);
+            }
+        }
     }
 }

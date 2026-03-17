@@ -88,6 +88,35 @@ class OperationRegistryTest {
     }
 
     @Test
+    void nestedSetInExampleRequestIsDeeplyImmutableAndSourceIsolated() {
+        var tags = new java.util.LinkedHashSet<String>();
+        tags.add("first");
+        tags.add("second");
+        var input = new LinkedHashMap<String, Object>();
+        input.put("tags", tags);
+        var request = new LinkedHashMap<String, Object>();
+        request.put("input", input);
+
+        var definition = new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                request
+        );
+
+        var frozenTags = (Set<String>) ((Map<String, Object>) definition.exampleRequest().get("input")).get("tags");
+        assertEquals(List.of("first", "second"), List.copyOf(frozenTags));
+        assertThrows(UnsupportedOperationException.class, () -> frozenTags.add("third"));
+
+        tags.add("third");
+        assertEquals(List.of("first", "second"), List.copyOf(frozenTags));
+    }
+
+    @Test
     void frozenMetadataPreservesInsertionOrderForNestedMaps() {
         var nestedSchema = new LinkedHashMap<String, Object>();
         nestedSchema.put("beta", 2);
@@ -160,6 +189,20 @@ class OperationRegistryTest {
                 Set.of("server"),
                 Map.of(),
                 Map.of()
+        ));
+    }
+
+    @Test
+    void exampleRequestRejectsUnknownTopLevelKey() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of("requestId", "r-1", "unknown", "value")
         ));
     }
 
