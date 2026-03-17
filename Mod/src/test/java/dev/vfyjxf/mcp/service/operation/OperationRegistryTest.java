@@ -16,27 +16,36 @@ class OperationRegistryTest {
 
     @Test
     void categoryDefinitionOwnsSkillIdsAndOperationIds() {
+        var skillIds = new java.util.LinkedHashSet<String>();
+        skillIds.add("moddev-entry");
+        skillIds.add("ui-snapshot");
+        var operationIds = new java.util.LinkedHashSet<String>();
+        operationIds.add("ui.snapshot");
+        operationIds.add("ui.query");
         var definition = new CategoryDefinition(
                 "ui",
                 "UI",
                 "Screen and interaction tools.",
-                Set.of("moddev-entry", "ui-snapshot"),
-                Set.of("ui.snapshot")
+                skillIds,
+                operationIds
         );
 
-        assertEquals(Set.of("moddev-entry", "ui-snapshot"), definition.skillIds());
-        assertEquals(Set.of("ui.snapshot"), definition.operationIds());
+        assertEquals(List.of("moddev-entry", "ui-snapshot"), List.copyOf(definition.skillIds()));
+        assertEquals(List.of("ui.snapshot", "ui.query"), List.copyOf(definition.operationIds()));
     }
 
     @Test
     void metadataIncludesTargetSideAndCategoryOwnership() {
+        var availableTargetSides = new java.util.LinkedHashSet<String>();
+        availableTargetSides.add("client");
+        availableTargetSides.add("server");
         var definition = new OperationDefinition(
                 "ui.snapshot",
                 "ui",
                 "UI Snapshot",
                 "Capture UI metadata.",
                 true,
-                Set.of("client"),
+                availableTargetSides,
                 Map.of("type", "object"),
                 Map.of("operationId", "ui.snapshot")
         );
@@ -44,7 +53,7 @@ class OperationRegistryTest {
         assertEquals("ui.snapshot", definition.operationId());
         assertEquals("ui", definition.categoryId());
         assertTrue(definition.supportsTargetSide());
-        assertEquals(Set.of("client"), definition.availableTargetSides());
+        assertEquals(List.of("client", "server"), List.copyOf(definition.availableTargetSides()));
     }
 
     @Test
@@ -55,7 +64,7 @@ class OperationRegistryTest {
         schema.put("properties", nestedSchema);
         var nestedList = new java.util.ArrayList<>(List.of("client"));
         var request = new LinkedHashMap<String, Object>();
-        request.put("targetSides", nestedList);
+        request.put("targetSide", nestedList);
 
         var definition = new OperationDefinition(
                 "ui.snapshot",
@@ -69,13 +78,13 @@ class OperationRegistryTest {
         );
 
         assertThrows(UnsupportedOperationException.class, () -> ((Map<String, Object>) definition.inputSchema().get("properties")).put("x", "y"));
-        assertThrows(UnsupportedOperationException.class, () -> ((List<String>) definition.exampleRequest().get("targetSides")).add("server"));
+        assertThrows(UnsupportedOperationException.class, () -> ((List<String>) definition.exampleRequest().get("targetSide")).add("server"));
 
         nestedSchema.put("postConstruct", "changed");
         nestedList.add("server");
 
         assertEquals(Map.of("type", "object"), definition.inputSchema().get("properties"));
-        assertEquals(List.of("client"), definition.exampleRequest().get("targetSides"));
+        assertEquals(List.of("client"), definition.exampleRequest().get("targetSide"));
     }
 
     @Test
@@ -88,7 +97,10 @@ class OperationRegistryTest {
         schema.put("eta", nestedSchema);
         var example = new LinkedHashMap<String, Object>();
         example.put("requestId", "r-1");
-        example.put("input", new LinkedHashMap<>(Map.of("k2", "v2", "k1", "v1")));
+        var input = new LinkedHashMap<String, Object>();
+        input.put("k2", "v2");
+        input.put("k1", "v1");
+        example.put("input", input);
 
         var definition = new OperationDefinition(
                 "ui.snapshot",
@@ -104,6 +116,7 @@ class OperationRegistryTest {
         assertEquals(List.of("zeta", "eta"), List.copyOf(definition.inputSchema().keySet()));
         assertEquals(List.of("beta", "alpha"), List.copyOf(((Map<String, Object>) definition.inputSchema().get("eta")).keySet()));
         assertEquals(List.of("requestId", "input"), List.copyOf(definition.exampleRequest().keySet()));
+        assertEquals(List.of("k2", "k1"), List.copyOf(((Map<String, Object>) definition.exampleRequest().get("input")).keySet()));
     }
 
     @Test

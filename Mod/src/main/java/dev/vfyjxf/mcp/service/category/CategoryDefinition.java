@@ -1,6 +1,8 @@
 package dev.vfyjxf.mcp.service.category;
 
 import java.util.Set;
+import java.util.LinkedHashSet;
+import java.util.Collections;
 
 public record CategoryDefinition(
         String categoryId,
@@ -26,7 +28,7 @@ public record CategoryDefinition(
         if (operationIds == null) {
             throw new IllegalArgumentException("operationIds must not be null");
         }
-        skillIds = Set.copyOf(skillIds);
-        operationIds = Set.copyOf(operationIds);
+        skillIds = Collections.unmodifiableSet(new LinkedHashSet<>(skillIds));
+        operationIds = Collections.unmodifiableSet(new LinkedHashSet<>(operationIds));
     }
 }

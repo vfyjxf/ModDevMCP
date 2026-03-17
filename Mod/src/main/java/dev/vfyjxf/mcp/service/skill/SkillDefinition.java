@@ -1,6 +1,8 @@
 package dev.vfyjxf.mcp.service.skill;
 
 import java.util.Set;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 
 public record SkillDefinition(
         String skillId,
@@ -52,7 +54,7 @@ public record SkillDefinition(
         }
 
         operationId = normalizedOperationId;
-        tags = Set.copyOf(tags);
+        tags = Collections.unmodifiableSet(new LinkedHashSet<>(tags));
     }
 
     private static String normalize(String value) {

@@ -32,6 +32,9 @@ class SkillRegistryTest {
     @Test
     void guidanceSkillDoesNotRequireOperationId() {
         var markdown = "  # Entry Skill\n";
+        var tags = new java.util.LinkedHashSet<String>();
+        tags.add("entry");
+        tags.add("guide");
         var definition = new SkillDefinition(
                 "moddev-entry",
                 "status",
@@ -39,13 +42,13 @@ class SkillRegistryTest {
                 "Entry",
                 "Start here.",
                 null,
-                Set.of("entry"),
+                tags,
                 false,
                 markdown
         );
 
         assertEquals("moddev-entry", definition.skillId());
-        assertEquals(Set.of("entry"), definition.tags());
+        assertEquals(List.of("entry", "guide"), List.copyOf(definition.tags()));
         assertTrue(definition.markdown().contains("Entry"));
         assertEquals(markdown, definition.markdown());
     }

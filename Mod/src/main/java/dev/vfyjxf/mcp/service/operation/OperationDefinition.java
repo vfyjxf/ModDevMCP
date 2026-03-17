@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 
 public record OperationDefinition(
         String operationId,
@@ -32,7 +33,7 @@ public record OperationDefinition(
             throw new IllegalArgumentException("summary must not be blank");
         }
 
-        availableTargetSides = availableTargetSides == null ? Set.of() : Set.copyOf(availableTargetSides);
+        availableTargetSides = freezeSet(availableTargetSides);
         inputSchema = freezeMap(inputSchema);
         exampleRequest = freezeMap(exampleRequest);
 
@@ -53,6 +54,13 @@ public record OperationDefinition(
             copy.put(entry.getKey(), freezeValue(entry.getValue()));
         }
         return Collections.unmodifiableMap(copy);
+    }
+
+    private static Set<String> freezeSet(Set<String> source) {
+        if (source == null || source.isEmpty()) {
+            return Set.of();
+        }
+        return Collections.unmodifiableSet(new LinkedHashSet<>(source));
     }
 
     private static List<Object> freezeList(List<?> source) {
