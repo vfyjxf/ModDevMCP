@@ -30,6 +30,40 @@ class SkillRegistryTest {
     }
 
     @Test
+    void registryRejectsExecutableModdevEntrySkill() {
+        var executableEntry = new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.ACTION,
+                "Entry",
+                "Start here.",
+                "ui.snapshot",
+                Set.of("entry"),
+                false,
+                "This is the entry skill."
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> new SkillRegistry(List.of(executableEntry)));
+    }
+
+    @Test
+    void registryRejectsGameRequiredModdevEntrySkill() {
+        var gameRequiredEntry = new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of("entry"),
+                true,
+                "This is the entry skill."
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> new SkillRegistry(List.of(gameRequiredEntry)));
+    }
+
+    @Test
     void registryRejectsNullDefinitionsCollectionAndNullMembers() {
         assertThrows(IllegalArgumentException.class, () -> new SkillRegistry(null));
         var withNullMember = new java.util.ArrayList<SkillDefinition>();

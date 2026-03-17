@@ -34,8 +34,12 @@ public final class SkillRegistry {
             ordered.add(definition);
             categoryMap.computeIfAbsent(definition.categoryId(), ignored -> new ArrayList<>()).add(definition);
         }
-        if (!idMap.containsKey(ENTRY_SKILL_ID)) {
+        var entrySkill = idMap.get(ENTRY_SKILL_ID);
+        if (entrySkill == null) {
             throw new IllegalArgumentException("required skill missing: " + ENTRY_SKILL_ID);
+        }
+        if (entrySkill.kind() != SkillKind.GUIDANCE || entrySkill.operationId() != null || entrySkill.requiresGame()) {
+            throw new IllegalArgumentException(ENTRY_SKILL_ID + " must be guidance-only and not require game");
         }
         this.all = List.copyOf(ordered);
         this.byId = Map.copyOf(idMap);

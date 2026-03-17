@@ -40,7 +40,7 @@ public record ServiceConfig(
         if (value == null || value.isBlank()) {
             return defaultValue;
         }
-        return value;
+        return value.trim();
     }
 
     private static int parsePort(String value) {

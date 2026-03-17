@@ -42,6 +42,18 @@ class ServiceConfigTest {
         assertEquals(Path.of("build", "..", "tmp", "skills").toAbsolutePath().normalize(), config.exportRoot());
     }
 
+    @Test
+    void loadResolvedTrimsNonBlankOverrideValues() {
+        withProperty("moddev.service.host", " 0.0.0.0 ", () ->
+                withProperty("moddev.service.port", " 47813 ", () ->
+                        withProperty("moddev.skill.exportRoot", "  build/skills  ", () -> {
+                            var config = ServiceConfig.loadResolved();
+                            assertEquals("0.0.0.0", config.host());
+                            assertEquals(47813, config.port());
+                            assertEquals(Path.of("build/skills").toAbsolutePath().normalize(), config.exportRoot());
+                        })));
+    }
+
     private static void withClearedProperty(String key, Runnable testBody) {
         var previous = System.getProperty(key);
         try {
