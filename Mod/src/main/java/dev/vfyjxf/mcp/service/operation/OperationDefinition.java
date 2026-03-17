@@ -86,7 +86,7 @@ public record OperationDefinition(
         for (var item : source) {
             copy.add(freezeValue(item));
         }
-        return List.copyOf(copy);
+        return Collections.unmodifiableList(copy);
     }
 
     private static Object freezeValue(Object value) {

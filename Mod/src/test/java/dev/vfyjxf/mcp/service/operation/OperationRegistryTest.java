@@ -246,6 +246,32 @@ class OperationRegistryTest {
     }
 
     @Test
+    void metadataSupportsNullElementsInsideListsWithoutNpeLeak() {
+        var input = new LinkedHashMap<String, Object>();
+        input.put("values", java.util.Arrays.asList(null, "ok"));
+        var request = new LinkedHashMap<String, Object>();
+        request.put("operationId", "ui.snapshot");
+        request.put("input", input);
+
+        var definition = new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                request
+        );
+
+        var frozenValues = (List<Object>) ((Map<String, Object>) definition.exampleRequest().get("input")).get("values");
+        assertEquals(2, frozenValues.size());
+        assertEquals(null, frozenValues.get(0));
+        assertEquals("ok", frozenValues.get(1));
+        assertThrows(UnsupportedOperationException.class, () -> frozenValues.add("x"));
+    }
+
+    @Test
     void exampleRequestRejectsNestedMapWithNonStringOrNullKey() {
         var badInput = new java.util.LinkedHashMap<Object, Object>();
         badInput.put(1, "bad");
