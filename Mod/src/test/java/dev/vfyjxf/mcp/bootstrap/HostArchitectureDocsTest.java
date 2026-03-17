@@ -11,44 +11,31 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class HostArchitectureDocsTest {
 
     @Test
-    void readmeDocumentsHostFirstPrimaryWorkflow() throws Exception {
+    void readmeDocumentsModOwnedServiceArchitecture() throws Exception {
         var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
         var readme = Files.readString(rootDir.resolve("README.md"));
 
-        assertTrue(readme.contains("host-first architecture"));
-        assertTrue(readme.contains(":Server:runStdioMcp"));
-        assertTrue(readme.contains("runClient --no-daemon"));
-        assertTrue(readme.contains("moddev.status"));
-        assertTrue(readme.contains("hostReady"));
-        assertFalse(readme.toLowerCase().contains("relay"));
-        assertFalse(readme.contains("createGameMcpBridgeLaunchScript"));
-        assertFalse(readme.contains("run-game-mcp-bridge.bat"));
-        assertFalse(readme.contains("Legacy standalone embedded stdio host"));
+        assertTrue(readme.toLowerCase().contains("local http service"));
+        assertTrue(readme.contains("Mod"));
+        assertTrue(readme.contains("/api/v1/status"));
+        assertFalse(readme.contains("host-first architecture"));
+        assertFalse(readme.contains(":Server:runStdioMcp"));
+        assertFalse(readme.contains("moddev.status"));
     }
 
     @Test
-    void guidesDocumentHostStartupAndPreflight() throws Exception {
+    void rootBuildDocsDropServerAndPluginAsEndUserProducts() throws Exception {
         var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
-        var guidesDir = rootDir.resolve("docs").resolve("guides");
-        var installGuide = Files.readString(guidesDir.resolve("2026-03-11-simple-agent-install-guide.md"));
-        var preflightGuide = Files.readString(guidesDir.resolve("2026-03-11-agent-preflight-checklist.md"));
-        var testModGuide = Files.readString(guidesDir.resolve("2026-03-11-testmod-runclient-guide.md"));
+        var settingsGradle = Files.readString(rootDir.resolve("settings.gradle"));
+        var readme = Files.readString(rootDir.resolve("README.md"));
 
-        assertTrue(installGuide.contains(":Server:runStdioMcp"));
-        assertTrue(installGuide.contains("host"));
-        assertTrue(installGuide.contains("moddev.status"));
-        assertFalse(installGuide.contains("run-game-mcp-bridge.bat"));
+        assertTrue(settingsGradle.contains("include(\":Mod\""));
+        assertTrue(settingsGradle.contains("Server and Plugin stay in-repo only for migration"));
+        assertTrue(settingsGradle.contains(":Server"));
+        assertTrue(settingsGradle.contains(":Plugin"));
 
-        assertTrue(preflightGuide.contains("moddev.status"));
-        assertTrue(preflightGuide.contains("moddev.ui_get_live_screen"));
-        assertTrue(preflightGuide.contains("host"));
-        assertFalse(preflightGuide.contains("run-game-mcp-bridge.bat"));
-
-        assertTrue(testModGuide.contains("cd TestMod"));
-        assertTrue(testModGuide.contains("runClient --no-daemon"));
-        assertTrue(testModGuide.toLowerCase().contains("host"));
-        assertFalse(testModGuide.toLowerCase().contains("relay"));
-        assertFalse(testModGuide.contains("run-game-mcp-bridge.bat"));
+        assertFalse(readme.contains("Server artifact"));
+        assertFalse(readme.contains("Gradle plugin id"));
     }
 
     @Test

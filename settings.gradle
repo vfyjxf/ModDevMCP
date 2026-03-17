@@ -9,5 +9,6 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
-
+// Product boundary: Mod is the end-user runtime product.
+// Server and Plugin stay in-repo only for migration and verification.
 include(":Mod", ":Server", ":Plugin")
