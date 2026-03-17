@@ -1,8 +1,8 @@
 # ModDevMCP
 
-ModDevMCP is a skill-first service for Minecraft NeoForge debugging workflows.
+ModDevMCP is migrating to a skill-first service model for Minecraft NeoForge debugging workflows.
 
-The primary architecture is a local HTTP service running inside `Mod` on loopback. Agents discover capabilities through skills and execute operations through HTTP requests.
+For branch `feat/http-skill-first-architecture`, the approved migration direction is a local HTTP service running inside `Mod` on loopback. Agents discover capabilities through skills and execute operations through HTTP requests.
 
 ## Product Boundary
 
@@ -51,10 +51,8 @@ curl http://127.0.0.1:47812/api/v1/status
 
 If `serviceReady=true`, read `moddev-entry` first and continue with category or operation skills.
 
-## Guides
+## Migration Notes
 
-- `docs/guides/2026-03-11-simple-agent-install-guide.md`
-- `docs/guides/2026-03-11-game-mcp-guide.md`
-- `docs/guides/2026-03-11-testmod-runclient-guide.md`
-- `docs/guides/2026-03-11-agent-preflight-checklist.md`
-- `README.zh.md`
+- This README locks the planned product boundary and terminology for migration.
+- Legacy host-first guides are intentionally not linked here until they are rewritten for the service-first flow.
+- Chinese version: `README.zh.md`

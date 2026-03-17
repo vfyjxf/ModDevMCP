@@ -15,8 +15,10 @@ class HostArchitectureDocsTest {
         var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
         var readme = Files.readString(rootDir.resolve("README.md"));
 
+        assertTrue(readme.contains("approved migration direction"));
         assertTrue(readme.toLowerCase().contains("local http service"));
-        assertTrue(readme.contains("Mod"));
+        assertTrue(readme.contains("End-user runtime product: `:Mod`"));
+        assertTrue(readme.contains("Internal migration modules still in repo: `:Server`, `:Plugin`"));
         assertTrue(readme.contains("/api/v1/status"));
         assertFalse(readme.contains("host-first architecture"));
         assertFalse(readme.contains(":Server:runStdioMcp"));
@@ -30,10 +32,11 @@ class HostArchitectureDocsTest {
         var readme = Files.readString(rootDir.resolve("README.md"));
 
         assertTrue(settingsGradle.contains("include(\":Mod\""));
-        assertTrue(settingsGradle.contains("Server and Plugin stay in-repo only for migration"));
         assertTrue(settingsGradle.contains(":Server"));
         assertTrue(settingsGradle.contains(":Plugin"));
 
+        assertTrue(readme.contains("End-user runtime product: `:Mod`"));
+        assertTrue(readme.contains("Internal migration modules still in repo: `:Server`, `:Plugin`"));
         assertFalse(readme.contains("Server artifact"));
         assertFalse(readme.contains("Gradle plugin id"));
     }
