@@ -84,8 +84,10 @@ class OperationRegistryTest {
         var schema = new LinkedHashMap<String, Object>();
         schema.put("properties", nestedSchema);
         var nestedList = new java.util.ArrayList<>(List.of("client"));
+        var input = new LinkedHashMap<String, Object>();
+        input.put("values", nestedList);
         var request = new LinkedHashMap<String, Object>();
-        request.put("targetSide", nestedList);
+        request.put("input", input);
 
         var definition = new OperationDefinition(
                 "ui.snapshot",
@@ -99,13 +101,13 @@ class OperationRegistryTest {
         );
 
         assertThrows(UnsupportedOperationException.class, () -> ((Map<String, Object>) definition.inputSchema().get("properties")).put("x", "y"));
-        assertThrows(UnsupportedOperationException.class, () -> ((List<String>) definition.exampleRequest().get("targetSide")).add("server"));
+        assertThrows(UnsupportedOperationException.class, () -> ((List<String>) ((Map<String, Object>) definition.exampleRequest().get("input")).get("values")).add("server"));
 
         nestedSchema.put("postConstruct", "changed");
         nestedList.add("server");
 
         assertEquals(Map.of("type", "object"), definition.inputSchema().get("properties"));
-        assertEquals(List.of("client"), definition.exampleRequest().get("targetSide"));
+        assertEquals(List.of("client"), ((Map<String, Object>) definition.exampleRequest().get("input")).get("values"));
     }
 
     @Test
@@ -265,6 +267,72 @@ class OperationRegistryTest {
                 Set.of("client"),
                 Map.of(),
                 Map.of("requestId", "r-1", "unknown", "value")
+        ));
+    }
+
+    @Test
+    void exampleRequestRejectsMismatchedOperationId() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of("operationId", "world.list")
+        ));
+    }
+
+    @Test
+    void exampleRequestRejectsNonStringOperationId() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of("operationId", 42)
+        ));
+    }
+
+    @Test
+    void exampleRequestRejectsInvalidTargetSideShapeAndValue() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of("targetSide", List.of("client"))
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of("targetSide", "server")
+        ));
+    }
+
+    @Test
+    void exampleRequestRejectsTargetSideWhenOperationDoesNotSupportIt() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "world.list",
+                "world",
+                "List Worlds",
+                "List available worlds.",
+                false,
+                Set.of(),
+                Map.of(),
+                Map.of("targetSide", "server")
         ));
     }
 

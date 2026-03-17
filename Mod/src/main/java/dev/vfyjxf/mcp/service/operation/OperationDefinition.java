@@ -38,6 +38,7 @@ public record OperationDefinition(
         availableTargetSides = freezeSet(availableTargetSides);
         inputSchema = freezeMap(inputSchema);
         validateExampleRequestKeys(exampleRequest);
+        validateExampleRequestShape(exampleRequest, operationId, supportsTargetSide, availableTargetSides);
         exampleRequest = freezeMap(exampleRequest);
 
         if (supportsTargetSide && availableTargetSides.isEmpty()) {
@@ -120,6 +121,40 @@ public record OperationDefinition(
         for (var key : source.keySet()) {
             if (!ALLOWED_EXAMPLE_REQUEST_KEYS.contains(key)) {
                 throw new IllegalArgumentException("exampleRequest contains unsupported key: " + key);
+            }
+        }
+    }
+
+    private static void validateExampleRequestShape(
+            Map<String, Object> source,
+            String operationId,
+            boolean supportsTargetSide,
+            Set<String> availableTargetSides
+    ) {
+        if (source == null || source.isEmpty()) {
+            return;
+        }
+
+        if (source.containsKey("operationId")) {
+            var operationIdValue = source.get("operationId");
+            if (!(operationIdValue instanceof String operationIdString)) {
+                throw new IllegalArgumentException("exampleRequest.operationId must be a string");
+            }
+            if (!operationId.equals(operationIdString)) {
+                throw new IllegalArgumentException("exampleRequest.operationId must match definition operationId");
+            }
+        }
+
+        if (source.containsKey("targetSide")) {
+            if (!supportsTargetSide) {
+                throw new IllegalArgumentException("exampleRequest.targetSide must be absent when supportsTargetSide is false");
+            }
+            var targetSideValue = source.get("targetSide");
+            if (!(targetSideValue instanceof String targetSideString)) {
+                throw new IllegalArgumentException("exampleRequest.targetSide must be a string");
+            }
+            if (!availableTargetSides.contains(targetSideString)) {
+                throw new IllegalArgumentException("exampleRequest.targetSide must be one of availableTargetSides");
             }
         }
     }
