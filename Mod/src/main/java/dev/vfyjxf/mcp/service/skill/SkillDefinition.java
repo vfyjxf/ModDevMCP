@@ -53,7 +53,6 @@ public record SkillDefinition(
 
         operationId = normalizedOperationId;
         tags = Set.copyOf(tags);
-        markdown = markdown.trim();
     }
 
     private static String normalize(String value) {

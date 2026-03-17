@@ -1,11 +1,14 @@
 package dev.vfyjxf.mcp.service.operation;
 
+import dev.vfyjxf.mcp.service.category.CategoryDefinition;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public final class OperationRegistry {
 
@@ -46,5 +49,16 @@ public final class OperationRegistry {
 
     public List<OperationDefinition> findByCategoryId(String categoryId) {
         return byCategoryId.getOrDefault(categoryId, List.of());
+    }
+
+    public void validateCategoryOwnership(CategoryDefinition categoryDefinition) {
+        var expectedOperationIds = byCategoryId
+                .getOrDefault(categoryDefinition.categoryId(), List.of())
+                .stream()
+                .map(OperationDefinition::operationId)
+                .collect(Collectors.toSet());
+        if (!expectedOperationIds.equals(categoryDefinition.operationIds())) {
+            throw new IllegalArgumentException("operation ownership mismatch for categoryId: " + categoryDefinition.categoryId());
+        }
     }
 }

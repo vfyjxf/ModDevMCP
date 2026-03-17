@@ -31,7 +31,8 @@ public record ServiceConfig(
         var portText = defaultIfBlank(System.getProperty(PORT_PROPERTY), String.valueOf(DEFAULT_PORT));
         var port = parsePort(portText);
         var exportRootText = defaultIfBlank(System.getProperty(EXPORT_ROOT_PROPERTY), defaultExportRoot().toString());
-        return new ServiceConfig(host, port, Path.of(exportRootText));
+        var exportRoot = Path.of(exportRootText).toAbsolutePath().normalize();
+        return new ServiceConfig(host, port, exportRoot);
     }
 
     private static String defaultIfBlank(String value, String defaultValue) {

@@ -2,6 +2,9 @@ package dev.vfyjxf.mcp.service.operation;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 public record OperationDefinition(
         String operationId,
@@ -29,8 +32,8 @@ public record OperationDefinition(
         }
 
         availableTargetSides = availableTargetSides == null ? Set.of() : Set.copyOf(availableTargetSides);
-        inputSchema = inputSchema == null ? Map.of() : Map.copyOf(inputSchema);
-        exampleRequest = exampleRequest == null ? Map.of() : Map.copyOf(exampleRequest);
+        inputSchema = freezeMap(inputSchema);
+        exampleRequest = freezeMap(exampleRequest);
 
         if (supportsTargetSide && availableTargetSides.isEmpty()) {
             throw new IllegalArgumentException("availableTargetSides must not be empty when supportsTargetSide is true");
@@ -38,5 +41,41 @@ public record OperationDefinition(
         if (!supportsTargetSide && !availableTargetSides.isEmpty()) {
             throw new IllegalArgumentException("availableTargetSides must be empty when supportsTargetSide is false");
         }
+    }
+
+    private static Map<String, Object> freezeMap(Map<String, Object> source) {
+        if (source == null || source.isEmpty()) {
+            return Map.of();
+        }
+        var copy = new LinkedHashMap<String, Object>();
+        for (var entry : source.entrySet()) {
+            copy.put(entry.getKey(), freezeValue(entry.getValue()));
+        }
+        return Map.copyOf(copy);
+    }
+
+    private static List<Object> freezeList(List<?> source) {
+        if (source.isEmpty()) {
+            return List.of();
+        }
+        var copy = new ArrayList<Object>(source.size());
+        for (var item : source) {
+            copy.add(freezeValue(item));
+        }
+        return List.copyOf(copy);
+    }
+
+    private static Object freezeValue(Object value) {
+        if (value instanceof Map<?, ?> mapValue) {
+            var nested = new LinkedHashMap<String, Object>();
+            for (var entry : mapValue.entrySet()) {
+                nested.put(String.valueOf(entry.getKey()), freezeValue(entry.getValue()));
+            }
+            return Map.copyOf(nested);
+        }
+        if (value instanceof List<?> listValue) {
+            return freezeList(listValue);
+        }
+        return value;
     }
 }

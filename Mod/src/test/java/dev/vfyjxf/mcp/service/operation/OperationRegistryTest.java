@@ -4,6 +4,7 @@ import dev.vfyjxf.mcp.service.category.CategoryDefinition;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -44,6 +45,37 @@ class OperationRegistryTest {
         assertEquals("ui", definition.categoryId());
         assertTrue(definition.supportsTargetSide());
         assertEquals(Set.of("client"), definition.availableTargetSides());
+    }
+
+    @Test
+    void nestedInputSchemaAndExampleRequestAreDeeplyImmutable() {
+        var nestedSchema = new LinkedHashMap<String, Object>();
+        nestedSchema.put("type", "object");
+        var schema = new LinkedHashMap<String, Object>();
+        schema.put("properties", nestedSchema);
+        var nestedList = new java.util.ArrayList<>(List.of("client"));
+        var request = new LinkedHashMap<String, Object>();
+        request.put("targetSides", nestedList);
+
+        var definition = new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                schema,
+                request
+        );
+
+        assertThrows(UnsupportedOperationException.class, () -> ((Map<String, Object>) definition.inputSchema().get("properties")).put("x", "y"));
+        assertThrows(UnsupportedOperationException.class, () -> ((List<String>) definition.exampleRequest().get("targetSides")).add("server"));
+
+        nestedSchema.put("postConstruct", "changed");
+        nestedList.add("server");
+
+        assertEquals(Map.of("type", "object"), definition.inputSchema().get("properties"));
+        assertEquals(List.of("client"), definition.exampleRequest().get("targetSides"));
     }
 
     @Test
@@ -88,5 +120,29 @@ class OperationRegistryTest {
                 Map.of(),
                 Map.of()
         ));
+    }
+
+    @Test
+    void validateCategoryOwnershipRejectsMismatch() {
+        var snapshot = new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of()
+        );
+        var registry = new OperationRegistry(List.of(snapshot));
+        var brokenCategory = new CategoryDefinition(
+                "ui",
+                "UI",
+                "Screen and interaction tools.",
+                Set.of("ui-snapshot"),
+                Set.of("ui.missing")
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(brokenCategory));
     }
 }

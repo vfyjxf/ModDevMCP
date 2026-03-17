@@ -1,5 +1,6 @@
 package dev.vfyjxf.mcp.service.skill;
 
+import dev.vfyjxf.mcp.service.category.CategoryDefinition;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -30,6 +31,7 @@ class SkillRegistryTest {
 
     @Test
     void guidanceSkillDoesNotRequireOperationId() {
+        var markdown = "  # Entry Skill\n";
         var definition = new SkillDefinition(
                 "moddev-entry",
                 "status",
@@ -39,12 +41,13 @@ class SkillRegistryTest {
                 null,
                 Set.of("entry"),
                 false,
-                "This is the entry skill."
+                markdown
         );
 
         assertEquals("moddev-entry", definition.skillId());
         assertEquals(Set.of("entry"), definition.tags());
-        assertTrue(definition.markdown().contains("entry"));
+        assertTrue(definition.markdown().contains("Entry"));
+        assertEquals(markdown, definition.markdown());
     }
 
     @Test
@@ -132,5 +135,41 @@ class SkillRegistryTest {
         assertEquals(2, registry.all().size());
         assertTrue(registry.findById("moddev-entry").isPresent());
         assertThrows(UnsupportedOperationException.class, () -> registry.all().add(entry));
+    }
+
+    @Test
+    void validateCategoryOwnershipRejectsMismatch() {
+        var entry = new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of("entry"),
+                false,
+                "This is the entry skill."
+        );
+        var action = new SkillDefinition(
+                "ui-snapshot",
+                "ui",
+                SkillKind.ACTION,
+                "UI Snapshot",
+                "Capture UI metadata.",
+                "ui.snapshot",
+                Set.of("ui"),
+                true,
+                "Capture UI metadata."
+        );
+        var registry = new SkillRegistry(List.of(entry, action));
+        var brokenCategory = new CategoryDefinition(
+                "ui",
+                "UI",
+                "Screen and interaction tools.",
+                Set.of("ui-missing"),
+                Set.of("ui.snapshot")
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(brokenCategory));
     }
 }

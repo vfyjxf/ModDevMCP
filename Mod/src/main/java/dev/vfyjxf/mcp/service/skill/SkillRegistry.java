@@ -1,11 +1,14 @@
 package dev.vfyjxf.mcp.service.skill;
 
+import dev.vfyjxf.mcp.service.category.CategoryDefinition;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public final class SkillRegistry {
 
@@ -51,5 +54,16 @@ public final class SkillRegistry {
 
     public List<SkillDefinition> findByCategoryId(String categoryId) {
         return byCategoryId.getOrDefault(categoryId, List.of());
+    }
+
+    public void validateCategoryOwnership(CategoryDefinition categoryDefinition) {
+        var expectedSkillIds = byCategoryId
+                .getOrDefault(categoryDefinition.categoryId(), List.of())
+                .stream()
+                .map(SkillDefinition::skillId)
+                .collect(Collectors.toSet());
+        if (!expectedSkillIds.equals(categoryDefinition.skillIds())) {
+            throw new IllegalArgumentException("skill ownership mismatch for categoryId: " + categoryDefinition.categoryId());
+        }
     }
 }
