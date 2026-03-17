@@ -110,6 +110,35 @@ class SkillRegistryTest {
     }
 
     @Test
+    void skillRejectsBlankOrNullTagMembers() {
+        assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of(" "),
+                false,
+                "This is the entry skill."
+        ));
+        var tagsWithNull = new java.util.LinkedHashSet<String>();
+        tagsWithNull.add("entry");
+        tagsWithNull.add(null);
+        assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                tagsWithNull,
+                false,
+                "This is the entry skill."
+        ));
+    }
+
+    @Test
     void registryExposesReadOnlyDefinitions() {
         var entry = new SkillDefinition(
                 "moddev-entry",

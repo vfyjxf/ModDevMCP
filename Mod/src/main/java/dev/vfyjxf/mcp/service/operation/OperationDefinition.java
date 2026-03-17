@@ -19,6 +19,7 @@ public record OperationDefinition(
         Map<String, Object> exampleRequest
 ) {
     private static final Set<String> ALLOWED_EXAMPLE_REQUEST_KEYS = Set.of("requestId", "operationId", "targetSide", "input");
+    private static final Set<String> ALLOWED_TARGET_SIDES = Set.of("client", "server");
 
     public OperationDefinition {
         if (operationId == null || operationId.isBlank()) {
@@ -61,6 +62,14 @@ public record OperationDefinition(
     private static Set<String> freezeSet(Set<String> source) {
         if (source == null || source.isEmpty()) {
             return Set.of();
+        }
+        for (var side : source) {
+            if (side == null || side.isBlank()) {
+                throw new IllegalArgumentException("availableTargetSides must not contain null or blank members");
+            }
+            if (!ALLOWED_TARGET_SIDES.contains(side)) {
+                throw new IllegalArgumentException("availableTargetSides contains unsupported value: " + side);
+            }
         }
         return Collections.unmodifiableSet(new LinkedHashSet<>(source));
     }

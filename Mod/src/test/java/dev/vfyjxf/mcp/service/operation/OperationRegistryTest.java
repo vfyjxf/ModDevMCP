@@ -35,6 +35,27 @@ class OperationRegistryTest {
     }
 
     @Test
+    void categoryDefinitionRejectsBlankOrNullMembers() {
+        assertThrows(IllegalArgumentException.class, () -> new CategoryDefinition(
+                "ui",
+                "UI",
+                "Screen and interaction tools.",
+                Set.of(" "),
+                Set.of("ui.snapshot")
+        ));
+        var operationIds = new java.util.LinkedHashSet<String>();
+        operationIds.add("ui.snapshot");
+        operationIds.add(null);
+        assertThrows(IllegalArgumentException.class, () -> new CategoryDefinition(
+                "ui",
+                "UI",
+                "Screen and interaction tools.",
+                Set.of("ui-snapshot"),
+                operationIds
+        ));
+    }
+
+    @Test
     void metadataIncludesTargetSideAndCategoryOwnership() {
         var availableTargetSides = new java.util.LinkedHashSet<String>();
         availableTargetSides.add("client");
@@ -187,6 +208,47 @@ class OperationRegistryTest {
                 "List available worlds.",
                 false,
                 Set.of("server"),
+                Map.of(),
+                Map.of()
+        ));
+    }
+
+    @Test
+    void operationRejectsUnsupportedTargetSideValue() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("proxy"),
+                Map.of(),
+                Map.of()
+        ));
+    }
+
+    @Test
+    void operationRejectsBlankOrNullAvailableTargetSideMembers() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of(" "),
+                Map.of(),
+                Map.of()
+        ));
+        var sides = new java.util.LinkedHashSet<String>();
+        sides.add("client");
+        sides.add(null);
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                sides,
                 Map.of(),
                 Map.of()
         ));

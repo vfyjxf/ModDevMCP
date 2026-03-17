@@ -38,6 +38,7 @@ public record SkillDefinition(
         if (markdown == null || markdown.isBlank()) {
             throw new IllegalArgumentException("markdown must not be blank");
         }
+        validateTagMembers(tags);
 
         var normalizedOperationId = normalize(operationId);
         switch (kind) {
@@ -62,5 +63,13 @@ public record SkillDefinition(
             return null;
         }
         return value.trim();
+    }
+
+    private static void validateTagMembers(Set<String> tags) {
+        for (var tag : tags) {
+            if (tag == null || tag.isBlank()) {
+                throw new IllegalArgumentException("tags must not contain null or blank members");
+            }
+        }
     }
 }

@@ -28,7 +28,17 @@ public record CategoryDefinition(
         if (operationIds == null) {
             throw new IllegalArgumentException("operationIds must not be null");
         }
+        validateMembers(skillIds, "skillIds");
+        validateMembers(operationIds, "operationIds");
         skillIds = Collections.unmodifiableSet(new LinkedHashSet<>(skillIds));
         operationIds = Collections.unmodifiableSet(new LinkedHashSet<>(operationIds));
+    }
+
+    private static void validateMembers(Set<String> values, String fieldName) {
+        for (var value : values) {
+            if (value == null || value.isBlank()) {
+                throw new IllegalArgumentException(fieldName + " must not contain null or blank members");
+            }
+        }
     }
 }
