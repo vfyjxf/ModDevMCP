@@ -88,7 +88,16 @@ public record OperationDefinition(
     }
 
     private static Object freezeValue(Object value) {
-        if (value == null || value instanceof String || value instanceof Number || value instanceof Boolean) {
+        if (value == null || value instanceof String || value instanceof Boolean) {
+            return value;
+        }
+        if (value instanceof Number numberValue) {
+            if (numberValue instanceof Double doubleValue && !Double.isFinite(doubleValue)) {
+                throw new IllegalArgumentException("metadata numeric values must be finite");
+            }
+            if (numberValue instanceof Float floatValue && !Float.isFinite(floatValue)) {
+                throw new IllegalArgumentException("metadata numeric values must be finite");
+            }
             return value;
         }
         if (value instanceof Map<?, ?> mapValue) {
@@ -115,11 +124,12 @@ public record OperationDefinition(
         return stringKey;
     }
 
-    private static void validateExampleRequestKeys(Map<String, Object> source) {
+    private static void validateExampleRequestKeys(Map<?, ?> source) {
         if (source == null || source.isEmpty()) {
             return;
         }
-        for (var key : source.keySet()) {
+        for (var rawKey : source.keySet()) {
+            var key = validateMapKey(rawKey);
             if (!ALLOWED_EXAMPLE_REQUEST_KEYS.contains(key)) {
                 throw new IllegalArgumentException("exampleRequest contains unsupported key: " + key);
             }

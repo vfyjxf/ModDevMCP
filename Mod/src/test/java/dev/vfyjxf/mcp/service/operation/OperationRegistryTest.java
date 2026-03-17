@@ -16,12 +16,8 @@ class OperationRegistryTest {
 
     @Test
     void categoryDefinitionOwnsSkillIdsAndOperationIds() {
-        var skillIds = new java.util.LinkedHashSet<String>();
-        skillIds.add("moddev-entry");
-        skillIds.add("ui-snapshot");
-        var operationIds = new java.util.LinkedHashSet<String>();
-        operationIds.add("ui.snapshot");
-        operationIds.add("ui.query");
+        var skillIds = List.of("moddev-entry", "ui-snapshot");
+        var operationIds = List.of("ui.snapshot", "ui.query");
         var definition = new CategoryDefinition(
                 "ui",
                 "UI",
@@ -30,8 +26,8 @@ class OperationRegistryTest {
                 operationIds
         );
 
-        assertEquals(List.of("moddev-entry", "ui-snapshot"), List.copyOf(definition.skillIds()));
-        assertEquals(List.of("ui.snapshot", "ui.query"), List.copyOf(definition.operationIds()));
+        assertEquals(List.of("moddev-entry", "ui-snapshot"), definition.skillIds());
+        assertEquals(List.of("ui.snapshot", "ui.query"), definition.operationIds());
     }
 
     @Test
@@ -58,17 +54,17 @@ class OperationRegistryTest {
                 "ui",
                 "UI",
                 "Screen and interaction tools.",
-                Set.of(" "),
-                Set.of("ui.snapshot")
+                List.of(" "),
+                List.of("ui.snapshot")
         ));
-        var operationIds = new java.util.LinkedHashSet<String>();
+        var operationIds = new java.util.ArrayList<String>();
         operationIds.add("ui.snapshot");
         operationIds.add(null);
         assertThrows(IllegalArgumentException.class, () -> new CategoryDefinition(
                 "ui",
                 "UI",
                 "Screen and interaction tools.",
-                Set.of("ui-snapshot"),
+                List.of("ui-snapshot"),
                 operationIds
         ));
     }
@@ -366,6 +362,48 @@ class OperationRegistryTest {
     }
 
     @Test
+    void exampleRequestRejectsInvalidTopLevelKeyShape() {
+        var nonStringKey = new LinkedHashMap<Object, Object>();
+        nonStringKey.put(1, "value");
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                (Map<String, Object>) (Map<?, ?>) nonStringKey
+        ));
+
+        var blankKey = new LinkedHashMap<Object, Object>();
+        blankKey.put(" ", "value");
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                (Map<String, Object>) (Map<?, ?>) blankKey
+        ));
+
+        var nullKey = new LinkedHashMap<Object, Object>();
+        nullKey.put(null, "value");
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                (Map<String, Object>) (Map<?, ?>) nullKey
+        ));
+    }
+
+    @Test
     void exampleRequestRejectsMismatchedOperationId() {
         assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
                 "ui.snapshot",
@@ -460,6 +498,30 @@ class OperationRegistryTest {
     }
 
     @Test
+    void metadataRejectsNonFiniteNumbers() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of("value", Double.NaN),
+                Map.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of("operationId", "ui.snapshot", "input", Map.of("threshold", Double.POSITIVE_INFINITY))
+        ));
+    }
+
+    @Test
     void exampleRequestRejectsTargetSideWhenOperationDoesNotSupportIt() {
         assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
                 "world.list",
@@ -490,8 +552,8 @@ class OperationRegistryTest {
                 "ui",
                 "UI",
                 "Screen and interaction tools.",
-                Set.of("ui-snapshot"),
-                Set.of("ui.missing")
+                List.of("ui-snapshot"),
+                List.of("ui.missing")
         );
 
         assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(brokenCategory));
@@ -520,14 +582,12 @@ class OperationRegistryTest {
                 Map.of()
         );
         var registry = new OperationRegistry(List.of(first, second));
-        var reversedOperationIds = new java.util.LinkedHashSet<String>();
-        reversedOperationIds.add("ui.query");
-        reversedOperationIds.add("ui.snapshot");
+        var reversedOperationIds = List.of("ui.query", "ui.snapshot");
         var category = new CategoryDefinition(
                 "ui",
                 "UI",
                 "Screen and interaction tools.",
-                Set.of("ui-snapshot"),
+                List.of("ui-snapshot"),
                 reversedOperationIds
         );
 

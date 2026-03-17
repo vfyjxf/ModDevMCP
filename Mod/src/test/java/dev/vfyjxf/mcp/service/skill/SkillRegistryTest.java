@@ -217,8 +217,8 @@ class SkillRegistryTest {
                 "ui",
                 "UI",
                 "Screen and interaction tools.",
-                Set.of("ui-missing"),
-                Set.of("ui.snapshot")
+                List.of("ui-missing"),
+                List.of("ui.snapshot")
         );
 
         assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(brokenCategory));
@@ -249,15 +249,13 @@ class SkillRegistryTest {
                 "Capture UI metadata."
         );
         var registry = new SkillRegistry(List.of(entry, action));
-        var reversedSkillIds = new java.util.LinkedHashSet<String>();
-        reversedSkillIds.add("ui-snapshot");
-        reversedSkillIds.add("moddev-entry");
+        var reversedSkillIds = List.of("ui-snapshot", "moddev-entry");
         var category = new CategoryDefinition(
                 "ui",
                 "UI",
                 "Screen and interaction tools.",
                 reversedSkillIds,
-                Set.of("ui.snapshot")
+                List.of("ui.snapshot")
         );
 
         assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(category));

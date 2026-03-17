@@ -1,15 +1,13 @@
 package dev.vfyjxf.mcp.service.category;
 
-import java.util.Set;
-import java.util.LinkedHashSet;
-import java.util.Collections;
+import java.util.List;
 
 public record CategoryDefinition(
         String categoryId,
         String title,
         String summary,
-        Set<String> skillIds,
-        Set<String> operationIds
+        List<String> skillIds,
+        List<String> operationIds
 ) {
 
     public CategoryDefinition {
@@ -30,11 +28,11 @@ public record CategoryDefinition(
         }
         validateMembers(skillIds, "skillIds");
         validateMembers(operationIds, "operationIds");
-        skillIds = Collections.unmodifiableSet(new LinkedHashSet<>(skillIds));
-        operationIds = Collections.unmodifiableSet(new LinkedHashSet<>(operationIds));
+        skillIds = List.copyOf(skillIds);
+        operationIds = List.copyOf(operationIds);
     }
 
-    private static void validateMembers(Set<String> values, String fieldName) {
+    private static void validateMembers(List<String> values, String fieldName) {
         for (var value : values) {
             if (value == null || value.isBlank()) {
                 throw new IllegalArgumentException(fieldName + " must not contain null or blank members");
