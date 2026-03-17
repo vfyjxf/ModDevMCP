@@ -87,6 +87,7 @@ class OperationRegistryTest {
         var input = new LinkedHashMap<String, Object>();
         input.put("values", nestedList);
         var request = new LinkedHashMap<String, Object>();
+        request.put("operationId", "ui.snapshot");
         request.put("input", input);
 
         var definition = new OperationDefinition(
@@ -118,6 +119,7 @@ class OperationRegistryTest {
         var input = new LinkedHashMap<String, Object>();
         input.put("tags", tags);
         var request = new LinkedHashMap<String, Object>();
+        request.put("operationId", "ui.snapshot");
         request.put("input", input);
 
         var definition = new OperationDefinition(
@@ -149,6 +151,7 @@ class OperationRegistryTest {
         schema.put("eta", nestedSchema);
         var example = new LinkedHashMap<String, Object>();
         example.put("requestId", "r-1");
+        example.put("operationId", "ui.snapshot");
         var input = new LinkedHashMap<String, Object>();
         input.put("k2", "v2");
         input.put("k1", "v1");
@@ -167,7 +170,7 @@ class OperationRegistryTest {
 
         assertEquals(List.of("zeta", "eta"), List.copyOf(definition.inputSchema().keySet()));
         assertEquals(List.of("beta", "alpha"), List.copyOf(((Map<String, Object>) definition.inputSchema().get("eta")).keySet()));
-        assertEquals(List.of("requestId", "input"), List.copyOf(definition.exampleRequest().keySet()));
+        assertEquals(List.of("requestId", "operationId", "input"), List.copyOf(definition.exampleRequest().keySet()));
         assertEquals(List.of("k2", "k1"), List.copyOf(((Map<String, Object>) definition.exampleRequest().get("input")).keySet()));
     }
 
@@ -285,6 +288,20 @@ class OperationRegistryTest {
     }
 
     @Test
+    void exampleRequestRejectsMissingOperationIdWhenNonEmpty() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of("requestId", "r-1")
+        ));
+    }
+
+    @Test
     void exampleRequestRejectsNonStringOperationId() {
         assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
                 "ui.snapshot",
@@ -319,6 +336,34 @@ class OperationRegistryTest {
                 Set.of("client"),
                 Map.of(),
                 Map.of("targetSide", "server")
+        ));
+    }
+
+    @Test
+    void exampleRequestRejectsNonStringRequestId() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of("operationId", "ui.snapshot", "requestId", 123)
+        ));
+    }
+
+    @Test
+    void exampleRequestRejectsNonMapInput() {
+        assertThrows(IllegalArgumentException.class, () -> new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of("operationId", "ui.snapshot", "input", "not-an-object")
         ));
     }
 

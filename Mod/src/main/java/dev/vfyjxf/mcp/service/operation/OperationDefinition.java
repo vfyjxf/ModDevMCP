@@ -134,6 +134,9 @@ public record OperationDefinition(
         if (source == null || source.isEmpty()) {
             return;
         }
+        if (!source.containsKey("operationId")) {
+            throw new IllegalArgumentException("exampleRequest.operationId is required when exampleRequest is non-empty");
+        }
 
         if (source.containsKey("operationId")) {
             var operationIdValue = source.get("operationId");
@@ -155,6 +158,20 @@ public record OperationDefinition(
             }
             if (!availableTargetSides.contains(targetSideString)) {
                 throw new IllegalArgumentException("exampleRequest.targetSide must be one of availableTargetSides");
+            }
+        }
+
+        if (source.containsKey("requestId")) {
+            var requestIdValue = source.get("requestId");
+            if (!(requestIdValue instanceof String)) {
+                throw new IllegalArgumentException("exampleRequest.requestId must be a string");
+            }
+        }
+
+        if (source.containsKey("input")) {
+            var inputValue = source.get("input");
+            if (!(inputValue instanceof Map<?, ?>)) {
+                throw new IllegalArgumentException("exampleRequest.input must be an object");
             }
         }
     }
