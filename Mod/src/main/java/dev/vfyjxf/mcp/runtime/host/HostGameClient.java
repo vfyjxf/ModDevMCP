@@ -6,12 +6,17 @@ import dev.vfyjxf.mcp.server.api.ToolCallContext;
 import dev.vfyjxf.mcp.server.api.ToolResult;
 import dev.vfyjxf.mcp.server.transport.JsonCodec;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 public final class HostGameClient implements AutoCloseable {
 
@@ -20,22 +25,26 @@ public final class HostGameClient implements AutoCloseable {
     private final String runtimeId;
     private final String runtimeSide;
     private final JsonCodec jsonCodec;
+    private final Consumer<String> logSink;
     private volatile Socket socket;
     private volatile boolean closed;
 
     public HostGameClient(ModDevMcpServer server, HostRuntimeClientConfig config, String runtimeId, String runtimeSide) {
+        this(server, config, runtimeId, runtimeSide, message -> ModDevMCP.LOGGER.info(message));
+    }
+
+    HostGameClient(ModDevMcpServer server, HostRuntimeClientConfig config, String runtimeId, String runtimeSide, Consumer<String> logSink) {
         this.server = Objects.requireNonNull(server, "server");
         this.config = Objects.requireNonNull(config, "config");
         this.runtimeId = Objects.requireNonNull(runtimeId, "runtimeId");
         this.runtimeSide = Objects.requireNonNull(runtimeSide, "runtimeSide");
+        this.logSink = Objects.requireNonNull(logSink, "logSink");
         this.jsonCodec = new JsonCodec();
     }
 
     public void runUntilDisconnected() throws IOException {
-        ModDevMCP.LOGGER.info("Connecting runtime {} to host {}:{}", runtimeId, config.host(), config.port());
         try (var connectedSocket = new Socket(config.host(), config.port())) {
             socket = connectedSocket;
-            ModDevMCP.LOGGER.info("Runtime {} connected to host {}:{}", runtimeId, config.host(), config.port());
             try (var reader = new BufferedReader(new InputStreamReader(connectedSocket.getInputStream(), StandardCharsets.UTF_8));
                  var writer = new BufferedWriter(new OutputStreamWriter(connectedSocket.getOutputStream(), StandardCharsets.UTF_8))) {
                 write(writer, Map.of(
@@ -56,7 +65,7 @@ public final class HostGameClient implements AutoCloseable {
                 }
             } finally {
                 socket = null;
-                ModDevMCP.LOGGER.info("Runtime {} disconnected from host", runtimeId);
+                logSink.accept("Runtime " + runtimeId + " disconnected from gateway");
             }
         }
     }

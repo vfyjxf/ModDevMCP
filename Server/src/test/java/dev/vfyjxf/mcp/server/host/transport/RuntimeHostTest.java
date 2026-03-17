@@ -4,7 +4,9 @@ import dev.vfyjxf.mcp.server.host.RuntimeRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -46,6 +48,31 @@ class RuntimeHostTest {
         assertFalse(registry.state().gameConnected());
     }
 
+    @Test
+    void hostLogsDisconnectButNotSuccessfulConnect() throws Exception {
+        var registry = new RuntimeRegistry();
+        var logOutput = new ByteArrayOutputStream();
+        var originalErr = System.err;
+        try {
+            System.setErr(new PrintStream(logOutput, true, StandardCharsets.UTF_8));
+            try (var host = RuntimeHost.start(registry, "127.0.0.1", freePort())) {
+                try (var socket = new Socket("127.0.0.1", host.port());
+                     var writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8))) {
+                    writer.write("{\"type\":\"runtime.hello\",\"runtimeId\":\"runtime-1\",\"runtimeSide\":\"client\",\"supportedScopes\":[\"common\",\"client\"],\"supportedSides\":[\"client\"],\"toolDescriptors\":[],\"state\":{}}\n");
+                    writer.flush();
+                    waitUntil(() -> registry.state().gameConnected());
+                }
+                waitUntil(() -> !registry.state().gameConnected());
+            }
+        } finally {
+            System.setErr(originalErr);
+        }
+
+        var logs = logOutput.toString(StandardCharsets.UTF_8);
+        assertFalse(logs.contains("runtime connected:"));
+        assertTrue(logs.contains("runtime disconnected: runtime-1"));
+    }
+
     private int freePort() throws Exception {
         try (var socket = new ServerSocket(0)) {
             return socket.getLocalPort();
@@ -68,4 +95,3 @@ class RuntimeHostTest {
         boolean ok();
     }
 }
-

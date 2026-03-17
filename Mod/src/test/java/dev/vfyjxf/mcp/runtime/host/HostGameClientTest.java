@@ -17,11 +17,13 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HostGameClientTest {
 
@@ -131,15 +133,46 @@ class HostGameClientTest {
     void reconnectLoopRetriesUntilClientRunSucceeds() throws Exception {
         var attempts = new AtomicInteger();
         var connected = new CompletableFuture<Integer>();
+        var logs = new CopyOnWriteArrayList<String>();
         try (var loop = new HostReconnectLoop(() -> {
             var attempt = attempts.incrementAndGet();
             if (attempt < 3) {
                 throw new java.io.IOException("refused");
             }
             connected.complete(attempt);
-        }, 50L)) {
+        }, 50L, logs::add)) {
             loop.start();
             assertEquals(3, connected.get(5, TimeUnit.SECONDS));
+        }
+        assertTrue(logs.size() >= 2);
+        assertTrue(logs.stream().allMatch(log -> log.contains("reconnect")));
+    }
+
+    @Test
+    void clientLogsDisconnectButNotSuccessfulConnect() throws Exception {
+        try (var relaySocket = new ServerSocket(0);
+             var executor = Executors.newSingleThreadExecutor()) {
+            var logs = new CopyOnWriteArrayList<String>();
+            var server = new ModDevMcpServer(new McpToolRegistry());
+            var client = new HostGameClient(
+                    server,
+                    new HostRuntimeClientConfig("127.0.0.1", relaySocket.getLocalPort(), 50L),
+                    "runtime-1",
+                    "client",
+                    logs::add
+            );
+
+            var runFuture = executor.submit(() -> { client.runUntilDisconnected(); return null; });
+            try (var socket = relaySocket.accept();
+                 var reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+                 var writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8))) {
+                readJsonLine(reader);
+                writeLine(writer, "{\"status\":\"ok\"}");
+            }
+
+            runFuture.get(5, TimeUnit.SECONDS);
+            assertEquals(1, logs.size());
+            assertTrue(logs.getFirst().contains("disconnected"));
         }
     }
 
@@ -160,3 +193,4 @@ class HostGameClientTest {
         throw new AssertionError("Timed out waiting for JSON line");
     }
 }
+

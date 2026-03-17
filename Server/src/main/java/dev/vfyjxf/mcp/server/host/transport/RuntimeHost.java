@@ -1,11 +1,19 @@
 package dev.vfyjxf.mcp.server.host.transport;
 
 import dev.vfyjxf.mcp.server.api.ToolResult;
-import dev.vfyjxf.mcp.server.host.*;
+import dev.vfyjxf.mcp.server.host.RuntimeCallQueue;
+import dev.vfyjxf.mcp.server.host.RuntimeInvoker;
+import dev.vfyjxf.mcp.server.host.RuntimeRegistry;
+import dev.vfyjxf.mcp.server.host.RuntimeSession;
+import dev.vfyjxf.mcp.server.host.RuntimeToolDescriptor;
 import dev.vfyjxf.mcp.server.host.protocol.RuntimeHostDispatcher;
 import dev.vfyjxf.mcp.server.transport.JsonCodec;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -18,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 public final class RuntimeHost implements AutoCloseable, RuntimeInvoker {
 
@@ -31,10 +40,11 @@ public final class RuntimeHost implements AutoCloseable, RuntimeInvoker {
     private final ConcurrentHashMap<String, RuntimeConnection> connectionsByRuntimeId;
     private final AtomicLong nextCallId;
     private final RuntimeCallQueue scheduler;
+    private final Consumer<String> logSink;
     private final Thread acceptThread;
     private volatile boolean closed;
 
-    private RuntimeHost(ServerSocket serverSocket, RuntimeRegistry registry, RuntimeCallQueue scheduler) {
+    private RuntimeHost(ServerSocket serverSocket, RuntimeRegistry registry, RuntimeCallQueue scheduler, Consumer<String> logSink) {
         this.serverSocket = Objects.requireNonNull(serverSocket, "serverSocket");
         this.dispatcher = new RuntimeHostDispatcher(Objects.requireNonNull(registry, "registry"));
         this.jsonCodec = new JsonCodec();
@@ -43,6 +53,7 @@ public final class RuntimeHost implements AutoCloseable, RuntimeInvoker {
         this.connectionsByRuntimeId = new ConcurrentHashMap<>();
         this.nextCallId = new AtomicLong();
         this.scheduler = scheduler;
+        this.logSink = Objects.requireNonNull(logSink, "logSink");
         if (scheduler != null) {
             scheduler.setInvoker(this);
         }
@@ -56,8 +67,12 @@ public final class RuntimeHost implements AutoCloseable, RuntimeInvoker {
     }
 
     public static RuntimeHost start(RuntimeRegistry registry, String host, int port, RuntimeCallQueue scheduler) throws IOException {
+        return start(registry, host, port, scheduler, System.err::println);
+    }
+
+    static RuntimeHost start(RuntimeRegistry registry, String host, int port, RuntimeCallQueue scheduler, Consumer<String> logSink) throws IOException {
         var serverSocket = new ServerSocket(port, 50, InetAddress.getByName(host));
-        return new RuntimeHost(serverSocket, registry, scheduler);
+        return new RuntimeHost(serverSocket, registry, scheduler, logSink);
     }
 
     public int port() {
@@ -142,7 +157,6 @@ public final class RuntimeHost implements AutoCloseable, RuntimeInvoker {
                     if ("runtime.hello".equals(request.get("type"))) {
                         connection.runtimeId = runtimeId;
                         connectionsByRuntimeId.put(runtimeId, connection);
-                        System.err.println("runtime connected: " + runtimeId + " from " + socket.getRemoteSocketAddress());
                     }
                 }
                 var response = dispatcher.handle(request);
@@ -166,7 +180,7 @@ public final class RuntimeHost implements AutoCloseable, RuntimeInvoker {
                 if (scheduler != null) {
                     scheduler.onRuntimeDisconnected(runtimeId);
                 }
-                System.err.println("runtime disconnected: " + runtimeId);
+                logSink.accept("runtime disconnected: " + runtimeId);
             }
         }
     }

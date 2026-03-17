@@ -54,6 +54,7 @@ public final class HotswapToolProvider implements McpToolProvider {
                         Map.of(
                                 "type", "object",
                                 "properties", Map.of(
+                                        "targetSide", targetSideSchema(),
                                         "compile", Map.of(
                                                 "type", "boolean",
                                                 "description", "Whether to compile before attempting hotswap. Defaults to true."
@@ -95,6 +96,14 @@ public final class HotswapToolProvider implements McpToolProvider {
                     response.put("success", reloadResult.errors().isEmpty());
                     return ToolResult.success(response);
                 }
+        );
+    }
+
+    private Map<String, Object> targetSideSchema() {
+        return Map.of(
+                "type", "string",
+                "enum", List.of("client", "server"),
+                "description", "Optional runtime routing hint when both client and server runtimes are connected to the same gateway."
         );
     }
 }
