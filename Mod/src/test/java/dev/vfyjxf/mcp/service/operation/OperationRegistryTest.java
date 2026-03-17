@@ -746,4 +746,25 @@ class OperationRegistryTest {
 
         assertThrows(IllegalArgumentException.class, () -> registry.validateDeclaredCategories(categories));
     }
+
+    @Test
+    void validateDeclaredCategoriesRejectsDuplicateCategoryIds() {
+        var operation = new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of()
+        );
+        var registry = new OperationRegistry(List.of(operation));
+        var categories = List.of(
+                new CategoryDefinition("ui", "UI", "Screen tools.", List.of("ui-snapshot"), List.of("ui.snapshot")),
+                new CategoryDefinition("ui", "UI Duplicate", "Duplicate.", List.of("ui-snapshot"), List.of("ui.snapshot"))
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> registry.validateDeclaredCategories(categories));
+    }
 }

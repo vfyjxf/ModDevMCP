@@ -429,6 +429,28 @@ class SkillRegistryTest {
     }
 
     @Test
+    void validateDeclaredCategoriesRejectsDuplicateCategoryIds() {
+        var entry = new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of("entry"),
+                false,
+                "This is the entry skill."
+        );
+        var registry = new SkillRegistry(List.of(entry));
+        var categories = List.of(
+                new CategoryDefinition("status", "Status", "Service status.", List.of("moddev-entry"), List.of()),
+                new CategoryDefinition("status", "Status Duplicate", "Duplicate.", List.of("moddev-entry"), List.of())
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> registry.validateDeclaredCategories(categories));
+    }
+
+    @Test
     void skillDefinitionRejectsPaddedIdentifiers() {
         assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
                 " moddev-entry",

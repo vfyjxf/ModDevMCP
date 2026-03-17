@@ -80,7 +80,9 @@ public final class OperationRegistry {
             if (category == null) {
                 throw new IllegalArgumentException("categories must not contain null members");
             }
-            declared.add(category.categoryId());
+            if (!declared.add(category.categoryId())) {
+                throw new IllegalArgumentException("duplicate declared categoryId: " + category.categoryId());
+            }
         }
         for (var operation : all) {
             if (!declared.contains(operation.categoryId())) {

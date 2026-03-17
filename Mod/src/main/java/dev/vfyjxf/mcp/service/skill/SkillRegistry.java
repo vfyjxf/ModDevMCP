@@ -106,7 +106,9 @@ public final class SkillRegistry {
             if (category == null) {
                 throw new IllegalArgumentException("categories must not contain null members");
             }
-            declared.add(category.categoryId());
+            if (!declared.add(category.categoryId())) {
+                throw new IllegalArgumentException("duplicate declared categoryId: " + category.categoryId());
+            }
         }
         for (var skill : all) {
             if (!declared.contains(skill.categoryId())) {
