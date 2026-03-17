@@ -12,7 +12,7 @@ class ServiceConfigTest {
     void loadResolvedUsesDefaultHostPortAndExportRoot() {
         withClearedProperty("moddev.service.host", () ->
                 withClearedProperty("moddev.service.port", () ->
-                        withClearedProperty("moddev.service.exportRoot", () -> {
+                        withClearedProperty("moddev.skill.exportRoot", () -> {
                             var config = ServiceConfig.loadResolved();
 
                             assertEquals("127.0.0.1", config.host());

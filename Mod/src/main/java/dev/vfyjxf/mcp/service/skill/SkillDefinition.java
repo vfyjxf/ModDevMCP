@@ -1,12 +1,17 @@
 package dev.vfyjxf.mcp.service.skill;
 
+import java.util.Set;
+
 public record SkillDefinition(
         String skillId,
         String categoryId,
         SkillKind kind,
         String title,
         String summary,
-        String operationId
+        String operationId,
+        Set<String> tags,
+        boolean requiresGame,
+        String markdown
 ) {
 
     public SkillDefinition {
@@ -25,6 +30,12 @@ public record SkillDefinition(
         if (summary == null || summary.isBlank()) {
             throw new IllegalArgumentException("summary must not be blank");
         }
+        if (tags == null) {
+            throw new IllegalArgumentException("tags must not be null");
+        }
+        if (markdown == null || markdown.isBlank()) {
+            throw new IllegalArgumentException("markdown must not be blank");
+        }
 
         var normalizedOperationId = normalize(operationId);
         switch (kind) {
@@ -41,6 +52,8 @@ public record SkillDefinition(
         }
 
         operationId = normalizedOperationId;
+        tags = Set.copyOf(tags);
+        markdown = markdown.trim();
     }
 
     private static String normalize(String value) {

@@ -1,5 +1,6 @@
 package dev.vfyjxf.mcp.service.operation;
 
+import dev.vfyjxf.mcp.service.category.CategoryDefinition;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -11,6 +12,20 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OperationRegistryTest {
+
+    @Test
+    void categoryDefinitionOwnsSkillIdsAndOperationIds() {
+        var definition = new CategoryDefinition(
+                "ui",
+                "UI",
+                "Screen and interaction tools.",
+                Set.of("moddev-entry", "ui-snapshot"),
+                Set.of("ui.snapshot")
+        );
+
+        assertEquals(Set.of("moddev-entry", "ui-snapshot"), definition.skillIds());
+        assertEquals(Set.of("ui.snapshot"), definition.operationIds());
+    }
 
     @Test
     void metadataIncludesTargetSideAndCategoryOwnership() {

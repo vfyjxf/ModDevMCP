@@ -12,7 +12,7 @@ public record ServiceConfig(
     public static final int DEFAULT_PORT = 47812;
     public static final String HOST_PROPERTY = "moddev.service.host";
     public static final String PORT_PROPERTY = "moddev.service.port";
-    public static final String EXPORT_ROOT_PROPERTY = "moddev.service.exportRoot";
+    public static final String EXPORT_ROOT_PROPERTY = "moddev.skill.exportRoot";
 
     public ServiceConfig {
         if (host == null || host.isBlank()) {

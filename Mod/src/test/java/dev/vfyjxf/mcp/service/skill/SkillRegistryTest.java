@@ -3,6 +3,7 @@ package dev.vfyjxf.mcp.service.skill;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -18,7 +19,10 @@ class SkillRegistryTest {
                 SkillKind.ACTION,
                 "UI Snapshot",
                 "Capture UI metadata.",
-                "ui.snapshot"
+                "ui.snapshot",
+                Set.of("ui", "snapshot"),
+                true,
+                "Use this skill to capture UI metadata."
         ));
 
         assertThrows(IllegalArgumentException.class, () -> new SkillRegistry(definitions));
@@ -32,10 +36,15 @@ class SkillRegistryTest {
                 SkillKind.GUIDANCE,
                 "Entry",
                 "Start here.",
-                null
+                null,
+                Set.of("entry"),
+                false,
+                "This is the entry skill."
         );
 
         assertEquals("moddev-entry", definition.skillId());
+        assertEquals(Set.of("entry"), definition.tags());
+        assertTrue(definition.markdown().contains("entry"));
     }
 
     @Test
@@ -46,7 +55,10 @@ class SkillRegistryTest {
                 SkillKind.ACTION,
                 "UI Snapshot",
                 "Capture UI metadata.",
-                null
+                null,
+                Set.of("ui"),
+                true,
+                "Capture a snapshot."
         ));
     }
 
@@ -58,6 +70,35 @@ class SkillRegistryTest {
                 SkillKind.HYBRID,
                 "Guide and Run",
                 "Explain and run.",
+                "   ",
+                Set.of("guide"),
+                true,
+                "Guide users and execute one operation."
+        ));
+    }
+
+    @Test
+    void skillRequiresNonBlankMarkdownAndNonNullTags() {
+        assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                null,
+                false,
+                "This is the entry skill."
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of("entry"),
+                false,
                 "   "
         ));
     }
@@ -70,7 +111,10 @@ class SkillRegistryTest {
                 SkillKind.GUIDANCE,
                 "Entry",
                 "Start here.",
-                null
+                null,
+                Set.of("entry"),
+                false,
+                "This is the entry skill."
         );
         var action = new SkillDefinition(
                 "ui-snapshot",
@@ -78,7 +122,10 @@ class SkillRegistryTest {
                 SkillKind.ACTION,
                 "UI Snapshot",
                 "Capture UI metadata.",
-                "ui.snapshot"
+                "ui.snapshot",
+                Set.of("ui"),
+                true,
+                "Capture UI metadata."
         );
         var registry = new SkillRegistry(List.of(entry, action));
 
