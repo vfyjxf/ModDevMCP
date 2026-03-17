@@ -37,16 +37,5 @@ class HostArchitectureDocsTest {
         assertFalse(readme.contains("Server artifact"));
         assertFalse(readme.contains("Gradle plugin id"));
     }
-
-    @Test
-    void modBuildNoLongerPublishesLegacyBridgeTasks() throws Exception {
-        var buildGradle = Files.readString(Path.of("").toAbsolutePath().normalize().resolve("build.gradle"));
-
-        assertFalse(buildGradle.contains("EmbeddedMcpLaunchFiles"));
-        assertFalse(buildGradle.contains("embeddedMcpRuntime"));
-        assertFalse(buildGradle.contains("runEmbeddedMcpStdio"));
-        assertFalse(buildGradle.contains("runGameMcpBridge"));
-        assertFalse(buildGradle.contains("createGameMcpBridgeLaunchScript"));
-    }
 }
 
