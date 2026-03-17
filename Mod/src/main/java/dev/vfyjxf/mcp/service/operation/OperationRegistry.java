@@ -71,6 +71,24 @@ public final class OperationRegistry {
         }
     }
 
+    public void validateDeclaredCategories(List<CategoryDefinition> categories) {
+        if (categories == null) {
+            throw new IllegalArgumentException("categories must not be null");
+        }
+        var declared = new java.util.HashSet<String>();
+        for (var category : categories) {
+            if (category == null) {
+                throw new IllegalArgumentException("categories must not contain null members");
+            }
+            declared.add(category.categoryId());
+        }
+        for (var operation : all) {
+            if (!declared.contains(operation.categoryId())) {
+                throw new IllegalArgumentException("orphan operation categoryId: " + operation.categoryId());
+            }
+        }
+    }
+
     private static void validateLookupId(String value, String fieldName) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(fieldName + " must not be blank");

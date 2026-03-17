@@ -722,4 +722,28 @@ class OperationRegistryTest {
 
         assertThrows(IllegalArgumentException.class, () -> registry.validateCategoryOwnership(category));
     }
+
+    @Test
+    void validateDeclaredCategoriesRejectsOrphanOperationCategoryId() {
+        var operation = new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                Map.of(),
+                Map.of()
+        );
+        var registry = new OperationRegistry(List.of(operation));
+        var categories = List.of(new CategoryDefinition(
+                "status",
+                "Status",
+                "Service status.",
+                List.of("moddev-entry"),
+                List.of()
+        ));
+
+        assertThrows(IllegalArgumentException.class, () -> registry.validateDeclaredCategories(categories));
+    }
 }

@@ -97,6 +97,24 @@ public final class SkillRegistry {
         }
     }
 
+    public void validateDeclaredCategories(List<CategoryDefinition> categories) {
+        if (categories == null) {
+            throw new IllegalArgumentException("categories must not be null");
+        }
+        var declared = new java.util.HashSet<String>();
+        for (var category : categories) {
+            if (category == null) {
+                throw new IllegalArgumentException("categories must not contain null members");
+            }
+            declared.add(category.categoryId());
+        }
+        for (var skill : all) {
+            if (!declared.contains(skill.categoryId())) {
+                throw new IllegalArgumentException("orphan skill categoryId: " + skill.categoryId());
+            }
+        }
+    }
+
     private static void validateLookupId(String value, String fieldName) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(fieldName + " must not be blank");
