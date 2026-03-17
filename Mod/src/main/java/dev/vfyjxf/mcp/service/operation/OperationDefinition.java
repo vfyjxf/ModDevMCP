@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.Collections;
 
 public record OperationDefinition(
         String operationId,
@@ -51,7 +52,7 @@ public record OperationDefinition(
         for (var entry : source.entrySet()) {
             copy.put(entry.getKey(), freezeValue(entry.getValue()));
         }
-        return Map.copyOf(copy);
+        return Collections.unmodifiableMap(copy);
     }
 
     private static List<Object> freezeList(List<?> source) {
@@ -71,7 +72,7 @@ public record OperationDefinition(
             for (var entry : mapValue.entrySet()) {
                 nested.put(String.valueOf(entry.getKey()), freezeValue(entry.getValue()));
             }
-            return Map.copyOf(nested);
+            return Collections.unmodifiableMap(nested);
         }
         if (value instanceof List<?> listValue) {
             return freezeList(listValue);

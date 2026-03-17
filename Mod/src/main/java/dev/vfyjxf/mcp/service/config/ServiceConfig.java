@@ -24,6 +24,7 @@ public record ServiceConfig(
         if (exportRoot == null) {
             throw new IllegalArgumentException("exportRoot must not be null");
         }
+        exportRoot = exportRoot.toAbsolutePath().normalize();
     }
 
     public static ServiceConfig loadResolved() {
@@ -31,7 +32,7 @@ public record ServiceConfig(
         var portText = defaultIfBlank(System.getProperty(PORT_PROPERTY), String.valueOf(DEFAULT_PORT));
         var port = parsePort(portText);
         var exportRootText = defaultIfBlank(System.getProperty(EXPORT_ROOT_PROPERTY), defaultExportRoot().toString());
-        var exportRoot = Path.of(exportRootText).toAbsolutePath().normalize();
+        var exportRoot = Path.of(exportRootText);
         return new ServiceConfig(host, port, exportRoot);
     }
 

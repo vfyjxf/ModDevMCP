@@ -36,6 +36,12 @@ class ServiceConfigTest {
                 }));
     }
 
+    @Test
+    void constructorNormalizesExportRootInvariant() {
+        var config = new ServiceConfig("127.0.0.1", 47812, Path.of("build", "..", "tmp", "skills"));
+        assertEquals(Path.of("build", "..", "tmp", "skills").toAbsolutePath().normalize(), config.exportRoot());
+    }
+
     private static void withClearedProperty(String key, Runnable testBody) {
         var previous = System.getProperty(key);
         try {

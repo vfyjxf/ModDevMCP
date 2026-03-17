@@ -79,6 +79,34 @@ class OperationRegistryTest {
     }
 
     @Test
+    void frozenMetadataPreservesInsertionOrderForNestedMaps() {
+        var nestedSchema = new LinkedHashMap<String, Object>();
+        nestedSchema.put("beta", 2);
+        nestedSchema.put("alpha", 1);
+        var schema = new LinkedHashMap<String, Object>();
+        schema.put("zeta", 26);
+        schema.put("eta", nestedSchema);
+        var example = new LinkedHashMap<String, Object>();
+        example.put("requestId", "r-1");
+        example.put("input", new LinkedHashMap<>(Map.of("k2", "v2", "k1", "v1")));
+
+        var definition = new OperationDefinition(
+                "ui.snapshot",
+                "ui",
+                "UI Snapshot",
+                "Capture UI metadata.",
+                true,
+                Set.of("client"),
+                schema,
+                example
+        );
+
+        assertEquals(List.of("zeta", "eta"), List.copyOf(definition.inputSchema().keySet()));
+        assertEquals(List.of("beta", "alpha"), List.copyOf(((Map<String, Object>) definition.inputSchema().get("eta")).keySet()));
+        assertEquals(List.of("requestId", "input"), List.copyOf(definition.exampleRequest().keySet()));
+    }
+
+    @Test
     void registryGroupsOperationsByCategoryAndIsReadOnly() {
         var snapshot = new OperationDefinition(
                 "ui.snapshot",
