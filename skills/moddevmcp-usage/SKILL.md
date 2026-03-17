@@ -77,12 +77,12 @@ Available tools:
 - `moddev.command_suggest`
 - `moddev.command_execute`
 
-Interpret `commandSide` strictly:
+Interpret `targetSide` strictly:
 
-- `commandSide=client` means NeoForge client commands
-- `commandSide=server` means server commands in the current runtime context
-- in a singleplayer world, `commandSide=server` may resolve to the integrated server
-- at the title screen or outside a loaded singleplayer server context, `commandSide=server` may be unavailable
+- `targetSide=client` routes to the client runtime
+- `targetSide=server` routes to the server runtime
+- when both runtimes are connected, do not omit `targetSide`
+- at the title screen or outside a loaded world, runtime-specific command availability may still be limited
 
 Prefer this order for command work:
 
@@ -98,7 +98,7 @@ Minimal examples:
 {
   "name": "moddev.command_list",
   "arguments": {
-    "commandSide": "client",
+    "targetSide": "client",
     "limit": 20
   }
 }
@@ -108,7 +108,7 @@ Minimal examples:
 {
   "name": "moddev.command_execute",
   "arguments": {
-    "commandSide": "server",
+    "targetSide": "server",
     "command": "time set day"
   }
 }

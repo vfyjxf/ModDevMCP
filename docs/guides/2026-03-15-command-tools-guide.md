@@ -15,19 +15,18 @@ Describe the command MCP tools used to discover and execute Minecraft commands i
 ## Routing Rule
 
 - command tools follow the normal runtime routing already used by other dynamic tools
-- `commandSide` selects which command dispatcher to use inside the chosen runtime
-- use `commandSide=client` for NeoForge client commands
-- use `commandSide=server` for vanilla / modded server commands
-- when the chosen runtime is `client runtime`, `commandSide=server` targets the integrated server dispatcher if a singleplayer server is running
-- do not pass `targetSide` for command tools; the gateway already uses that key for runtime routing
+- when both `client` and `server` runtimes are connected, pass `targetSide=client|server` to select which runtime receives the tool call
+- `targetSide=client` routes to the NeoForge client command runtime
+- `targetSide=server` routes to the server command runtime
 
 ## Recommended Flow
 
 1. call `moddev.status`
 2. confirm `gameConnected=true`
-3. call `moddev.command_list` with a small `query`
-4. call `moddev.command_suggest` when refining an argument-heavy command
-5. call `moddev.command_execute` only after choosing the command side explicitly
+3. choose `targetSide`
+4. call `moddev.command_list` with a small `query`
+5. call `moddev.command_suggest` when refining an argument-heavy command
+6. call `moddev.command_execute`
 
 ## Minimal Examples
 
@@ -37,7 +36,7 @@ List matching server commands:
 {
   "name": "moddev.command_list",
   "arguments": {
-    "commandSide": "server",
+    "targetSide": "server",
     "query": "time"
   }
 }
@@ -49,7 +48,7 @@ Get suggestions for a client command:
 {
   "name": "moddev.command_suggest",
   "arguments": {
-    "commandSide": "client",
+    "targetSide": "client",
     "input": "/clientconfig "
   }
 }
@@ -61,7 +60,7 @@ Execute a server command:
 {
   "name": "moddev.command_execute",
   "arguments": {
-    "commandSide": "server",
+    "targetSide": "server",
     "command": "/say hello from MCP"
   }
 }
@@ -72,4 +71,3 @@ Execute a server command:
 - `command_execute` normalizes a leading `/`
 - `messages` contains bounded feedback lines, not an unbounded log dump
 - parse or dispatch failures are returned as structured `errorCode` / `errorDetail`
-- `commandSide=server` is not limited to the dedicated `server runtime`; in singleplayer it can be served by the client-side integrated server

@@ -20,6 +20,6 @@ public class Events {
     }
 
     public static int testMethod(int a, int b) {
-        return a + b + 1;
+        return a + b + 200;
     }
 }

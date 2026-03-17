@@ -52,13 +52,13 @@ If connection or the first tool call fails, treat the game as not ready.
 
 ## Command Tools
 
-The gateway also exposes side-aware command tools:
+The gateway also exposes runtime-routed command tools:
 
 - `moddev.command_list`
 - `moddev.command_suggest`
 - `moddev.command_execute`
 
-Command tools use `commandSide` to choose client or server command context inside the runtime selected by the normal gateway routing.
+When both `client` and `server` runtimes are connected, pass `targetSide=client|server` to choose which runtime receives the command tool call.
 
 ## Local World Tools
 
