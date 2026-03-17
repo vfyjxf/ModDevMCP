@@ -44,7 +44,15 @@ public final class HttpServiceServer {
     }
 
     public URI baseUri() {
-        return URI.create("http://" + config.host() + ":" + config.port());
+        return buildBaseUri(config.host(), config.port());
+    }
+
+    static URI buildBaseUri(String host, int port) {
+        var authorityHost = host;
+        if (host.indexOf(':') >= 0 && !(host.startsWith("[") && host.endsWith("]"))) {
+            authorityHost = "[" + host + "]";
+        }
+        return URI.create("http://" + authorityHost + ":" + port);
     }
 
     private static HttpServer createServer(ServiceConfig config) {

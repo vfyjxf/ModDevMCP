@@ -18,6 +18,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -81,13 +82,13 @@ class SkillDiscoveryEndpointTest {
                         false,
                         Set.of(),
                         Map.of("type", "object"),
-                        Map.of("operationId", "status.check", "input", Map.of("verbose", true))
+                        orderedExampleRequest()
                 )
         ));
 
         server = new HttpServiceServer(
                 new ServiceConfig("127.0.0.1", findOpenPort(), tempDir),
-                new StatusEndpoint(false, List.of(), "moddev-entry", tempDir, null),
+                statusEndpoint(tempDir),
                 new CategoriesEndpoint(List.of(category)),
                 new SkillsEndpoint(skillRegistry),
                 new OperationsEndpoint(operationRegistry)
@@ -135,7 +136,7 @@ class SkillDiscoveryEndpointTest {
 
         server = new HttpServiceServer(
                 new ServiceConfig("127.0.0.1", findOpenPort(), tempDir),
-                new StatusEndpoint(false, List.of(), "moddev-entry", tempDir, null),
+                statusEndpoint(tempDir),
                 new CategoriesEndpoint(List.of()),
                 new SkillsEndpoint(skillRegistry),
                 new OperationsEndpoint(new OperationRegistry(List.of()))
@@ -149,9 +150,166 @@ class SkillDiscoveryEndpointTest {
         assertEquals("# Entry\nUse /api/v1/status\n", response.body());
     }
 
+    @Test
+    void skillMarkdownPathDecodingKeepsPlusCharacter() throws Exception {
+        var skillRegistry = new SkillRegistry(List.of(
+                new SkillDefinition(
+                        "moddev-entry",
+                        "status",
+                        SkillKind.GUIDANCE,
+                        "Entry",
+                        "Start here.",
+                        null,
+                        Set.of("entry"),
+                        false,
+                        "# Entry\n"
+                ),
+                new SkillDefinition(
+                        "status+tips",
+                        "status",
+                        SkillKind.GUIDANCE,
+                        "Status Tips",
+                        "Keep plus in id.",
+                        null,
+                        Set.of("status"),
+                        false,
+                        "# Plus Id\n"
+                )
+        ));
+
+        server = new HttpServiceServer(
+                new ServiceConfig("127.0.0.1", findOpenPort(), tempDir),
+                statusEndpoint(tempDir),
+                new CategoriesEndpoint(List.of()),
+                new SkillsEndpoint(skillRegistry),
+                new OperationsEndpoint(new OperationRegistry(List.of()))
+        );
+        server.start();
+
+        var response = get(server.baseUri().resolve("/api/v1/skills/status+tips/markdown"));
+
+        assertEquals(200, response.statusCode());
+        assertEquals("# Plus Id\n", response.body());
+    }
+
+    @Test
+    void unknownSkillMarkdownReturnsNotFound() throws Exception {
+        var skillRegistry = new SkillRegistry(List.of(
+                new SkillDefinition(
+                        "moddev-entry",
+                        "status",
+                        SkillKind.GUIDANCE,
+                        "Entry",
+                        "Start here.",
+                        null,
+                        Set.of("entry"),
+                        false,
+                        "# Entry\n"
+                )
+        ));
+
+        server = new HttpServiceServer(
+                new ServiceConfig("127.0.0.1", findOpenPort(), tempDir),
+                statusEndpoint(tempDir),
+                new CategoriesEndpoint(List.of()),
+                new SkillsEndpoint(skillRegistry),
+                new OperationsEndpoint(new OperationRegistry(List.of()))
+        );
+        server.start();
+
+        var response = get(server.baseUri().resolve("/api/v1/skills/missing/markdown"));
+
+        assertEquals(404, response.statusCode());
+        assertTrue(response.body().contains("not_found"));
+    }
+
+    @Test
+    void markdownEndpointRejectsNonGetMethod() throws Exception {
+        var skillRegistry = new SkillRegistry(List.of(
+                new SkillDefinition(
+                        "moddev-entry",
+                        "status",
+                        SkillKind.GUIDANCE,
+                        "Entry",
+                        "Start here.",
+                        null,
+                        Set.of("entry"),
+                        false,
+                        "# Entry\n"
+                )
+        ));
+
+        server = new HttpServiceServer(
+                new ServiceConfig("127.0.0.1", findOpenPort(), tempDir),
+                statusEndpoint(tempDir),
+                new CategoriesEndpoint(List.of()),
+                new SkillsEndpoint(skillRegistry),
+                new OperationsEndpoint(new OperationRegistry(List.of()))
+        );
+        server.start();
+
+        var response = request(server.baseUri().resolve("/api/v1/skills/moddev-entry/markdown"), "POST");
+
+        assertEquals(405, response.statusCode());
+        assertEquals("GET", response.headers().firstValue("Allow").orElse("missing"));
+    }
+
     private static HttpResponse<String> get(URI uri) throws IOException, InterruptedException {
-        var request = HttpRequest.newBuilder(uri).GET().build();
+        return request(uri, "GET");
+    }
+
+    private static HttpResponse<String> request(URI uri, String method) throws IOException, InterruptedException {
+        var request = HttpRequest.newBuilder(uri).method(method, HttpRequest.BodyPublishers.noBody()).build();
         return HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static Map<String, Object> orderedExampleRequest() {
+        var exampleRequest = new LinkedHashMap<String, Object>();
+        exampleRequest.put("operationId", "status.check");
+        exampleRequest.put("input", Map.of("verbose", true));
+        return exampleRequest;
+    }
+
+    private static StatusEndpoint statusEndpoint(Path exportRoot) {
+        return new StatusEndpoint(new StaticStatusProvider(exportRoot));
+    }
+
+    private static final class StaticStatusProvider implements StatusEndpoint.StatusProvider {
+        private final Path exportRoot;
+
+        private StaticStatusProvider(Path exportRoot) {
+            this.exportRoot = exportRoot;
+        }
+
+        @Override
+        public boolean serviceReady() {
+            return true;
+        }
+
+        @Override
+        public boolean gameReady() {
+            return false;
+        }
+
+        @Override
+        public List<String> connectedSides() {
+            return List.of();
+        }
+
+        @Override
+        public String entrySkillId() {
+            return "moddev-entry";
+        }
+
+        @Override
+        public Path exportRoot() {
+            return exportRoot;
+        }
+
+        @Override
+        public String lastError() {
+            return null;
+        }
     }
 
     private static int findOpenPort() {

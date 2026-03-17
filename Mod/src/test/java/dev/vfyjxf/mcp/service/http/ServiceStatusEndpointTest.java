@@ -51,11 +51,15 @@ class ServiceStatusEndpointTest {
                         "# Entry\n"
                 )
         ));
+        var status = new MutableStatusProvider(tempDir);
+        status.gameReady = true;
+        status.connectedSides = List.of("client");
+        status.lastError = "no game instance";
 
         var config = new ServiceConfig("127.0.0.1", findOpenPort(), tempDir);
         server = new HttpServiceServer(
                 config,
-                new StatusEndpoint(true, List.of("client"), "moddev-entry", tempDir, "no game instance"),
+                new StatusEndpoint(status),
                 new CategoriesEndpoint(List.of()),
                 new SkillsEndpoint(skillRegistry),
                 new OperationsEndpoint(new OperationRegistry(List.of()))
@@ -70,6 +74,101 @@ class ServiceStatusEndpointTest {
                 "{\"serviceReady\":true,\"gameReady\":true,\"connectedSides\":[\"client\"],\"entrySkillId\":\"moddev-entry\",\"exportRoot\":\"" + tempDir.toAbsolutePath().normalize().toString().replace("\\", "\\\\") + "\",\"lastError\":\"no game instance\"}",
                 response.body()
         );
+    }
+
+    @Test
+    void getStatusReflectsLiveStateAcrossRequests() throws Exception {
+        var status = new MutableStatusProvider(tempDir);
+        server = new HttpServiceServer(
+                new ServiceConfig("127.0.0.1", findOpenPort(), tempDir),
+                new StatusEndpoint(status),
+                new CategoriesEndpoint(List.of()),
+                new SkillsEndpoint(new SkillRegistry(List.of(entrySkill()))),
+                new OperationsEndpoint(new OperationRegistry(List.of()))
+        );
+        server.start();
+
+        var first = get(server.baseUri().resolve("/api/v1/status"));
+        assertEquals(
+                "{\"serviceReady\":true,\"gameReady\":false,\"connectedSides\":[],\"entrySkillId\":\"moddev-entry\",\"exportRoot\":\"" + tempDir.toAbsolutePath().normalize().toString().replace("\\", "\\\\") + "\",\"lastError\":null}",
+                first.body()
+        );
+
+        status.serviceReady = false;
+        status.gameReady = true;
+        status.connectedSides = List.of("server");
+        status.entrySkillId = "moddev-entry-alt";
+        status.exportRoot = tempDir.resolve("next");
+        status.lastError = "updated";
+
+        var second = get(server.baseUri().resolve("/api/v1/status"));
+        assertEquals(
+                "{\"serviceReady\":false,\"gameReady\":true,\"connectedSides\":[\"server\"],\"entrySkillId\":\"moddev-entry-alt\",\"exportRoot\":\"" + tempDir.resolve("next").toAbsolutePath().normalize().toString().replace("\\", "\\\\") + "\",\"lastError\":\"updated\"}",
+                second.body()
+        );
+    }
+
+    @Test
+    void baseUriWrapsIpv6HostWithBrackets() {
+        var uri = HttpServiceServer.buildBaseUri("::1", 47812);
+        assertEquals("http://[::1]:47812", uri.toString());
+    }
+
+    private static SkillDefinition entrySkill() {
+        return new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of("entry"),
+                false,
+                "# Entry\n"
+        );
+    }
+
+    private static final class MutableStatusProvider implements StatusEndpoint.StatusProvider {
+        private boolean serviceReady = true;
+        private boolean gameReady;
+        private List<String> connectedSides = List.of();
+        private String entrySkillId = "moddev-entry";
+        private Path exportRoot;
+        private String lastError;
+
+        private MutableStatusProvider(Path exportRoot) {
+            this.exportRoot = exportRoot;
+        }
+
+        @Override
+        public boolean serviceReady() {
+            return serviceReady;
+        }
+
+        @Override
+        public boolean gameReady() {
+            return gameReady;
+        }
+
+        @Override
+        public List<String> connectedSides() {
+            return connectedSides;
+        }
+
+        @Override
+        public String entrySkillId() {
+            return entrySkillId;
+        }
+
+        @Override
+        public Path exportRoot() {
+            return exportRoot;
+        }
+
+        @Override
+        public String lastError() {
+            return lastError;
+        }
     }
 
     private static HttpResponse<String> get(URI uri) throws IOException, InterruptedException {

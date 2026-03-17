@@ -5,7 +5,7 @@ import com.sun.net.httpserver.HttpServer;
 import dev.vfyjxf.mcp.service.skill.SkillRegistry;
 
 import java.io.IOException;
-import java.net.URLDecoder;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -33,6 +33,7 @@ public final class SkillsEndpoint implements HttpServiceServer.Endpoint {
         }
 
         var path = exchange.getRequestURI().getPath();
+        var rawPath = exchange.getRequestURI().getRawPath();
         if (BASE_PATH.equals(path) || (BASE_PATH + "/").equals(path)) {
             handleList(exchange);
             return;
@@ -42,10 +43,10 @@ public final class SkillsEndpoint implements HttpServiceServer.Endpoint {
             return;
         }
 
-        var remainder = path.substring((BASE_PATH + "/").length());
+        var remainder = rawPath.substring((BASE_PATH + "/").length());
         var parts = remainder.split("/");
         if (parts.length == 2 && "markdown".equals(parts[1])) {
-            handleMarkdown(exchange, URLDecoder.decode(parts[0], StandardCharsets.UTF_8));
+            handleMarkdown(exchange, decodePathSegment(parts[0]));
             return;
         }
         HttpJson.sendNotFound(exchange);
@@ -81,5 +82,28 @@ public final class SkillsEndpoint implements HttpServiceServer.Endpoint {
         } catch (IllegalArgumentException ignored) {
             HttpJson.sendNotFound(exchange);
         }
+    }
+
+    private static String decodePathSegment(String rawSegment) {
+        var bytes = new ByteArrayOutputStream(rawSegment.length());
+        for (int i = 0; i < rawSegment.length(); i++) {
+            var ch = rawSegment.charAt(i);
+            if (ch == '%') {
+                if (i + 2 >= rawSegment.length()) {
+                    throw new IllegalArgumentException("incomplete percent escape in path segment");
+                }
+                var hi = Character.digit(rawSegment.charAt(i + 1), 16);
+                var lo = Character.digit(rawSegment.charAt(i + 2), 16);
+                if (hi < 0 || lo < 0) {
+                    throw new IllegalArgumentException("invalid percent escape in path segment");
+                }
+                bytes.write((hi << 4) + lo);
+                i += 2;
+            } else {
+                var encoded = String.valueOf(ch).getBytes(StandardCharsets.UTF_8);
+                bytes.write(encoded, 0, encoded.length);
+            }
+        }
+        return bytes.toString(StandardCharsets.UTF_8);
     }
 }

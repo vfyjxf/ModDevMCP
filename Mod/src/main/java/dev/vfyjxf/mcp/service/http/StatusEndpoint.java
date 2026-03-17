@@ -11,24 +11,24 @@ import java.util.Objects;
 
 public final class StatusEndpoint implements HttpServiceServer.Endpoint {
 
-    private final boolean gameReady;
-    private final List<String> connectedSides;
-    private final String entrySkillId;
-    private final Path exportRoot;
-    private final String lastError;
+    public interface StatusProvider {
+        boolean serviceReady();
 
-    public StatusEndpoint(
-            boolean gameReady,
-            List<String> connectedSides,
-            String entrySkillId,
-            Path exportRoot,
-            String lastError
-    ) {
-        this.gameReady = gameReady;
-        this.connectedSides = List.copyOf(Objects.requireNonNull(connectedSides, "connectedSides"));
-        this.entrySkillId = Objects.requireNonNull(entrySkillId, "entrySkillId");
-        this.exportRoot = Objects.requireNonNull(exportRoot, "exportRoot").toAbsolutePath().normalize();
-        this.lastError = lastError;
+        boolean gameReady();
+
+        List<String> connectedSides();
+
+        String entrySkillId();
+
+        Path exportRoot();
+
+        String lastError();
+    }
+
+    private final StatusProvider statusProvider;
+
+    public StatusEndpoint(StatusProvider statusProvider) {
+        this.statusProvider = Objects.requireNonNull(statusProvider, "statusProvider");
     }
 
     @Override
@@ -41,13 +41,17 @@ public final class StatusEndpoint implements HttpServiceServer.Endpoint {
             HttpJson.sendMethodNotAllowed(exchange);
             return;
         }
+
+        var connectedSides = List.copyOf(Objects.requireNonNull(statusProvider.connectedSides(), "connectedSides"));
+        var entrySkillId = Objects.requireNonNull(statusProvider.entrySkillId(), "entrySkillId");
+        var exportRoot = Objects.requireNonNull(statusProvider.exportRoot(), "exportRoot").toAbsolutePath().normalize();
         var payload = new LinkedHashMap<String, Object>();
-        payload.put("serviceReady", true);
-        payload.put("gameReady", gameReady);
+        payload.put("serviceReady", statusProvider.serviceReady());
+        payload.put("gameReady", statusProvider.gameReady());
         payload.put("connectedSides", connectedSides);
         payload.put("entrySkillId", entrySkillId);
         payload.put("exportRoot", exportRoot.toString());
-        payload.put("lastError", lastError);
+        payload.put("lastError", statusProvider.lastError());
         HttpJson.sendJson(exchange, 200, payload);
     }
 }
