@@ -31,6 +31,8 @@ class SkillFirstDocsTest {
         assertTrue(readmeZh.contains("已批准的迁移方向"));
         assertTrue(readmeZh.contains("moddev-entry"));
         assertTrue(readmeZh.contains("/api/v1/status"));
+        assertTrue(readmeZh.contains("面向最终用户的运行时产品：`:Mod`"));
+        assertTrue(readmeZh.contains("迁移期内部模块：`:Server`、`:Plugin`"));
         assertTrue(readmeZh.contains("导出技能"));
         assertTrue(readmeZh.contains("本地 HTTP 服务"));
         assertFalse(readmeZh.contains(":Server:runStdioMcp"));

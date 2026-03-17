@@ -34,6 +34,9 @@ class HostArchitectureDocsTest {
         assertTrue(settingsGradle.contains("include(\":Mod\""));
         assertTrue(settingsGradle.contains(":Server"));
         assertTrue(settingsGradle.contains(":Plugin"));
+        assertTrue(settingsGradle.toLowerCase().contains("product boundary"));
+        assertTrue(settingsGradle.toLowerCase().contains("end-user runtime product"));
+        assertTrue(settingsGradle.toLowerCase().contains("migration"));
 
         assertTrue(readme.contains("End-user runtime product: `:Mod`"));
         assertTrue(readme.contains("Internal migration modules still in repo: `:Server`, `:Plugin`"));
