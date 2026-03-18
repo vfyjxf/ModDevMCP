@@ -3,10 +3,13 @@ package dev.vfyjxf.mcp.service.discovery;
 import dev.vfyjxf.mcp.server.transport.JsonCodec;
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -35,56 +38,51 @@ public final class GameInstanceRegistry {
     public synchronized void upsert(String side, GameInstanceRecord record) {
         var normalizedSide = normalizeSide(side);
         Objects.requireNonNull(record, "record");
-        var root = readRoot();
-        var instances = mutableInstances(root);
-        instances.put(normalizedSide, toPayload(record));
-        root.put("updatedAt", Instant.now().toString());
-        root.put("projectPath", projectPath().toString());
-        root.put("instances", instances);
-        writeRoot(root);
+        withRegistryLock(() -> {
+            var root = readRoot();
+            var instances = mutableInstances(root);
+            instances.put(normalizedSide, toPayload(record));
+            root.put("updatedAt", Instant.now().toString());
+            root.put("projectPath", projectPath().toString());
+            root.put("instances", instances);
+            writeRoot(root);
+            return null;
+        });
     }
 
     public synchronized void remove(String side) {
         var normalizedSide = normalizeSide(side);
-        if (!Files.exists(registryPath)) {
+        if (!Files.exists(registryPath) && !Files.exists(lockPath())) {
             return;
         }
-        var root = readRoot();
-        var instances = mutableInstances(root);
-        instances.remove(normalizedSide);
-        if (instances.isEmpty()) {
-            try {
-                Files.deleteIfExists(registryPath);
-                return;
-            } catch (IOException exception) {
-                throw new IllegalStateException("failed to delete game instance registry: " + registryPath, exception);
-            }
+        withRegistryLock(() -> {
+            removeSideEntry(normalizedSide);
+            return null;
+        });
+    }
+
+    public synchronized boolean removeIfSame(String side, GameInstanceRecord expected) {
+        var normalizedSide = normalizeSide(side);
+        Objects.requireNonNull(expected, "expected");
+        if (!Files.exists(registryPath) && !Files.exists(lockPath())) {
+            return false;
         }
-        root.put("updatedAt", Instant.now().toString());
-        root.put("projectPath", projectPath().toString());
-        root.put("instances", instances);
-        writeRoot(root);
+        return withRegistryLock(() -> {
+            var current = findInternal(normalizedSide);
+            if (current.isEmpty() || !sameIdentity(current.get(), expected)) {
+                return false;
+            }
+            removeSideEntry(normalizedSide);
+            return true;
+        });
     }
 
     public synchronized Optional<GameInstanceRecord> find(String side) {
         var normalizedSide = normalizeSide(side);
-        if (!Files.exists(registryPath)) {
+        if (!Files.exists(registryPath) && !Files.exists(lockPath())) {
             return Optional.empty();
         }
-        var root = readRoot();
-        var instances = root.get("instances");
-        if (!(instances instanceof Map<?, ?> instancesMap)) {
-            return Optional.empty();
-        }
-        var entry = instancesMap.get(normalizedSide);
-        if (!(entry instanceof Map<?, ?> entryMap)) {
-            return Optional.empty();
-        }
-        try {
-            return Optional.of(fromPayload(entryMap));
-        } catch (RuntimeException ignored) {
-            return Optional.empty();
-        }
+        return withRegistryLock(() -> findInternal(normalizedSide));
     }
 
     private String normalizeSide(String side) {
@@ -117,6 +115,10 @@ public final class GameInstanceRegistry {
         return projectRoot.toAbsolutePath().normalize();
     }
 
+    private Path lockPath() {
+        return registryPath.resolveSibling("game-instances.lock");
+    }
+
     private Map<String, Object> readRoot() {
         if (!Files.exists(registryPath)) {
             return baseRoot();
@@ -135,6 +137,26 @@ public final class GameInstanceRegistry {
         root.put("updatedAt", Instant.now().toString());
         root.put("instances", new LinkedHashMap<String, Object>());
         return root;
+    }
+
+    private Optional<GameInstanceRecord> findInternal(String normalizedSide) {
+        if (!Files.exists(registryPath)) {
+            return Optional.empty();
+        }
+        var root = readRoot();
+        var instances = root.get("instances");
+        if (!(instances instanceof Map<?, ?> instancesMap)) {
+            return Optional.empty();
+        }
+        var entry = instancesMap.get(normalizedSide);
+        if (!(entry instanceof Map<?, ?> entryMap)) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(fromPayload(entryMap));
+        } catch (RuntimeException ignored) {
+            return Optional.empty();
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -160,6 +182,13 @@ public final class GameInstanceRegistry {
         payload.put("startedAt", record.startedAt().toString());
         payload.put("lastSeen", record.lastSeen().toString());
         return payload;
+    }
+
+    private static boolean sameIdentity(GameInstanceRecord left, GameInstanceRecord right) {
+        return left.pid() == right.pid()
+                && left.port() == right.port()
+                && left.baseUrl().equals(right.baseUrl())
+                && left.startedAt().equals(right.startedAt());
     }
 
     private static GameInstanceRecord fromPayload(Map<?, ?> payload) {
@@ -217,5 +246,47 @@ public final class GameInstanceRegistry {
         } catch (IOException exception) {
             throw new IllegalStateException("failed to write game instance registry: " + registryPath, exception);
         }
+    }
+
+    private void removeSideEntry(String normalizedSide) {
+        if (!Files.exists(registryPath)) {
+            return;
+        }
+        var root = readRoot();
+        var instances = mutableInstances(root);
+        instances.remove(normalizedSide);
+        if (instances.isEmpty()) {
+            try {
+                Files.deleteIfExists(registryPath);
+                return;
+            } catch (IOException exception) {
+                throw new IllegalStateException("failed to delete game instance registry: " + registryPath, exception);
+            }
+        }
+        root.put("updatedAt", Instant.now().toString());
+        root.put("projectPath", projectPath().toString());
+        root.put("instances", instances);
+        writeRoot(root);
+    }
+
+    private <T> T withRegistryLock(LockedOperation<T> operation) {
+        var parent = registryPath.getParent();
+        if (parent == null) {
+            throw new IllegalStateException("registryPath must include parent directory");
+        }
+        try {
+            Files.createDirectories(parent);
+            try (FileChannel channel = FileChannel.open(lockPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                 FileLock ignored = channel.lock()) {
+                return operation.run();
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException("failed to lock game instance registry: " + registryPath, exception);
+        }
+    }
+
+    @FunctionalInterface
+    private interface LockedOperation<T> {
+        T run();
     }
 }

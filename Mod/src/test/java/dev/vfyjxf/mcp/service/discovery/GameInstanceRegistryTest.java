@@ -85,6 +85,21 @@ class GameInstanceRegistryTest {
     }
 
     @Test
+    void removeIfSamePreservesNewerSameSideEntry() {
+        var registry = new GameInstanceRegistry(tempDir.resolve("build/moddevmcp/game-instances.json"));
+        var older = new GameInstanceRecord("http://127.0.0.1:47812", 47812, 4001L, Instant.parse("2026-03-18T04:00:00Z"), Instant.parse("2026-03-18T04:00:20Z"));
+        var newer = new GameInstanceRecord("http://127.0.0.1:57812", 57812, 4002L, Instant.parse("2026-03-18T04:01:00Z"), Instant.parse("2026-03-18T04:01:20Z"));
+
+        registry.upsert("client", older);
+        registry.upsert("client", newer);
+
+        assertFalse(registry.removeIfSame("client", older));
+        assertEquals(newer, registry.find("client").orElseThrow());
+        assertTrue(registry.removeIfSame("client", newer));
+        assertTrue(registry.find("client").isEmpty());
+    }
+
+    @Test
     void findReturnsEmptyWhenEntryPayloadIsMalformed() throws Exception {
         var registryPath = tempDir.resolve("build/moddevmcp/game-instances.json");
         Files.createDirectories(registryPath.getParent());
@@ -106,6 +121,16 @@ class GameInstanceRegistryTest {
 
         var registry = new GameInstanceRegistry(registryPath);
         assertTrue(registry.find("client").isEmpty());
+    }
+
+    @Test
+    void findOnMissingRegistryDoesNotCreateArtifacts() {
+        var registryPath = tempDir.resolve("build/moddevmcp/game-instances.json");
+        var registry = new GameInstanceRegistry(registryPath);
+
+        assertTrue(registry.find("client").isEmpty());
+        assertFalse(Files.exists(registryPath));
+        assertFalse(Files.exists(registryPath.resolveSibling("game-instances.lock")));
     }
 
     @Test
