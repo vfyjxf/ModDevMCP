@@ -1,15 +1,3 @@
----
-kind: guidance
-skill_id: moddev-usage
-category_id: status
-interaction_channel: moddevmcp
-game_control_policy: declared_operations_only
-forbidden_fallbacks:
-  - keyboard_input_injection
-  - pointer_input_injection
-  - external_gui_automation
----
-
 # moddev-usage
 
 Start with the local HTTP service, not an external bridge.

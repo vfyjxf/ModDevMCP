@@ -2,9 +2,3 @@ interface:
   display_name: "ModDevMCP Usage"
   short_description: "Use the local ModDevMCP HTTP service safely"
   default_prompt: "Use $moddevmcp-usage to verify local service readiness, read exported skills, and send safe request API calls."
-constraints:
-  game_control_policy: "declared_operations_only"
-  forbidden_fallbacks:
-    - keyboard_input_injection
-    - pointer_input_injection
-    - external_gui_automation
