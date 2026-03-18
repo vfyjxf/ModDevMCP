@@ -46,8 +46,8 @@ Use lower-level session and ref tools only when a longer same-screen flow really
 4. call `moddev.ui_get_live_screen`
 5. if multiple drivers are active, choose the default `driverId` or narrow read-only calls with `includeDrivers` / `excludeDrivers`
 6. call `moddev.ui_run_intent` if you need to enter a top-level screen such as `inventory`, `chat`, or `pause_menu`
-7. call `moddev.ui_inspect`
-8. call `moddev.ui_act`
+7. for mixed-driver screens, call `moddev.ui_query` with `driverId` / `includeDrivers` / `excludeDrivers` to target the intended driver
+8. call `moddev.ui_action` for driver-targeted actions; use `moddev.ui_inspect` / `moddev.ui_act` only when default-driver behavior is acceptable
 9. call `moddev.ui_wait`
 10. call `moddev.ui_screenshot` at checkpoints
 11. call `moddev.ui_trace_recent` if you need a short action history

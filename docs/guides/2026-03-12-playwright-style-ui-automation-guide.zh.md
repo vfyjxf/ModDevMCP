@@ -46,8 +46,8 @@ Updated: 2026-03-15 00:05 CST
 4. 调用 `moddev.ui_get_live_screen`
 5. 如果同时有多个 driver 活跃，先决定默认 `driverId`，或在只读调用里用 `includeDrivers` / `excludeDrivers` 收窄范围
 6. 如果需要进入顶层界面，例如 `inventory`、`chat`、`pause_menu`，调用 `moddev.ui_run_intent`
-7. 调用 `moddev.ui_inspect`
-8. 调用 `moddev.ui_act`
+7. 对多 driver 场景，先用 `moddev.ui_query`，并通过 `driverId` / `includeDrivers` / `excludeDrivers` 精确锁定目标 driver
+8. 再用 `moddev.ui_action` 执行动作；只有在“默认 driver 行为可接受”时才用 `moddev.ui_inspect` / `moddev.ui_act`
 9. 调用 `moddev.ui_wait`
 10. 在检查点调用 `moddev.ui_screenshot`
 11. 如果需要一段简短的动作历史，调用 `moddev.ui_trace_recent`

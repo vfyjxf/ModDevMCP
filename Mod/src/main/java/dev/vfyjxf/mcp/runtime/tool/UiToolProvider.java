@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public final class UiToolProvider implements McpToolProvider {
@@ -1219,18 +1220,31 @@ public final class UiToolProvider implements McpToolProvider {
             extensions.putAll(primary.extensions());
         }
         extensions.put("drivers", driverDetails(composition.drivers()));
+        var focusedTargetId = mergeInteractionId(snapshots, UiSnapshot::focusedTargetId);
+        var selectedTargetId = mergeInteractionId(snapshots, UiSnapshot::selectedTargetId);
+        var hoveredTargetId = mergeInteractionId(snapshots, UiSnapshot::hoveredTargetId);
+        var activeTargetId = mergeInteractionId(snapshots, UiSnapshot::activeTargetId);
         return new UiSnapshot(
                 primary == null ? "screen" : primary.screenId(),
                 context.screenClass(),
                 composition.defaultDriverId(),
                 List.copyOf(targets.values()),
                 overlays,
-                primary == null ? null : primary.focusedTargetId(),
-                primary == null ? null : primary.selectedTargetId(),
-                primary == null ? null : primary.hoveredTargetId(),
-                primary == null ? null : primary.activeTargetId(),
+                focusedTargetId,
+                selectedTargetId,
+                hoveredTargetId,
+                activeTargetId,
                 Map.copyOf(extensions)
         );
+    }
+
+    private String mergeInteractionId(List<UiSnapshot> snapshots, Function<UiSnapshot, String> accessor) {
+        var candidates = snapshots.stream()
+                .map(accessor)
+                .filter(candidate -> candidate != null && !candidate.isBlank())
+                .distinct()
+                .toList();
+        return candidates.size() == 1 ? candidates.getFirst() : null;
     }
 
     private List<UiTarget> aggregateQueryTargets(UiContext context, UiDriverComposition composition, TargetSelector selector) {

@@ -86,9 +86,13 @@ class LegacyArchitectureCleanupTest {
 
         var playwrightGuide = Files.readString(rootDir.resolve("docs/guides/2026-03-12-playwright-style-ui-automation-guide.md"));
         assertTrue(playwrightGuide.contains("moddev.input_action"), "playwright guide should point raw input to moddev.input_action");
+        assertTrue(playwrightGuide.contains("moddev.ui_query"), "playwright guide should mention moddev.ui_query for multi-driver flows");
+        assertTrue(playwrightGuide.contains("moddev.ui_action"), "playwright guide should mention moddev.ui_action for multi-driver flows");
 
         var playwrightGuideZh = Files.readString(rootDir.resolve("docs/guides/2026-03-12-playwright-style-ui-automation-guide.zh.md"));
         assertTrue(playwrightGuideZh.contains("moddev.input_action"), "zh playwright guide should point raw input to moddev.input_action");
+        assertTrue(playwrightGuideZh.contains("moddev.ui_query"), "zh playwright guide should mention moddev.ui_query for multi-driver flows");
+        assertTrue(playwrightGuideZh.contains("moddev.ui_action"), "zh playwright guide should mention moddev.ui_action for multi-driver flows");
     }
 }
 

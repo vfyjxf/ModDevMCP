@@ -862,6 +862,74 @@ class UiToolInvocationTest {
     }
 
     @Test
+    void uiSnapshotClearsInteractionIdsWhenAggregatingMultipleDrivers() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "base",
+                100,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("base", "root", "Base Root")),
+                "base-focus",
+                "base-selected",
+                "base-hovered",
+                "base-active"
+        ));
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "addon",
+                300,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("addon", "pin", "Pin")),
+                "addon-focus",
+                "addon-selected",
+                "addon-hovered",
+                "addon-active"
+        ));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.CompositeScreen", 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_snapshot").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "includeDrivers", List.of("base", "addon")
+        ));
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("", payload.get("focusedTargetId"));
+    }
+
+    @Test
+    void uiSnapshotPreservesInteractionIdsForSingleDriverComposition() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "base",
+                100,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("base", "root", "Base Root")),
+                "base-focus",
+                "base-selected",
+                "base-hovered",
+                "base-active"
+        ));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.CompositeScreen", 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_snapshot").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "driverId", "base"
+        ));
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("base-focus", payload.get("focusedTargetId"));
+    }
+
+    @Test
     void uiCaptureUsesLiveScreenWhenScreenClassIsOmitted() {
         var server = new ModDevMcpServer(new McpToolRegistry());
         var registries = new RuntimeRegistries();
@@ -2427,11 +2495,32 @@ class UiToolInvocationTest {
         private final DriverDescriptor descriptor;
         private final String screenClass;
         private final List<UiTarget> targets;
+        private final String focusedTargetId;
+        private final String selectedTargetId;
+        private final String hoveredTargetId;
+        private final String activeTargetId;
 
         private CompositeTestUiDriver(String driverId, int priority, String screenClass, List<UiTarget> targets) {
+            this(driverId, priority, screenClass, targets, null, null, null, null);
+        }
+
+        private CompositeTestUiDriver(
+                String driverId,
+                int priority,
+                String screenClass,
+                List<UiTarget> targets,
+                String focusedTargetId,
+                String selectedTargetId,
+                String hoveredTargetId,
+                String activeTargetId
+        ) {
             this.descriptor = new DriverDescriptor(driverId, "test", priority, Set.of("snapshot", "query", "action"));
             this.screenClass = screenClass;
             this.targets = List.copyOf(targets);
+            this.focusedTargetId = focusedTargetId;
+            this.selectedTargetId = selectedTargetId;
+            this.hoveredTargetId = hoveredTargetId;
+            this.activeTargetId = activeTargetId;
         }
 
         @Override
@@ -2452,10 +2541,10 @@ class UiToolInvocationTest {
                     descriptor.id(),
                     targets,
                     List.of(),
-                    null,
-                    null,
-                    null,
-                    null,
+                    focusedTargetId,
+                    selectedTargetId,
+                    hoveredTargetId,
+                    activeTargetId,
                     Map.of()
             );
         }
