@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -159,6 +160,32 @@ class HttpServiceServerLifecycleTest {
         mod.activateClientSide();
         mod.activateServerSide();
         assertThrows(IllegalStateException.class, mod::startHttpService);
+    }
+
+    @Test
+    void noArgStartHttpServiceSucceedsWhenExactlyOneSideIsActive() {
+        var projectRoot = tempDir.resolve("project-no-arg");
+        var exportRoot = tempDir.resolve("skills-no-arg");
+        var preferredPort = findOpenPort();
+
+        withProperties(Map.of(
+                ServiceConfig.HOST_PROPERTY, "127.0.0.1",
+                ServiceConfig.PORT_PROPERTY, String.valueOf(preferredPort),
+                ServiceConfig.EXPORT_ROOT_PROPERTY, exportRoot.toString(),
+                ServiceConfig.PROJECT_ROOT_PROPERTY, projectRoot.toString()
+        ), () -> {
+            var config = ServiceConfig.loadResolved();
+            var registry = new GameInstanceRegistry(config.gameInstancesPath());
+            var mod = new ModDevMCP(new ModDevMcpServer());
+            mods.add(mod);
+            mod.activateClientSide();
+
+            assertDoesNotThrow(() -> mod.startHttpService());
+            assertTrue(registry.find("client").isPresent());
+
+            mod.stopHttpService();
+            assertFalse(Files.exists(config.gameInstancesPath()));
+        });
     }
 
     private static SkillDefinition entrySkill() {

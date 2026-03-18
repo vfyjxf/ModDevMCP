@@ -182,7 +182,7 @@ public class ModDevMCP {
         } finally {
             if (gameInstanceRegistry != null && httpServiceSide != null && httpServiceRecord != null) {
                 var current = gameInstanceRegistry.find(httpServiceSide);
-                if (current.isPresent() && sameInstance(current.get(), httpServiceRecord)) {
+                if (current.isPresent() && isSameRegistryIdentity(current.get(), httpServiceRecord)) {
                     gameInstanceRegistry.remove(httpServiceSide);
                 }
             }
@@ -382,7 +382,8 @@ public class ModDevMCP {
         throw new IllegalArgumentException("side must be client or server");
     }
 
-    private static boolean sameInstance(GameInstanceRecord left, GameInstanceRecord right) {
+    // Registry cleanup is conditional: only the exact instance that created the entry may remove it.
+    private static boolean isSameRegistryIdentity(GameInstanceRecord left, GameInstanceRecord right) {
         return left.pid() == right.pid()
                 && left.port() == right.port()
                 && left.baseUrl().equals(right.baseUrl())
