@@ -145,8 +145,8 @@ Prefer:
 3. `moddev.ui_get_live_screen`
 4. `includeDrivers` / `excludeDrivers` when multiple UI drivers are active
 5. `moddev.ui_run_intent`
-6. `moddev.ui_inspect`
-7. `moddev.ui_act`
+6. for mixed-driver screens, use `moddev.ui_query` with `driverId` / `includeDrivers` / `excludeDrivers`
+7. use `moddev.ui_action` for driver-targeted actions; `moddev.ui_inspect` / `moddev.ui_act` stay default-driver-oriented
 8. `moddev.ui_wait`
 9. `moddev.ui_screenshot`
 10. `moddev.ui_trace_recent`

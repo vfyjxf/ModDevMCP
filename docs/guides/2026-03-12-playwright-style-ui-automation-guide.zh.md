@@ -145,8 +145,8 @@ Updated: 2026-03-15 00:05 CST
 3. `moddev.ui_get_live_screen`
 4. 多 driver 场景下先用 `includeDrivers` / `excludeDrivers`
 5. `moddev.ui_run_intent`
-6. `moddev.ui_inspect`
-7. `moddev.ui_act`
+6. 多 driver 场景下，用 `moddev.ui_query`，并通过 `driverId` / `includeDrivers` / `excludeDrivers` 锁定目标 driver
+7. 用 `moddev.ui_action` 执行目标 driver 的动作；`moddev.ui_inspect` / `moddev.ui_act` 仍是默认 driver 导向
 8. `moddev.ui_wait`
 9. `moddev.ui_screenshot`
 10. `moddev.ui_trace_recent`
