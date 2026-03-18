@@ -52,6 +52,7 @@ public final class UiAutomationSessionManager {
             return OperationResult.rejected("target_stale");
         }
         return state.snapshot().targets().stream()
+                .filter(target -> target.driverId().equals(refState.ref().driverId()))
                 .filter(target -> target.targetId().equals(refState.ref().targetId()))
                 .findFirst()
                 .map(OperationResult::success)
@@ -123,19 +124,21 @@ public final class UiAutomationSessionManager {
                 refsById.values().forEach(RefState::markStale);
             }
             var activeTargetIds = snapshot.targets().stream()
-                    .map(UiTarget::targetId)
+                    .map(target -> target.driverId() + "::" + target.targetId())
                     .collect(java.util.stream.Collectors.toSet());
             refsById.values().stream()
-                    .filter(refState -> !refState.stale() && !activeTargetIds.contains(refState.ref().targetId()))
+                    .filter(refState -> !refState.stale() && !activeTargetIds.contains(refState.ref().driverId() + "::" + refState.ref().targetId()))
                     .forEach(RefState::markStale);
             for (var target : snapshot.targets()) {
                 var existing = refsById.values().stream()
-                        .filter(refState -> !refState.stale() && refState.ref().targetId().equals(target.targetId()))
+                        .filter(refState -> !refState.stale()
+                                && refState.ref().driverId().equals(target.driverId())
+                                && refState.ref().targetId().equals(target.targetId()))
                         .findFirst()
                         .orElse(null);
                 if (existing == null) {
                     var refId = "ref-" + refSequence.incrementAndGet();
-                    refsById.put(refId, new RefState(new UiAutomationRef(refId, target.targetId(), snapshot.screenId())));
+                    refsById.put(refId, new RefState(new UiAutomationRef(refId, target.driverId(), target.targetId(), snapshot.screenId())));
                 }
             }
             this.snapshot = snapshot;

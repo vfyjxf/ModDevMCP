@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -90,6 +91,25 @@ class UiAutomationSessionManagerTest {
         assertEquals("target-a", resolved.value().targetId());
     }
 
+    @Test
+    void openCreatesDistinctRefsForSameTargetIdAcrossDrivers() {
+        var manager = new UiAutomationSessionManager();
+
+        var session = manager.open(snapshot(
+                "screen-1",
+                "custom.ScreenOne",
+                target("base", "shared-id", "Base Button"),
+                target("addon", "shared-id", "Addon Button")
+        ));
+
+        assertEquals(2, session.refs().size());
+        assertEquals(
+                Set.of("base", "addon"),
+                session.refs().stream().map(UiAutomationRef::driverId).collect(java.util.stream.Collectors.toSet())
+        );
+        assertNotEquals(session.refs().get(0).refId(), session.refs().get(1).refId());
+    }
+
     private UiSnapshot snapshot(String screenId, String screenClass, UiTarget... targets) {
         return new UiSnapshot(
                 screenId,
@@ -106,9 +126,13 @@ class UiAutomationSessionManagerTest {
     }
 
     private UiTarget target(String targetId, String text) {
+        return target("test-driver", targetId, text);
+    }
+
+    private UiTarget target(String driverId, String targetId, String text) {
         return new UiTarget(
                 targetId,
-                "test-driver",
+                driverId,
                 "custom.Screen",
                 "minecraft",
                 "button",

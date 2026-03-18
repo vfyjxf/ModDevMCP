@@ -173,28 +173,23 @@ public final class UiToolProvider implements McpToolProvider {
                     (String) arguments.getOrDefault("action", "click"),
                     arguments
             );
-            return withDriver(uiContext, driver -> {
-                var missingTarget = missingTargetResult(driver, uiContext, targetSelector);
-                if (missingTarget != null) {
-                    return missingTarget;
+            if (selectorSpecified(targetSelector)) {
+                var composition = filteredComposition(uiContext, arguments);
+                if (composition.drivers().isEmpty()) {
+                    return ToolResult.failure("unsupported: no ui driver matched screenClass=" + uiContext.screenClass() + ", modId=" + uiContext.modId());
                 }
-                var preSnapshot = driver.snapshot(uiContext, SnapshotOptions.DEFAULT);
-                var preSnapshotRef = registries.uiSnapshotJournal().record(uiContext, preSnapshot);
-                var actionResult = driver.action(uiContext, request);
-                if (!actionResult.accepted()) {
-                    return operationRejected("action", driver, actionResult);
+                var matchingDrivers = composition.drivers().stream()
+                        .filter(driver -> !driver.query(uiContext, targetSelector).isEmpty())
+                        .toList();
+                if (matchingDrivers.isEmpty()) {
+                    return ToolResult.failure("target_not_found: selector did not match any target");
                 }
-                var result = actionResult.value();
-                var postSnapshot = driver.snapshot(uiContext, SnapshotOptions.DEFAULT);
-                var postSnapshotRef = registries.uiSnapshotJournal().record(uiContext, postSnapshot);
-                return ToolResult.success(withOptionalWait(
-                        uiContext,
-                        driver,
-                        arguments,
-                        targetSelector,
-                        withActionSnapshots(result, preSnapshotRef, postSnapshotRef, postSnapshot)
-                ));
-            });
+                if (matchingDrivers.size() > 1) {
+                    return ToolResult.failure("target_ambiguous");
+                }
+                return runUiAction(uiContext, arguments, targetSelector, request, matchingDrivers.getFirst());
+            }
+            return withDriver(uiContext, driver -> runUiAction(uiContext, arguments, targetSelector, request, driver));
         });
         registry.registerTool(definition("moddev.ui_wait"), (context, arguments) -> {
             var uiContext = uiContext(arguments);
@@ -1266,6 +1261,35 @@ public final class UiToolProvider implements McpToolProvider {
         return driver.query(context, selector).isEmpty()
                 ? ToolResult.failure("target_not_found: selector did not match any target")
                 : null;
+    }
+
+    private ToolResult runUiAction(
+            UiContext uiContext,
+            Map<String, Object> arguments,
+            TargetSelector targetSelector,
+            UiActionRequest request,
+            UiDriver driver
+    ) {
+        var missingTarget = missingTargetResult(driver, uiContext, targetSelector);
+        if (missingTarget != null) {
+            return missingTarget;
+        }
+        var preSnapshot = driver.snapshot(uiContext, SnapshotOptions.DEFAULT);
+        var preSnapshotRef = registries.uiSnapshotJournal().record(uiContext, preSnapshot);
+        var actionResult = driver.action(uiContext, request);
+        if (!actionResult.accepted()) {
+            return operationRejected("action", driver, actionResult);
+        }
+        var result = actionResult.value();
+        var postSnapshot = driver.snapshot(uiContext, SnapshotOptions.DEFAULT);
+        var postSnapshotRef = registries.uiSnapshotJournal().record(uiContext, postSnapshot);
+        return ToolResult.success(withOptionalWait(
+                uiContext,
+                driver,
+                arguments,
+                targetSelector,
+                withActionSnapshots(result, preSnapshotRef, postSnapshotRef, postSnapshot)
+        ));
     }
 
     private boolean selectorSpecified(TargetSelector selector) {
@@ -2343,6 +2367,7 @@ public final class UiToolProvider implements McpToolProvider {
                             .value();
                     return Map.of(
                             "refId", ref.refId(),
+                            "driverId", ref.driverId(),
                             "targetId", ref.targetId(),
                             "screenId", ref.screenId(),
                             "role", target == null ? "" : target.role(),

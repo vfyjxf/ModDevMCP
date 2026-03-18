@@ -1117,6 +1117,36 @@ class UiToolInvocationTest {
     }
 
     @Test
+    void uiActionFailsWhenMatchingTargetsSpanMultipleDriversWithoutExplicitDriver() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "base",
+                100,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("base", "shared-id", "Shared"))
+        ));
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "addon",
+                300,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("addon", "shared-id", "Shared"))
+        ));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.CompositeScreen", 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_action").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "action", "click",
+                "target", Map.of("id", "shared-id")
+        ));
+
+        assertFalse(result.success());
+        assertEquals("target_ambiguous", result.error());
+    }
+
+    @Test
     void uiActionUsesLiveScreenWhenScreenClassIsOmitted() {
         var server = new ModDevMcpServer(new McpToolRegistry());
         var registries = new RuntimeRegistries();
@@ -2324,7 +2354,7 @@ class UiToolInvocationTest {
         private final List<UiTarget> targets;
 
         private CompositeTestUiDriver(String driverId, int priority, String screenClass, List<UiTarget> targets) {
-            this.descriptor = new DriverDescriptor(driverId, "test", priority, Set.of("snapshot", "query"));
+            this.descriptor = new DriverDescriptor(driverId, "test", priority, Set.of("snapshot", "query", "action"));
             this.screenClass = screenClass;
             this.targets = List.copyOf(targets);
         }
@@ -2361,6 +2391,15 @@ class UiToolInvocationTest {
                     .filter(target -> selector.role() == null || selector.role().equals(target.role()))
                     .filter(target -> selector.id() == null || selector.id().equals(target.targetId()))
                     .toList();
+        }
+
+        @Override
+        public OperationResult<Map<String, Object>> action(UiContext context, UiActionRequest request) {
+            return OperationResult.success(Map.of(
+                    "driverId", descriptor.id(),
+                    "performed", true,
+                    "action", request.action()
+            ));
         }
     }
 
