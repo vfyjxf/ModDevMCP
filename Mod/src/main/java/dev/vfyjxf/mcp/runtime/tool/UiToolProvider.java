@@ -223,20 +223,24 @@ public final class UiToolProvider implements McpToolProvider {
         });
         registry.registerTool(definition("moddev.ui_inspect_at"), (context, arguments) -> {
             var uiContext = uiContext(arguments);
-            return withDriver(uiContext, driver -> {
-                var inspectResult = driver.inspectAt(
-                        uiContext,
-                        ((Number) arguments.getOrDefault("x", 0)).intValue(),
-                        ((Number) arguments.getOrDefault("y", 0)).intValue()
-                );
-                if (!inspectResult.accepted()) {
-                    return operationRejected("inspect", driver, inspectResult);
+            var x = ((Number) arguments.getOrDefault("x", 0)).intValue();
+            var y = ((Number) arguments.getOrDefault("y", 0)).intValue();
+            return withComposition(uiContext, arguments, composition -> {
+                var mergedMatches = new LinkedHashMap<String, UiTarget>();
+                for (var driver : composition.drivers()) {
+                    var inspectResult = driver.inspectAt(uiContext, x, y);
+                    if (!inspectResult.accepted()) {
+                        return operationRejected("inspect", driver, inspectResult);
+                    }
+                    for (var target : inspectResult.value()) {
+                        mergedMatches.put(target.driverId() + ":" + target.targetId(), target);
+                    }
                 }
-                var matches = inspectResult.value();
+                var matches = List.copyOf(mergedMatches.values());
                 var topmost = matches.stream()
                         .min((left, right) -> Integer.compare(area(left), area(right)))
                         .orElse(null);
-                return ToolResult.success(withInspectTopmost(driver.descriptor().id(), matches, topmost));
+                return ToolResult.success(withInspectTopmost(composition.defaultDriverId(), matches, topmost));
             });
         });
         registry.registerTool(definition("moddev.ui_get_tooltip"), (context, arguments) -> {
@@ -873,6 +877,9 @@ public final class UiToolProvider implements McpToolProvider {
                             Map.of(
                                     "screenClass", stringSchema(),
                                     "modId", stringSchema(),
+                                    "driverId", stringSchema(),
+                                    "includeDrivers", arraySchema(stringSchema()),
+                                    "excludeDrivers", arraySchema(stringSchema()),
                                     "x", integerSchema(),
                                     "y", integerSchema()
                             ),

@@ -85,6 +85,9 @@ class UiToolProviderTest {
 
         assertEquals("object", inspectAt.inputSchema().get("type"));
         assertTrue(((Map<?, ?>) inspectAt.inputSchema().get("properties")).containsKey("x"));
+        assertTrue(((Map<?, ?>) inspectAt.inputSchema().get("properties")).containsKey("driverId"));
+        assertTrue(((Map<?, ?>) inspectAt.inputSchema().get("properties")).containsKey("includeDrivers"));
+        assertTrue(((Map<?, ?>) inspectAt.inputSchema().get("properties")).containsKey("excludeDrivers"));
         assertTrue(((Map<?, ?>) inspectAt.outputSchema().get("properties")).containsKey("topmostTarget"));
 
         assertEquals("object", tooltip.inputSchema().get("type"));

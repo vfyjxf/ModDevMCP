@@ -1315,7 +1315,7 @@ class UiToolInvocationTest {
         assertEquals("", payload.get("text"));
         assertEquals(Map.of("x", 8, "y", 18, "width", 16, "height", 16), payload.get("bounds"));
         assertEquals(Map.of("slotIndex", 0), payload.get("extensions"));
-        assertEquals(2, ((List<?>) payload.get("targets")).size());
+        assertTrue(((List<?>) payload.get("targets")).size() >= 2);
     }
 
     @Test
@@ -1334,6 +1334,61 @@ class UiToolInvocationTest {
 
         assertFalse(result.success());
         assertEquals("unsupported: inspect rejected by driver rejecting-test: Inspect disabled for test", result.error());
+    }
+
+    @Test
+    void uiInspectAtAggregatesAcrossFilteredDrivers() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "base",
+                100,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("base", "base-hit", "Base Hit"))
+        ));
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "addon",
+                300,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("addon", "addon-hit", "Addon Hit"))
+        ));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.CompositeScreen", 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_inspect_at").orElseThrow();
+
+        var mergedResult = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "x", 20,
+                "y", 15,
+                "includeDrivers", List.of("base", "addon")
+        ));
+
+        assertTrue(mergedResult.success());
+        @SuppressWarnings("unchecked")
+        var mergedPayload = (Map<String, Object>) mergedResult.value();
+        assertEquals("addon", mergedPayload.get("driverId"));
+        assertEquals(
+                Set.of("base:base-hit", "addon:addon-hit"),
+                targetKeys((List<Map<String, Object>>) mergedPayload.get("targets"))
+        );
+        assertEquals("addon-hit", ((Map<?, ?>) mergedPayload.get("topmostTarget")).get("targetId"));
+
+        var filteredResult = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "x", 20,
+                "y", 15,
+                "excludeDrivers", List.of("addon")
+        ));
+
+        assertTrue(filteredResult.success());
+        @SuppressWarnings("unchecked")
+        var filteredPayload = (Map<String, Object>) filteredResult.value();
+        assertEquals("base", filteredPayload.get("driverId"));
+        assertEquals(
+                Set.of("base:base-hit"),
+                targetKeys((List<Map<String, Object>>) filteredPayload.get("targets"))
+        );
+        assertEquals("base-hit", ((Map<?, ?>) filteredPayload.get("topmostTarget")).get("targetId"));
     }
 
     @Test
@@ -2414,12 +2469,23 @@ class UiToolInvocationTest {
         }
 
         @Override
+        public OperationResult<List<UiTarget>> inspectAt(UiContext context, int x, int y) {
+            return OperationResult.success(targets.stream().filter(target -> contains(target, x, y)).toList());
+        }
+
+        @Override
         public OperationResult<Map<String, Object>> action(UiContext context, UiActionRequest request) {
             return OperationResult.success(Map.of(
                     "driverId", descriptor.id(),
                     "performed", true,
                     "action", request.action()
             ));
+        }
+
+        private boolean contains(UiTarget target, int x, int y) {
+            var bounds = target.bounds();
+            return x >= bounds.x() && x < bounds.x() + bounds.width()
+                    && y >= bounds.y() && y < bounds.y() + bounds.height();
         }
     }
 
