@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpServer;
 import dev.vfyjxf.mcp.service.config.ServiceConfig;
 import dev.vfyjxf.mcp.service.export.SkillExportService;
 
+import java.net.BindException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -64,7 +65,7 @@ public final class HttpServiceServer {
     }
 
     public URI baseUri() {
-        return buildBaseUri(config.host(), config.port());
+        return buildBaseUri(config.host(), server.getAddress().getPort());
     }
 
     public static URI buildBaseUri(String host, int port) {
@@ -76,11 +77,17 @@ public final class HttpServiceServer {
     }
 
     private static HttpServer createServer(ServiceConfig config) {
-        try {
-            return HttpServer.create(new InetSocketAddress(config.host(), config.port()), 0);
-        } catch (IOException exception) {
-            throw new IllegalStateException("failed to create HTTP service server", exception);
+        IOException lastFailure = null;
+        for (int candidatePort = config.port(); candidatePort <= 65535; candidatePort++) {
+            try {
+                return HttpServer.create(new InetSocketAddress(config.host(), candidatePort), 0);
+            } catch (BindException bindException) {
+                lastFailure = bindException;
+            } catch (IOException exception) {
+                throw new IllegalStateException("failed to create HTTP service server", exception);
+            }
         }
+        throw new IllegalStateException("failed to create HTTP service server", lastFailure);
     }
 
     private void registerAll(List<Endpoint> endpoints) {

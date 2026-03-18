@@ -32,12 +32,14 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            systemProperty 'moddevmcp.project.root', project.projectDir.absolutePath
         }
 
         server {
             server()
             programArgument '--nogui'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            systemProperty 'moddevmcp.project.root', project.projectDir.absolutePath
         }
 
         gameTestServer {

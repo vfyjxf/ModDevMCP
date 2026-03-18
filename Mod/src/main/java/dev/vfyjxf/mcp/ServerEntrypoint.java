@@ -11,7 +11,7 @@ public class ServerEntrypoint extends ModDevMCP {
         serverBootstrap.prepareServerRuntime();
         serverBootstrap.registerServerProviders();
         activateServerSide();
-        startHttpService();
+        startHttpService("server");
         Runtime.getRuntime().addShutdownHook(new Thread(this::shutdownServer, "moddevmcp-server-shutdown"));
     }
 

@@ -22,7 +22,7 @@ public class ClientEntrypoint extends ModDevMCP {
         clientBootstrap.prepareClientRuntime();
         clientBootstrap.registerClientProviders();
         activateClientSide();
-        startHttpService();
+        startHttpService("client");
         this.integratedServerRuntimeHost.attach();
         Runtime.getRuntime().addShutdownHook(new Thread(this::shutdownClient, "moddevmcp-client-shutdown"));
         new ClientAutomationPauseGuard().attach();

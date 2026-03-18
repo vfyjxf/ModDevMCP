@@ -20,6 +20,8 @@ import dev.vfyjxf.mcp.server.ModDevMcpServer;
 import dev.vfyjxf.mcp.server.api.McpToolProvider;
 import dev.vfyjxf.mcp.server.api.ToolCallContext;
 import dev.vfyjxf.mcp.service.config.ServiceConfig;
+import dev.vfyjxf.mcp.service.discovery.GameInstanceRecord;
+import dev.vfyjxf.mcp.service.discovery.GameInstanceRegistry;
 import dev.vfyjxf.mcp.service.export.SkillExportService;
 import dev.vfyjxf.mcp.service.http.CategoriesEndpoint;
 import dev.vfyjxf.mcp.service.http.HttpServiceServer;
@@ -37,6 +39,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
+import java.time.Instant;
 import java.util.function.Supplier;
 
 public class ModDevMCP {
@@ -52,6 +55,9 @@ public class ModDevMCP {
     private final Supplier<? extends Collection<ServerMcpToolRegistrar>> serverRegistrarSupplier;
     private final Set<McpToolProvider> registeredToolProviders = Collections.newSetFromMap(new IdentityHashMap<>());
     private HttpServiceServer httpServiceServer;
+    private ServiceConfig httpServiceConfig;
+    private GameInstanceRegistry gameInstanceRegistry;
+    private String httpServiceSide;
     private String httpServiceLastError;
     private boolean commonRuntimeRegistered;
     private boolean commonProvidersRegistered;
@@ -105,10 +111,24 @@ public class ModDevMCP {
     }
 
     public synchronized void startHttpService() {
+        if (clientSideActive) {
+            startHttpService("client");
+            return;
+        }
+        if (serverSideActive) {
+            startHttpService("server");
+            return;
+        }
+        startHttpService("client");
+    }
+
+    public synchronized void startHttpService(String side) {
         if (httpServiceServer != null) {
             return;
         }
+        var instanceSide = normalizeSide(side);
         var config = ServiceConfig.loadResolved();
+        var registry = new GameInstanceRegistry(config.gameInstancesPath());
         var bindings = new RuntimeOperationBindings(this::invokeOperationTool, this::statusSnapshot);
         var catalog = new BuiltinSkillCatalog().build(config, bindings.operationRegistry());
         var exportService = new SkillExportService(config, catalog.categories(), catalog.skillRegistry());
@@ -127,11 +147,27 @@ public class ModDevMCP {
                 requestsEndpoint,
                 exportService
         );
+        var startedAt = Instant.now();
         try {
             serviceServer.start();
+            var baseUri = serviceServer.baseUri();
+            registry.upsert(
+                    instanceSide,
+                    new GameInstanceRecord(
+                            baseUri.toString(),
+                            baseUri.getPort(),
+                            ProcessHandle.current().pid(),
+                            startedAt,
+                            startedAt
+                    )
+            );
             this.httpServiceServer = serviceServer;
+            this.httpServiceConfig = config;
+            this.gameInstanceRegistry = registry;
+            this.httpServiceSide = instanceSide;
             this.httpServiceLastError = null;
         } catch (RuntimeException exception) {
+            serviceServer.stop();
             this.httpServiceLastError = exception.getMessage();
             throw exception;
         }
@@ -141,8 +177,17 @@ public class ModDevMCP {
         if (httpServiceServer == null) {
             return;
         }
-        httpServiceServer.stop();
-        httpServiceServer = null;
+        try {
+            httpServiceServer.stop();
+        } finally {
+            if (gameInstanceRegistry != null && httpServiceSide != null) {
+                gameInstanceRegistry.remove(httpServiceSide);
+            }
+            httpServiceServer = null;
+            httpServiceConfig = null;
+            gameInstanceRegistry = null;
+            httpServiceSide = null;
+        }
     }
 
     public synchronized void registerCommonProviders() {
@@ -321,9 +366,16 @@ public class ModDevMCP {
                 !connectedSides.isEmpty(),
                 connectedSides,
                 "moddev-usage",
-                ServiceConfig.loadResolved().exportRoot(),
+                httpServiceConfig != null ? httpServiceConfig.exportRoot() : ServiceConfig.loadResolved().exportRoot(),
                 httpServiceLastError
         );
+    }
+
+    private static String normalizeSide(String side) {
+        if ("client".equals(side) || "server".equals(side)) {
+            return side;
+        }
+        throw new IllegalArgumentException("side must be client or server");
     }
 
     private java.util.List<String> connectedSides() {
