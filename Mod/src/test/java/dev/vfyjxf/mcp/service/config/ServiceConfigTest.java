@@ -76,6 +76,10 @@ class ServiceConfigTest {
                                                     .normalize(),
                                             config.gameInstancesPath()
                                     );
+                                    assertEquals(
+                                            Path.of("D:/workspace/consumer").toAbsolutePath().normalize(),
+                                            config.projectRoot()
+                                    );
                                 }))));
     }
 
@@ -94,7 +98,25 @@ class ServiceConfigTest {
                                                             .normalize(),
                                                     config.gameInstancesPath()
                                             );
+                                            assertEquals(
+                                                    Path.of("D:/workspace/current-module").toAbsolutePath().normalize(),
+                                                    config.projectRoot()
+                                            );
                                         })))));
+    }
+
+    @Test
+    void loadResolvedKeepsStableProjectRootAfterCreation() {
+        withProperty("moddevmcp.project.root", "D:/workspace/first", () -> {
+            var config = ServiceConfig.loadResolved();
+            withProperty("moddevmcp.project.root", "D:/workspace/second", () -> {
+                assertEquals(Path.of("D:/workspace/first").toAbsolutePath().normalize(), config.projectRoot());
+                assertEquals(
+                        Path.of("D:/workspace/first", "build", "moddevmcp", "game-instances.json").toAbsolutePath().normalize(),
+                        config.gameInstancesPath()
+                );
+            });
+        });
     }
 
     private static void withClearedProperty(String key, Runnable testBody) {

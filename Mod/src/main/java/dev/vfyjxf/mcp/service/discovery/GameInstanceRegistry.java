@@ -80,7 +80,11 @@ public final class GameInstanceRegistry {
         if (!(entry instanceof Map<?, ?> entryMap)) {
             return Optional.empty();
         }
-        return Optional.of(fromPayload(entryMap));
+        try {
+            return Optional.of(fromPayload(entryMap));
+        } catch (RuntimeException ignored) {
+            return Optional.empty();
+        }
     }
 
     private String normalizeSide(String side) {
@@ -95,17 +99,20 @@ public final class GameInstanceRegistry {
     }
 
     private Path projectPath() {
+        if (!"game-instances.json".equals(registryPath.getFileName().toString())) {
+            throw new IllegalStateException("registryPath must end with build/moddevmcp/game-instances.json");
+        }
         var moddevmcpDir = registryPath.getParent();
-        if (moddevmcpDir == null) {
-            throw new IllegalStateException("registryPath must include build/moddevmcp directories");
+        if (moddevmcpDir == null || !"moddevmcp".equals(moddevmcpDir.getFileName().toString())) {
+            throw new IllegalStateException("registryPath must end with build/moddevmcp/game-instances.json");
         }
         var buildDir = moddevmcpDir.getParent();
-        if (buildDir == null) {
-            throw new IllegalStateException("registryPath must include build/moddevmcp directories");
+        if (buildDir == null || !"build".equals(buildDir.getFileName().toString())) {
+            throw new IllegalStateException("registryPath must end with build/moddevmcp/game-instances.json");
         }
         var projectRoot = buildDir.getParent();
         if (projectRoot == null) {
-            throw new IllegalStateException("registryPath must include build/moddevmcp directories");
+            throw new IllegalStateException("registryPath must end with build/moddevmcp/game-instances.json");
         }
         return projectRoot.toAbsolutePath().normalize();
     }

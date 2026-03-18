@@ -7,7 +7,8 @@ import java.nio.file.Path;
 public record ServiceConfig(
         String host,
         int port,
-        Path exportRoot
+        Path exportRoot,
+        Path projectRoot
 ) {
 
     public static final String DEFAULT_HOST = "127.0.0.1";
@@ -28,7 +29,11 @@ public record ServiceConfig(
         if (exportRoot == null) {
             throw new IllegalArgumentException("exportRoot must not be null");
         }
+        if (projectRoot == null) {
+            throw new IllegalArgumentException("projectRoot must not be null");
+        }
         exportRoot = exportRoot.toAbsolutePath().normalize();
+        projectRoot = projectRoot.toAbsolutePath().normalize();
     }
 
     public static ServiceConfig loadResolved() {
@@ -37,12 +42,13 @@ public record ServiceConfig(
         var port = parsePort(portText);
         var exportRootText = defaultIfBlank(System.getProperty(EXPORT_ROOT_PROPERTY), defaultExportRoot().toString());
         var exportRoot = Path.of(exportRootText);
-        return new ServiceConfig(host, port, exportRoot);
+        var projectRootText = defaultIfBlank(System.getProperty(PROJECT_ROOT_PROPERTY), System.getProperty("user.dir"));
+        var projectRoot = Path.of(projectRootText);
+        return new ServiceConfig(host, port, exportRoot, projectRoot);
     }
 
-    public Path projectRoot() {
-        var configuredProjectRoot = defaultIfBlank(System.getProperty(PROJECT_ROOT_PROPERTY), System.getProperty("user.dir"));
-        return Path.of(configuredProjectRoot).toAbsolutePath().normalize();
+    public ServiceConfig(String host, int port, Path exportRoot) {
+        this(host, port, exportRoot, Path.of(defaultIfBlank(System.getProperty(PROJECT_ROOT_PROPERTY), System.getProperty("user.dir"))));
     }
 
     public Path gameInstancesPath() {
