@@ -24,17 +24,19 @@ public final class CommandToolProvider implements McpToolProvider {
     private static final int MAX_SUGGEST_LIMIT = 100;
 
     private final CommandService commandService;
+    private final String runtimeSide;
 
-    public CommandToolProvider(CommandService commandService) {
+    private CommandToolProvider(CommandService commandService, String runtimeSide) {
         this.commandService = Objects.requireNonNull(commandService, "commandService");
+        this.runtimeSide = Objects.requireNonNull(runtimeSide, "runtimeSide");
     }
 
     public static CommandToolProvider clientOnly(CommandService clientCommands) {
-        return new CommandToolProvider(Objects.requireNonNull(clientCommands, "clientCommands"));
+        return new CommandToolProvider(Objects.requireNonNull(clientCommands, "clientCommands"), "client");
     }
 
     public static CommandToolProvider serverOnly(CommandService serverCommands) {
-        return new CommandToolProvider(Objects.requireNonNull(serverCommands, "serverCommands"));
+        return new CommandToolProvider(Objects.requireNonNull(serverCommands, "serverCommands"), "server");
     }
 
     @Override
@@ -138,7 +140,7 @@ public final class CommandToolProvider implements McpToolProvider {
                         "required", List.of("runtimeId", "runtimeSide", "commands", "truncated", "totalMatched")
                 ),
                 List.of("command", "discover"),
-                "common",
+                runtimeSide,
                 false,
                 false,
                 "public",
@@ -182,7 +184,7 @@ public final class CommandToolProvider implements McpToolProvider {
                         "required", List.of("runtimeId", "runtimeSide", "normalizedInput", "parseValidUpTo", "suggestions")
                 ),
                 List.of("command", "suggest"),
-                "common",
+                runtimeSide,
                 false,
                 false,
                 "public",
@@ -221,7 +223,7 @@ public final class CommandToolProvider implements McpToolProvider {
                         "required", List.of("runtimeId", "runtimeSide", "normalizedCommand", "executed", "messages")
                 ),
                 List.of("command", "execute"),
-                "common",
+                runtimeSide,
                 false,
                 false,
                 "public",

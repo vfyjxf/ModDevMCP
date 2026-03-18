@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpServer;
 import dev.vfyjxf.mcp.server.transport.JsonCodec;
 import dev.vfyjxf.mcp.service.operation.OperationRegistry;
 import dev.vfyjxf.mcp.service.request.OperationError;
+import dev.vfyjxf.mcp.service.request.OperationExecutionException;
 import dev.vfyjxf.mcp.service.request.OperationRequest;
 import dev.vfyjxf.mcp.service.request.OperationResponse;
 import dev.vfyjxf.mcp.service.runtime.TargetSideResolver;
@@ -15,6 +16,8 @@ import java.util.Map;
 import java.util.Objects;
 
 public final class RequestsEndpoint implements HttpServiceServer.Endpoint {
+
+    private static final String BASE_PATH = "/api/v1/requests";
 
     public interface ConnectedSidesProvider {
         List<String> connectedSides();
@@ -54,10 +57,15 @@ public final class RequestsEndpoint implements HttpServiceServer.Endpoint {
 
     @Override
     public void register(HttpServer server) {
-        server.createContext("/api/v1/requests", this::handle);
+        server.createContext(BASE_PATH, this::handle);
     }
 
     private void handle(HttpExchange exchange) throws IOException {
+        var path = exchange.getRequestURI().getPath();
+        if (!BASE_PATH.equals(path) && !(BASE_PATH + "/").equals(path)) {
+            HttpJson.sendNotFound(exchange);
+            return;
+        }
         if (!"POST".equals(exchange.getRequestMethod())) {
             exchange.getResponseHeaders().add("Allow", "POST");
             HttpJson.sendJson(exchange, 405, Map.of("error", "method_not_allowed"));
@@ -67,12 +75,12 @@ public final class RequestsEndpoint implements HttpServiceServer.Endpoint {
         OperationRequest request;
         try {
             request = OperationRequest.fromPayload(jsonCodec.parseObject(exchange.getRequestBody().readAllBytes()));
-        } catch (IllegalArgumentException exception) {
+        } catch (RuntimeException exception) {
             send(exchange, OperationResponse.error(
                     null,
                     null,
                     null,
-                    new OperationError("invalid_request", exception.getMessage())
+                    invalidRequestError(exception)
             ));
             return;
         }
@@ -113,6 +121,13 @@ public final class RequestsEndpoint implements HttpServiceServer.Endpoint {
                     resolvedTargetSide,
                     output
             ));
+        } catch (OperationExecutionException exception) {
+            send(exchange, OperationResponse.error(
+                    request.requestId(),
+                    request.operationId(),
+                    resolvedTargetSide,
+                    exception.error()
+            ));
         } catch (Exception exception) {
             var message = exception.getMessage();
             if (message == null || message.isBlank()) {
@@ -129,5 +144,16 @@ public final class RequestsEndpoint implements HttpServiceServer.Endpoint {
 
     private static void send(HttpExchange exchange, OperationResponse response) throws IOException {
         HttpJson.sendJson(exchange, 200, response.toPayload());
+    }
+
+    private static OperationError invalidRequestError(RuntimeException exception) {
+        if (!(exception instanceof IllegalArgumentException)) {
+            return new OperationError("invalid_request", "request body must be a valid JSON object");
+        }
+        var message = exception.getMessage();
+        if (message == null || message.isBlank()) {
+            message = "request body must be a valid JSON object";
+        }
+        return new OperationError("invalid_request", message);
     }
 }

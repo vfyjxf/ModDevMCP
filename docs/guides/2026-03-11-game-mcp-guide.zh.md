@@ -1,50 +1,76 @@
-# 2026-03-11 游戏 MCP 指南
+# 2026-03-11 Game MCP 指南
 
 Date: 2026-03-11 17:20 CST
-Updated: 2026-03-15 00:05 CST
+
+Updated: 2026-03-18 14:50 CST
 
 ## 用途
 
-- 解释面向用户的运行流程
-- 说明 host、游戏、agent 之间如何协作
-- 把操作规则保持得足够简单
+- 解释面向用户的运行时流程
+- 说明本地 service、游戏与 agent 的关系
+- 保持操作规则简单直接
 
-## 运行形态
+## 运行时形态
 
-- 普通消费者接入时，只需要应用插件并添加已发布的 mod 依赖，不需要额外写 `modDevMcp {}`
-- 用 `createMcpClientFiles` 先生成并安装一次 MCP client 配置
-- 先把生成出来的 MCP client 配置安装到你的 MCP client
-- 再启动你平时使用的游戏运行任务，例如 `runClient`
-- 让游戏自动连接到 host
-- 通过生成出来的 MCP 入口建立连接
-- 在任何游戏相关工具之前先调用 `moddev.status`
+- 在你的 NeoForge 工程里引入已发布的 `dev.vfyjxf:moddevmcp` 依赖
+- 启动你平时使用的游戏运行任务，例如 `runClient`
+- 让 mod 在游戏内部暴露 loopback HTTP service
+- 先探测 `/api/v1/status`
+- 再阅读 `moddev-entry`
+- 最后通过 `POST /api/v1/requests` 执行 operation
 
 ## 启动流程
 
-在你的工程里启动游戏：
+从你的工程里启动游戏：
 
 ```powershell
 .\gradlew.bat runClient --no-daemon
 ```
 
-然后用生成好的 ModDevMCP 配置连接你的 MCP client。MCP client 会根据这个配置自动启动 host 入口。
+然后直接检查本地 service：
 
-## Agent 首次调用
+```powershell
+curl http://127.0.0.1:47812/api/v1/status
+curl http://127.0.0.1:47812/api/v1/skills/moddev-entry/markdown
+```
+
+## 第一批请求
 
 推荐顺序：
 
-1. `moddev.status`
-2. `moddev.ui_get_live_screen`
+1. `GET /api/v1/status`
+2. `GET /api/v1/skills/moddev-entry/markdown`
+3. 用 `status.get` 调用 `POST /api/v1/requests`
+4. 如果需要当前客户端 screen，再用 `status.live_screen` 调用 `POST /api/v1/requests`
 
-只有在下面两点都满足时才继续：
+最小请求示例：
 
-- `gameConnected=true`
-- live screen 调用成功
+```powershell
+curl -X POST http://127.0.0.1:47812/api/v1/requests `
+  -H "Content-Type: application/json" `
+  -d '{"requestId":"guide-1","operationId":"status.get","input":{}}'
+```
 
-## 实际规则
+## 实用规则
 
-在确认就绪之前，不要使用 UI、input、inventory 或 capture 工具。
+在 readiness 确认前，不要执行 UI、输入、背包、截图、命令、世界或热更新相关 operation。
 
-如果连接失败，或最开始的检查失败，就把游戏视为尚未就绪。
+只有在下面条件满足后才继续：
 
-普通消费者接入时，不需要为了使用这条运行流程而额外写 `modDevMcp {}`。
+- `serviceReady=true`
+- 可以读取 `moddev-entry`
+- 任务依赖真实游戏状态时，`gameReady=true`
+
+## Target Side 规则
+
+- operation 不支持 side 选择时，不要传 `targetSide`
+- 只有一个可用 side 时，不要传 `targetSide`
+- 当 client 和 server 都能处理该 operation 时，传 `targetSide=client|server`
+- 如果服务返回 `target_side_required`，带上明确 side 再重试
+
+## 本地世界规则
+
+- 本地单机存档相关能力使用 `world.list`、`world.create`、`world.join`
+- 即使 integrated server 已连上，本地世界 operation 仍然按 client 侧能力处理
+- `world.create` 成功后，后续进入应优先复用返回的 `worldId`
+- `worldId` 是本地存档目录 id，不只是显示名称

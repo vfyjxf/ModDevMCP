@@ -18,6 +18,17 @@ import dev.vfyjxf.mcp.runtime.hotswap.HotswapService;
 import dev.vfyjxf.mcp.runtime.tool.HotswapToolProvider;
 import dev.vfyjxf.mcp.server.ModDevMcpServer;
 import dev.vfyjxf.mcp.server.api.McpToolProvider;
+import dev.vfyjxf.mcp.server.api.ToolCallContext;
+import dev.vfyjxf.mcp.service.config.ServiceConfig;
+import dev.vfyjxf.mcp.service.export.SkillExportService;
+import dev.vfyjxf.mcp.service.http.CategoriesEndpoint;
+import dev.vfyjxf.mcp.service.http.HttpServiceServer;
+import dev.vfyjxf.mcp.service.http.OperationsEndpoint;
+import dev.vfyjxf.mcp.service.http.RequestsEndpoint;
+import dev.vfyjxf.mcp.service.http.SkillsEndpoint;
+import dev.vfyjxf.mcp.service.http.StatusEndpoint;
+import dev.vfyjxf.mcp.service.runtime.RuntimeOperationBindings;
+import dev.vfyjxf.mcp.service.skill.BuiltinSkillCatalog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,12 +51,16 @@ public class ModDevMCP {
     private final Supplier<? extends Collection<ClientMcpToolRegistrar>> clientRegistrarSupplier;
     private final Supplier<? extends Collection<ServerMcpToolRegistrar>> serverRegistrarSupplier;
     private final Set<McpToolProvider> registeredToolProviders = Collections.newSetFromMap(new IdentityHashMap<>());
+    private HttpServiceServer httpServiceServer;
+    private String httpServiceLastError;
     private boolean commonRuntimeRegistered;
     private boolean commonProvidersRegistered;
     private boolean clientRuntimeRegistered;
     private boolean clientProvidersRegistered;
     private boolean serverRuntimeRegistered;
     private boolean serverProvidersRegistered;
+    private boolean clientSideActive;
+    private boolean serverSideActive;
 
     public ModDevMCP() {
         this(new ModDevMcpServer(), new RuntimeRegistries());
@@ -87,6 +102,47 @@ public class ModDevMCP {
 
     public synchronized void registerBuiltinProviders() {
         prepareClientServer();
+    }
+
+    public synchronized void startHttpService() {
+        if (httpServiceServer != null) {
+            return;
+        }
+        var config = ServiceConfig.loadResolved();
+        var bindings = new RuntimeOperationBindings(this::invokeOperationTool, this::statusSnapshot);
+        var catalog = new BuiltinSkillCatalog().build(config, bindings.operationRegistry());
+        var exportService = new SkillExportService(config, catalog.categories(), catalog.skillRegistry());
+        var statusEndpoint = new StatusEndpoint(new ServiceStatusProvider(config));
+        var requestsEndpoint = new RequestsEndpoint(
+                bindings.operationRegistry(),
+                this::connectedSides,
+                bindings::execute
+        );
+        var serviceServer = new HttpServiceServer(
+                config,
+                statusEndpoint,
+                new CategoriesEndpoint(catalog.categories()),
+                new SkillsEndpoint(catalog.skillRegistry(), exportService),
+                new OperationsEndpoint(bindings.operationRegistry()),
+                requestsEndpoint,
+                exportService
+        );
+        try {
+            serviceServer.start();
+            this.httpServiceServer = serviceServer;
+            this.httpServiceLastError = null;
+        } catch (RuntimeException exception) {
+            this.httpServiceLastError = exception.getMessage();
+            throw exception;
+        }
+    }
+
+    public synchronized void stopHttpService() {
+        if (httpServiceServer == null) {
+            return;
+        }
+        httpServiceServer.stop();
+        httpServiceServer = null;
     }
 
     public synchronized void registerCommonProviders() {
@@ -139,6 +195,22 @@ public class ModDevMCP {
 
     public synchronized void registerServerProviders() {
         new ServerRuntimeBootstrap(this).registerServerProviders();
+    }
+
+    public synchronized void activateClientSide() {
+        clientSideActive = true;
+    }
+
+    public synchronized void deactivateClientSide() {
+        clientSideActive = false;
+    }
+
+    public synchronized void activateServerSide() {
+        serverSideActive = true;
+    }
+
+    public synchronized void deactivateServerSide() {
+        serverSideActive = false;
     }
 
     private void registerCommonRuntime() {
@@ -223,5 +295,83 @@ public class ModDevMCP {
 
     private static Supplier<Collection<ServerMcpToolRegistrar>> discoveredServerRegistrars() {
         return () -> new AnnotationMcpRegistrarLookup<>(ServerMcpToolRegistrar.class, ServerMcpRegistrar.class).findRegistrars();
+    }
+
+    private dev.vfyjxf.mcp.server.api.ToolResult invokeOperationTool(
+            String toolName,
+            String targetSide,
+            java.util.Map<String, Object> input
+    ) throws Exception {
+        var tool = server.registry().findTool(toolName, targetSide)
+                .orElseThrow(() -> new IllegalStateException("tool not available: " + toolName));
+        var arguments = new java.util.LinkedHashMap<String, Object>();
+        arguments.putAll(input);
+        if (targetSide != null) {
+            arguments.put("targetSide", targetSide);
+        }
+        var contextSide = targetSide == null ? "either" : targetSide;
+        var metadata = java.util.Map.<String, Object>of("runtimeId", contextSide + "-runtime");
+        return tool.handler().handle(new ToolCallContext(contextSide, metadata), java.util.Map.copyOf(arguments));
+    }
+
+    private RuntimeOperationBindings.StatusSnapshot statusSnapshot() {
+        var connectedSides = connectedSides();
+        return new RuntimeOperationBindings.StatusSnapshot(
+                httpServiceServer != null,
+                !connectedSides.isEmpty(),
+                connectedSides,
+                "moddev-entry",
+                ServiceConfig.loadResolved().exportRoot(),
+                httpServiceLastError
+        );
+    }
+
+    private java.util.List<String> connectedSides() {
+        var sides = new java.util.ArrayList<String>(2);
+        if (clientSideActive) {
+            sides.add("client");
+        }
+        if (serverSideActive) {
+            sides.add("server");
+        }
+        return java.util.List.copyOf(sides);
+    }
+
+    private final class ServiceStatusProvider implements StatusEndpoint.StatusProvider {
+        private final ServiceConfig config;
+
+        private ServiceStatusProvider(ServiceConfig config) {
+            this.config = config;
+        }
+
+        @Override
+        public boolean serviceReady() {
+            return httpServiceServer != null;
+        }
+
+        @Override
+        public boolean gameReady() {
+            return !connectedSides().isEmpty();
+        }
+
+        @Override
+        public java.util.List<String> connectedSides() {
+            return ModDevMCP.this.connectedSides();
+        }
+
+        @Override
+        public String entrySkillId() {
+            return "moddev-entry";
+        }
+
+        @Override
+        public java.nio.file.Path exportRoot() {
+            return config.exportRoot();
+        }
+
+        @Override
+        public String lastError() {
+            return httpServiceLastError;
+        }
     }
 }

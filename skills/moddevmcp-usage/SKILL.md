@@ -1,232 +1,109 @@
 ---
 name: moddevmcp-usage
-description: Verify ModDevMCP installation, MCP connectivity, game readiness, and safe tool usage for Minecraft NeoForge debugging workflows. Use when an agent needs to operate ModDevMCP from Codex, Claude Code, Cursor, Cline, Windsurf, VS Code, Gemini CLI, Goose, or similar MCP-capable clients to inspect UI state, capture screenshots, query live screens, run UI actions, or troubleshoot why ModDevMCP is unavailable.
+description: Use when an agent needs to operate a local ModDevMCP game session through its built-in HTTP service, exported skills, and request API for Minecraft debugging or automation.
 ---
 
 # ModDevMCP Usage
 
 ## Overview
 
-Use this skill to work with ModDevMCP safely and consistently across MCP-capable clients. Confirm installation first, confirm runtime readiness second, and only then use game tools.
+ModDevMCP is a loopback HTTP service exposed by the game mod itself. Start with `moddev-entry`, verify `/api/v1/status`, then execute concrete operations through `POST /api/v1/requests`.
 
-## Workflow
+## Required Flow
 
-Follow this order every time:
+1. Read the exported entry skill from `~/.moddev/skills/skills/moddev-entry.md` when available, or fetch `GET /api/v1/skills/moddev-entry/markdown`.
+2. Call `GET /api/v1/status`.
+3. Continue only if `serviceReady=true`.
+4. Treat client UI work as ready only if `gameReady=true` and `connectedSides` includes `client`.
+5. Discover available skills and operations before guessing names:
+   - `GET /api/v1/categories`
+   - `GET /api/v1/skills`
+   - `GET /api/v1/operations`
+6. Prefer reading the specific skill markdown before issuing a request.
 
-1. Confirm the current MCP client has a `moddevmcp` server entry installed.
-2. If the client was just reconfigured, tell the user a restart or MCP refresh may be required before tools appear.
-3. Call `moddev.status`.
-4. Continue only if `gameConnected=true`.
-5. Call `moddev.ui_get_live_screen`.
-6. Continue only if that call succeeds.
-7. Use higher-level UI tools before lower-level tools unless the task truly needs stable refs or batching.
+## Discovery Rules
 
-## Installation Check
+- `moddev-entry` is the required starting skill.
+- Some exported skills are guidance-only. They explain workflow and do not map to an executable operation.
+- Category skills summarize a capability area and point to operation skills.
+- Operation skills show the exact `operationId`, input shape, and a minimal `curl` example.
 
-Before using game tools, confirm all of the following:
+## Request Rules
 
-- the MCP client shows a configured `moddevmcp` server
-- the MCP client can start that server without startup errors
-- the tool list includes at least `moddev.status`
+Send all executable work through `POST /api/v1/requests`.
 
-If the MCP client does not show `moddevmcp`, stop and report that ModDevMCP is not installed in the current client.
+Envelope fields:
 
-If the MCP client was recently reconfigured, tell the user that some clients require a restart, workspace reload, or MCP server refresh before new tools become visible.
-
-## Readiness Check
-
-Treat the game as ready only after both checks succeed:
-
-1. `moddev.status`
-2. `moddev.ui_get_live_screen`
-
-Interpret them strictly:
-
-- if `moddev.status` fails, the MCP server is not usable yet
-- if `moddev.status` returns `gameConnected=false`, the game runtime is not ready yet
-- if `moddev.ui_get_live_screen` fails, client-side UI tools are not ready yet
-
-Do not infer readiness from old screenshots, old files, old logs, or earlier runs.
-
-## Preferred Tool Order
-
-Use the smallest tool that matches the task.
-
-Prefer this order for UI work:
-
-1. `moddev.status`
-2. `moddev.ui_get_live_screen`
-3. `moddev.ui_run_intent` when entering a top-level screen helps
-4. `moddev.ui_inspect`
-5. `moddev.ui_act`
-6. `moddev.ui_wait`
-7. `moddev.ui_screenshot`
-8. `moddev.ui_trace_recent`
-
-Use lower-level tools such as session/ref tools, `ui_batch`, or raw snapshot/query tools only when the higher-level flow is not enough.
-
-If the task depends on the game staying active while the window loses focus, query or set `moddev.pause_on_lost_focus` early and prefer `enabled=false` before long-running UI automation.
-
-## Command Tool Usage
-
-Use command tools only after readiness is confirmed with `moddev.status`.
-
-Available tools:
-
-- `moddev.command_list`
-- `moddev.command_suggest`
-- `moddev.command_execute`
+- `requestId`
+- `operationId`
+- `targetSide`
+- `input`
 
 Interpret `targetSide` strictly:
 
-- `targetSide=client` routes to the client runtime
-- `targetSide=server` routes to the server runtime
-- when both runtimes are connected, do not omit `targetSide`
-- at the title screen or outside a loaded world, runtime-specific command availability may still be limited
-
-Prefer this order for command work:
-
-1. `moddev.command_list`
-2. `moddev.command_suggest`
-3. `moddev.command_execute`
-
-Do not guess command availability from memory when `command_list` can verify it directly.
-
-Minimal examples:
-
-```json
-{
-  "name": "moddev.command_list",
-  "arguments": {
-    "targetSide": "client",
-    "limit": 20
-  }
-}
-```
-
-```json
-{
-  "name": "moddev.command_execute",
-  "arguments": {
-    "targetSide": "server",
-    "command": "time set day"
-  }
-}
-```
-
-## Local World Tool Usage
-
-Use local world tools only for singleplayer saves on the connected client runtime.
-
-Available tools:
-
-- `moddev.world_list`
-- `moddev.world_create`
-- `moddev.world_join`
-
-Preferred flow:
-
-1. `moddev.world_list`
-2. `moddev.world_join` for an existing save
-3. `moddev.world_create` when a new local test world is needed
-
-Rules:
-
-- prefer `id` from `moddev.world_list` over visible `name`
-- treat `world_create` as client-runtime-only
-- `joinAfterCreate` currently needs to stay `true`
-- `worldType=flat` is the supported way to request a superflat world
-
-Minimal examples:
-
-```json
-{
-  "name": "moddev.world_create",
-  "arguments": {
-    "name": "Flat Build World",
-    "gameMode": "creative",
-    "allowCheats": true,
-    "worldType": "flat",
-    "difficulty": "peaceful",
-    "generateStructures": false
-  }
-}
-```
-
-```json
-{
-  "name": "moddev.world_join",
-  "arguments": {
-    "id": "dev"
-  }
-}
-```
-
-## Hotswap Usage
-
-Use hotswap only after readiness is confirmed with `moddev.status`.
-
-Available tools:
-
-- `moddev.compile`
-- `moddev.hotswap`
-
-Guidance:
-
-- recommend `JBR` or `DCEVM` for enhanced hotswap support
-- do not treat `JBR` as a hard requirement for basic hotswap
-- if the game mod lives in a Gradle subproject, keep `projectRoot` pointed at the mod project and set `gradleRoot` to the directory that actually owns `gradlew(.bat)` and `settings.gradle`, even when that Gradle root is outside the subproject tree
-- on a standard JVM, expect method-body changes to be the safest case
-- after structural changes such as fields, methods, or class hierarchy changes, expect hotswap to fail more often without enhanced hotswap support
-- if hotswap fails, prefer restarting the client over repeated blind retries
-- after plugin/server/generated MCP client file changes, regenerate MCP client files, reinstall or update the MCP config in the MCP client, and refresh or restart the MCP client before trusting the tool list
-
-Preferred flow:
-
-1. edit code
-2. call `moddev.hotswap` with compile enabled
-3. verify behavior with the smallest relevant tool
-4. if the reload fails or the change is structural, restart the client and retest
+- omit it when the operation does not support side selection
+- omit it when exactly one eligible side is connected
+- send it when multiple eligible sides are connected
+- if the service returns `target_side_required`, retry with an explicit side
 
 Minimal example:
 
-```json
-{
-  "name": "moddev.hotswap",
-  "arguments": {
-    "compile": true
-  }
-}
+```bash
+curl -X POST http://127.0.0.1:47812/api/v1/requests \
+  -H "Content-Type: application/json" \
+  -d '{"requestId":"check-1","operationId":"status.get","input":{}}'
 ```
 
-## Screenshot And Capture Rules
+## Preferred Order
 
-When the user asks for visual proof:
+For any new session:
 
-- prefer `moddev.ui_screenshot`
-- save or report the real returned artifact path when available
-- if capture fails, report the failure directly
-- do not fabricate a screenshot summary without a real capture result
+1. `GET /api/v1/status`
+2. `GET /api/v1/skills/moddev-entry/markdown`
+3. read the relevant category or operation skill
+4. `POST /api/v1/requests`
 
-When describing the current UI, base the answer on fresh `ui_get_live_screen`, `ui_inspect`, or screenshot output from the current run.
+For UI work:
+
+1. verify `connectedSides` includes `client`
+2. use `status.live_screen`
+3. use `ui.inspect`
+4. use `ui.snapshot` or `ui.action` only when needed
+
+For commands:
+
+1. `command.list`
+2. `command.suggest`
+3. `command.execute`
+
+For local worlds:
+
+1. `world.list`
+2. `world.join` with `worldId` when re-entering an existing save
+3. `world.create` when a fresh singleplayer world is required
+4. after `world.create` succeeds, treat the returned `worldId` as the stable save id for later calls
+
+For hotswap:
+
+1. `hotswap.reload`
+2. if it returns a structured execution error, fix the code or restart the game instead of blindly retrying
 
 ## Failure Handling
 
-Report failures by layer:
+Report the exact failure layer:
 
-- installation failure: `moddevmcp` is not installed in the current MCP client
-- startup failure: the MCP client cannot start the `moddevmcp` server entry
-- connection failure: `moddev.status` is unavailable or errors
-- game readiness failure: `moddev.status` says `gameConnected=false`
-- client UI failure: `moddev.ui_get_live_screen` or later UI tools fail
+- service missing: `/api/v1/status` is unavailable
+- service not ready: `serviceReady=false`
+- game not ready: `gameReady=false`
+- side unavailable: requested side is absent from `connectedSides`
+- invalid request: `errorCode=invalid_request`
+- execution failure: use the returned `errorCode` and `errorMessage`
 
-When blocked, stop and tell the user exactly which layer failed and what was verified successfully before that point.
+For local world failures:
 
-## Hard Rules
+- `world_not_found` means an existing target save was not resolved
+- `world_name_ambiguous` means the visible name matched multiple saves
+- `world_create_failed` or `world_join_failed` means the game did not complete the requested transition
+- if the game visibly entered the new world but the response reports `world_not_found`, treat that as a runtime bug, not a caller mistake
 
-- Do not use game-specific tools before calling `moddev.status`.
-- Do not continue if `gameConnected` is false.
-- Do not fabricate screenshots, UI trees, interaction results, or inventory state.
-- Do not claim ModDevMCP is installed unless the current MCP client actually exposes `moddevmcp`.
-- Do not assume a new MCP config is live until the client refreshes or restarts if needed.
-- Do not keep retrying blindly; after a clear readiness failure, report it and wait for user action or a new run state.
+Do not claim a skill or operation exists unless it is visible from the current service or exported skill tree.

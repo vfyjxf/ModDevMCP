@@ -80,22 +80,12 @@ extraJavaModuleInfo {
 }
 
 dependencies {
-    compileOnlyApi(project(":Server")) {
+    compileOnly("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
         exclude(group: "org.slf4j")
     }
-    jarJar(project(":Server")) {
-        exclude(group: "org.slf4j")
-        transitive = false
-    }
-    additionalRuntimeClasspath(project(":Server")) {
-        exclude(group: "org.slf4j")
-        transitive = false
-    }
-    testRuntimeOnly(project(":Server")) {
-        exclude(group: "org.slf4j")
-        transitive = false
-    }
-    implementation("net.lenni0451:Reflect:${reflectVersion}")
+    compileOnly("com.google.code.gson:gson:${gsonVersion}")
+    compileOnly("net.lenni0451:Reflect:${reflectVersion}")
+
     additionalRuntimeClasspath("net.lenni0451:Reflect:${reflectVersion}")
     jarJar("net.lenni0451:Reflect:${reflectVersion}")
     additionalRuntimeClasspath("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
@@ -104,10 +94,11 @@ dependencies {
     jarJar("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
         exclude(group: "org.slf4j")
     }
-    testRuntimeOnly("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
+    testImplementation("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
         exclude(group: "org.slf4j")
     }
-    testRuntimeOnly("com.google.code.gson:gson:${gsonVersion}")
+    testImplementation("com.google.code.gson:gson:${gsonVersion}")
+    testImplementation("net.lenni0451:Reflect:${reflectVersion}")
     testRuntimeOnly("org.slf4j:slf4j-api:2.0.9")
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.12.0'
@@ -176,14 +167,6 @@ mavenPublishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-}
-
-tasks.named('jarJar').configure {
-    dependsOn(project(':Server').tasks.named('jar'))
-}
-
-tasks.withType(Test).configureEach {
-    dependsOn(project(':Server').tasks.named('jar'))
 }
 
 idea {

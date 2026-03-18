@@ -1,8 +1,8 @@
-# 2026-03-15 Local World Tools Design
+# 2026-03-15 Local World Operations Design
 
 ## Context
 
-当前 `client runtime` 已经能通过 MCP 提供 UI、输入、截图、inventory 和命令能力，但还缺少一组面向本地单机世界的高层工具，导致 agent 不能稳定完成：
+当前 service-first runtime 已经能暴露 UI、输入、截图、inventory 和命令能力，但还缺少一组面向本地单机世界的高层操作，导致 agent 不能稳定完成：
 
 - 查看当前客户端可进入的本地存档
 - 创建新的本地世界
@@ -12,7 +12,13 @@
 
 ## Decision
 
-新增 3 个仅在 `client runtime` 暴露的工具：
+对外新增 3 个公共 operation：
+
+- `world.list`
+- `world.create`
+- `world.join`
+
+mod 内部仍由 3 个仅在 `client runtime` 暴露的 provider tool 承接：
 
 - `moddev.world_list`
 - `moddev.world_create`
@@ -20,9 +26,9 @@
 
 工具不走纯 UI 点击流，而是采用“原生客户端 API + 真实窗口状态切换”的实现方式：
 
-- `world_list` 读取本地世界列表数据
-- `world_create` 使用客户端创建本地世界的原生流程，并在默认情况下立即进入世界
-- `world_join` 使用客户端进入单机世界的原生流程
+- `world.list` 读取本地世界列表数据
+- `world.create` 使用客户端创建本地世界的原生流程，并在默认情况下立即进入世界
+- `world.join` 使用客户端进入单机世界的原生流程
 - 在必要时切换到合适 screen，保证真实客户端窗口最终进入对应界面或世界
 
 ## Why This Shape
@@ -44,9 +50,9 @@
 
 采用 Option B。
 
-## Tool Contract
+## Public Contract
 
-### `moddev.world_list`
+### `world.list`
 
 输入：
 
@@ -72,7 +78,7 @@
 - `id` 作为稳定标识
 - `name` 保留给人类可读和手动调用
 
-### `moddev.world_create`
+### `world.create`
 
 输入：
 
@@ -98,7 +104,13 @@
 - `created`
 - `joined`
 
-### `moddev.world_join`
+语义：
+
+- `worldId` 是本地存档目录 id
+- create 成功时，返回的是“真实已进入世界”的 `worldId`
+- create 的成功判定不能依赖创建后重新扫描世界列表一次
+
+### `world.join`
 
 输入：
 
@@ -136,14 +148,17 @@
 - 只处理本地世界
 - 不支持 dedicated server runtime
 
-`world_create` / `world_join` 必须在客户端主线程执行，并以最终窗口状态成功进入世界为成功条件。
+`world.create` / `world.join` 必须在客户端主线程执行，并以最终窗口状态成功进入世界为成功条件。
+
+`world.create` 在 create 成功后应直接从当前 integrated server 的真实世界上下文回填结果，而不是把“新世界能否再次从 summary 列表里立即看见”作为成功条件。
 
 ## Provider Shape
 
 - 新增 `runtime.world` 包，承载 request/result DTO 与 service 接口
 - 新增 `WorldToolProvider`
 - `ClientRuntimeBootstrap` 注册 `WorldToolProvider`
-- 工具 side 标记为 `client`
+- provider tool side 标记为 `client`
+- HTTP service 通过 `world.list|create|join` operation 暴露这些能力
 
 ## Non-Goals
 

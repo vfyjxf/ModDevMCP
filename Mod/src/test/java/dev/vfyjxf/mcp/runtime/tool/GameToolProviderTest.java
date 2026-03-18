@@ -10,18 +10,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GameToolProviderTest {
 
     @Test
-    void gameCloseToolDefinesCommonSchema() {
+    void gameCloseToolDefinesSideSpecificSchema() {
         var server = new ModDevMcpServer(new McpToolRegistry());
-        new GameToolProvider(() -> true).register(server.registry());
+        GameToolProvider.clientOnly(() -> true).register(server.registry());
 
-        var definition = server.registry().findTool("moddev.game_close").orElseThrow().definition();
+        var definition = server.registry().findTool("moddev.game_close", "client").orElseThrow().definition();
 
-        assertEquals("common", definition.side());
+        assertEquals("client", definition.side());
         assertEquals(List.of("game", "lifecycle"), definition.tags());
         assertEquals("object", definition.inputSchema().get("type"));
         assertTrue(((Map<?, ?>) definition.inputSchema().get("properties")).containsKey("targetSide"));
@@ -33,9 +35,9 @@ class GameToolProviderTest {
     void gameCloseToolRequestsShutdownAndReturnsAcceptedPayloadForClientRuntime() {
         var server = new ModDevMcpServer(new McpToolRegistry());
         var closer = new RecordingGameCloser(true);
-        new GameToolProvider(closer).register(server.registry());
+        GameToolProvider.clientOnly(closer).register(server.registry());
 
-        var tool = server.registry().findTool("moddev.game_close").orElseThrow();
+        var tool = server.registry().findTool("moddev.game_close", "client").orElseThrow();
         var result = tool.handler().handle(new ToolCallContext("client", Map.of("runtimeId", "client-runtime")), Map.of("targetSide", "client"));
 
         assertTrue(result.success());
@@ -51,9 +53,9 @@ class GameToolProviderTest {
     void gameCloseToolRequestsShutdownAndReturnsAcceptedPayloadForServerRuntime() {
         var server = new ModDevMcpServer(new McpToolRegistry());
         var closer = new RecordingGameCloser(true);
-        new GameToolProvider(closer).register(server.registry());
+        GameToolProvider.serverOnly(closer).register(server.registry());
 
-        var tool = server.registry().findTool("moddev.game_close").orElseThrow();
+        var tool = server.registry().findTool("moddev.game_close", "server").orElseThrow();
         var result = tool.handler().handle(new ToolCallContext("server", Map.of("runtimeId", "server-runtime")), Map.of("targetSide", "server"));
 
         assertTrue(result.success());
@@ -68,9 +70,9 @@ class GameToolProviderTest {
     @Test
     void gameCloseToolReturnsFailureWhenRuntimeRejectsShutdown() {
         var server = new ModDevMcpServer(new McpToolRegistry());
-        new GameToolProvider(() -> false).register(server.registry());
+        GameToolProvider.clientOnly(() -> false).register(server.registry());
 
-        var tool = server.registry().findTool("moddev.game_close").orElseThrow();
+        var tool = server.registry().findTool("moddev.game_close", "client").orElseThrow();
         var result = tool.handler().handle(ToolCallContext.empty(), Map.of());
 
         assertFalse(result.success());

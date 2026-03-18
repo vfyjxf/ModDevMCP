@@ -1,15 +1,15 @@
 package dev.vfyjxf.mcp.runtime.tool;
 
 import dev.vfyjxf.mcp.runtime.command.CommandDescriptor;
+import dev.vfyjxf.mcp.runtime.command.CommandExecutionRequest;
 import dev.vfyjxf.mcp.runtime.command.CommandExecutionResult;
+import dev.vfyjxf.mcp.runtime.command.CommandListResult;
+import dev.vfyjxf.mcp.runtime.command.CommandQuery;
 import dev.vfyjxf.mcp.runtime.command.CommandService;
 import dev.vfyjxf.mcp.runtime.command.CommandSuggestion;
-import dev.vfyjxf.mcp.runtime.command.CommandType;
-import dev.vfyjxf.mcp.runtime.command.CommandQuery;
 import dev.vfyjxf.mcp.runtime.command.CommandSuggestionQuery;
-import dev.vfyjxf.mcp.runtime.command.CommandExecutionRequest;
-import dev.vfyjxf.mcp.runtime.command.CommandListResult;
 import dev.vfyjxf.mcp.runtime.command.CommandSuggestionResult;
+import dev.vfyjxf.mcp.runtime.command.CommandType;
 import dev.vfyjxf.mcp.server.ModDevMcpServer;
 import dev.vfyjxf.mcp.server.runtime.McpToolRegistry;
 import org.junit.jupiter.api.Test;
@@ -27,9 +27,9 @@ class CommandToolProviderTest {
         var registry = new McpToolRegistry();
         CommandToolProvider.serverOnly(new RecordingServerCommandService()).register(registry);
 
-        assertTrue(registry.findTool("moddev.command_list").isPresent());
-        assertTrue(registry.findTool("moddev.command_suggest").isPresent());
-        assertTrue(registry.findTool("moddev.command_execute").isPresent());
+        assertTrue(registry.findTool("moddev.command_list", "server").isPresent());
+        assertTrue(registry.findTool("moddev.command_suggest", "server").isPresent());
+        assertTrue(registry.findTool("moddev.command_execute", "server").isPresent());
     }
 
     @Test
@@ -37,11 +37,11 @@ class CommandToolProviderTest {
         var server = new ModDevMcpServer(new McpToolRegistry());
         CommandToolProvider.serverOnly(new RecordingServerCommandService()).register(server.registry());
 
-        var list = server.registry().findTool("moddev.command_list").orElseThrow().definition();
-        var suggest = server.registry().findTool("moddev.command_suggest").orElseThrow().definition();
-        var execute = server.registry().findTool("moddev.command_execute").orElseThrow().definition();
+        var list = server.registry().findTool("moddev.command_list", "server").orElseThrow().definition();
+        var suggest = server.registry().findTool("moddev.command_suggest", "server").orElseThrow().definition();
+        var execute = server.registry().findTool("moddev.command_execute", "server").orElseThrow().definition();
 
-        assertEquals("common", list.side());
+        assertEquals("server", list.side());
         assertTrue(((Map<?, ?>) list.inputSchema().get("properties")).containsKey("query"));
         assertTrue(((Map<?, ?>) list.inputSchema().get("properties")).containsKey("targetSide"));
         assertTrue(!((Map<?, ?>) list.inputSchema().get("properties")).containsKey("runtimeSide"));
@@ -50,7 +50,7 @@ class CommandToolProviderTest {
         assertTrue(!((Map<?, ?>) list.outputSchema().get("properties")).containsKey("commandSide"));
         assertTrue(list.description().contains("selected runtime"));
 
-        assertEquals("common", suggest.side());
+        assertEquals("server", suggest.side());
         assertTrue(((Map<?, ?>) suggest.inputSchema().get("properties")).containsKey("input"));
         assertTrue(((Map<?, ?>) suggest.inputSchema().get("properties")).containsKey("targetSide"));
         assertTrue(!((Map<?, ?>) suggest.inputSchema().get("properties")).containsKey("runtimeSide"));
@@ -59,7 +59,7 @@ class CommandToolProviderTest {
         assertTrue(!((Map<?, ?>) suggest.outputSchema().get("properties")).containsKey("commandSide"));
         assertTrue(suggest.description().contains("selected runtime"));
 
-        assertEquals("common", execute.side());
+        assertEquals("server", execute.side());
         assertTrue(((Map<?, ?>) execute.inputSchema().get("properties")).containsKey("command"));
         assertTrue(((Map<?, ?>) execute.inputSchema().get("properties")).containsKey("targetSide"));
         assertTrue(!((Map<?, ?>) execute.inputSchema().get("properties")).containsKey("runtimeSide"));
@@ -75,7 +75,7 @@ class CommandToolProviderTest {
         var serverService = new RecordingServerCommandService();
         CommandToolProvider.serverOnly(serverService).register(server.registry());
 
-        var result = server.registry().findTool("moddev.command_execute").orElseThrow()
+        var result = server.registry().findTool("moddev.command_execute", "server").orElseThrow()
                 .handler()
                 .handle(dev.vfyjxf.mcp.server.api.ToolCallContext.empty(), Map.of("command", "/say hi"));
 
@@ -93,7 +93,7 @@ class CommandToolProviderTest {
         var clientService = new RecordingClientCommandService();
         CommandToolProvider.clientOnly(clientService).register(server.registry());
 
-        var result = server.registry().findTool("moddev.command_list").orElseThrow()
+        var result = server.registry().findTool("moddev.command_list", "client").orElseThrow()
                 .handler()
                 .handle(new dev.vfyjxf.mcp.server.api.ToolCallContext("client", Map.of("runtimeId", "client-runtime")), Map.of());
 
@@ -107,7 +107,7 @@ class CommandToolProviderTest {
         var serverService = new RecordingServerCommandService();
         CommandToolProvider.serverOnly(serverService).register(server.registry());
 
-        var result = server.registry().findTool("moddev.command_list").orElseThrow()
+        var result = server.registry().findTool("moddev.command_list", "server").orElseThrow()
                 .handler()
                 .handle(new dev.vfyjxf.mcp.server.api.ToolCallContext("server", Map.of("runtimeId", "server-runtime")), Map.of());
 

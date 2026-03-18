@@ -24,7 +24,7 @@ public record OperationResponse(
                 operationId,
                 targetSide,
                 "ok",
-                output == null ? Map.of() : Map.copyOf(output),
+                output == null ? Map.of() : JsonValueNormalizer.freezeObject(output, "output"),
                 null,
                 null
         );
@@ -41,7 +41,7 @@ public record OperationResponse(
                 operationId,
                 targetSide,
                 "error",
-                null,
+                Map.of(),
                 error.errorCode(),
                 error.errorMessage()
         );

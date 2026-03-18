@@ -2,6 +2,7 @@ package dev.vfyjxf.mcp.service.http;
 
 import com.sun.net.httpserver.HttpServer;
 import dev.vfyjxf.mcp.service.config.ServiceConfig;
+import dev.vfyjxf.mcp.service.export.SkillExportService;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -17,6 +18,7 @@ public final class HttpServiceServer {
 
     private final ServiceConfig config;
     private final HttpServer server;
+    private final SkillExportService skillExportService;
 
     public HttpServiceServer(
             ServiceConfig config,
@@ -26,8 +28,21 @@ public final class HttpServiceServer {
             OperationsEndpoint operationsEndpoint,
             RequestsEndpoint requestsEndpoint
     ) {
+        this(config, statusEndpoint, categoriesEndpoint, skillsEndpoint, operationsEndpoint, requestsEndpoint, null);
+    }
+
+    public HttpServiceServer(
+            ServiceConfig config,
+            StatusEndpoint statusEndpoint,
+            CategoriesEndpoint categoriesEndpoint,
+            SkillsEndpoint skillsEndpoint,
+            OperationsEndpoint operationsEndpoint,
+            RequestsEndpoint requestsEndpoint,
+            SkillExportService skillExportService
+    ) {
         this.config = Objects.requireNonNull(config, "config");
         this.server = createServer(config);
+        this.skillExportService = skillExportService;
         registerAll(List.of(
                 Objects.requireNonNull(statusEndpoint, "statusEndpoint"),
                 Objects.requireNonNull(categoriesEndpoint, "categoriesEndpoint"),
@@ -38,6 +53,9 @@ public final class HttpServiceServer {
     }
 
     public void start() {
+        if (skillExportService != null) {
+            skillExportService.exportAll();
+        }
         server.start();
     }
 
@@ -49,7 +67,7 @@ public final class HttpServiceServer {
         return buildBaseUri(config.host(), config.port());
     }
 
-    static URI buildBaseUri(String host, int port) {
+    public static URI buildBaseUri(String host, int port) {
         var authorityHost = host;
         if (host.indexOf(':') >= 0 && !(host.startsWith("[") && host.endsWith("]"))) {
             authorityHost = "[" + host + "]";

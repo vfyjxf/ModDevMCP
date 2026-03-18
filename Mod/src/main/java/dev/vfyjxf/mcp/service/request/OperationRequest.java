@@ -1,6 +1,5 @@
 package dev.vfyjxf.mcp.service.request;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -62,14 +61,7 @@ public record OperationRequest(
         if (!(value instanceof Map<?, ?> mapValue)) {
             throw new IllegalArgumentException("input must be an object");
         }
-        var result = new LinkedHashMap<String, Object>();
-        for (var entry : mapValue.entrySet()) {
-            if (!(entry.getKey() instanceof String key) || key.isBlank()) {
-                throw new IllegalArgumentException("input keys must be non-blank strings");
-            }
-            result.put(key, entry.getValue());
-        }
-        return result;
+        return JsonValueNormalizer.freezeObject(mapValue, "input");
     }
 
     private static String validateRequiredString(String value, String fieldName) {
@@ -99,6 +91,6 @@ public record OperationRequest(
         if (input == null || input.isEmpty()) {
             return Map.of();
         }
-        return Map.copyOf(input);
+        return JsonValueNormalizer.freezeObject(input, "input");
     }
 }

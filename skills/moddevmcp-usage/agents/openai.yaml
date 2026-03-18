@@ -1,4 +1,4 @@
 interface:
   display_name: "ModDevMCP Usage"
-  short_description: "Use ModDevMCP safely across MCP clients"
-  default_prompt: "Use $moddevmcp-usage to verify ModDevMCP installation, readiness, and safe tool usage."
+  short_description: "Use the local ModDevMCP HTTP service safely"
+  default_prompt: "Use $moddevmcp-usage to verify local service readiness, read exported skills, and send safe request API calls."

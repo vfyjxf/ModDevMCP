@@ -2,6 +2,7 @@ package dev.vfyjxf.mcp.service.http;
 
 import dev.vfyjxf.mcp.service.category.CategoryDefinition;
 import dev.vfyjxf.mcp.service.config.ServiceConfig;
+import dev.vfyjxf.mcp.service.export.SkillExportService;
 import dev.vfyjxf.mcp.service.operation.OperationDefinition;
 import dev.vfyjxf.mcp.service.operation.OperationRegistry;
 import dev.vfyjxf.mcp.service.skill.SkillDefinition;
@@ -18,6 +19,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -257,6 +259,61 @@ class SkillDiscoveryEndpointTest {
 
         assertEquals(405, response.statusCode());
         assertEquals("GET", response.headers().firstValue("Allow").orElse("missing"));
+    }
+
+    @Test
+    void postExportRegeneratesSkillTree() throws Exception {
+        var config = new ServiceConfig("127.0.0.1", findOpenPort(), tempDir);
+        var category = new CategoryDefinition(
+                "status",
+                "Status",
+                "Service status and discovery.",
+                List.of("moddev-entry", "status"),
+                List.of()
+        );
+        var skillRegistry = new SkillRegistry(List.of(
+                new SkillDefinition(
+                        "moddev-entry",
+                        "status",
+                        SkillKind.GUIDANCE,
+                        "Entry",
+                        "Start here.",
+                        null,
+                        Set.of("entry", "status"),
+                        false,
+                        "# Entry\n"
+                ),
+                new SkillDefinition(
+                        "status",
+                        "status",
+                        SkillKind.GUIDANCE,
+                        "Status",
+                        "Inspect service status.",
+                        null,
+                        Set.of("status"),
+                        false,
+                        "# Status\n"
+                )
+        ));
+        var exportService = new SkillExportService(config, List.of(category), skillRegistry);
+
+        server = new HttpServiceServer(
+                config,
+                statusEndpoint(tempDir),
+                new CategoriesEndpoint(List.of(category)),
+                new SkillsEndpoint(skillRegistry, exportService),
+                new OperationsEndpoint(new OperationRegistry(List.of())),
+                requestsEndpoint(),
+                exportService
+        );
+        server.start();
+        Files.writeString(tempDir.resolve("skills").resolve("moddev-entry.md"), "stale");
+
+        var response = request(server.baseUri().resolve("/api/v1/skills/export"), "POST");
+
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("\"exported\":true"));
+        assertEquals("# Entry\n", Files.readString(tempDir.resolve("skills").resolve("moddev-entry.md")));
     }
 
     private static HttpResponse<String> get(URI uri) throws IOException, InterruptedException {

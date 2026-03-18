@@ -1,17 +1,22 @@
 package dev.vfyjxf.mcp;
 
-import dev.vfyjxf.mcp.runtime.game.LiveClientGameCloser;
 import dev.vfyjxf.mcp.runtime.command.LiveClientCommandService;
-import dev.vfyjxf.mcp.runtime.input.MinecraftInputController;
+import dev.vfyjxf.mcp.runtime.game.LiveClientGameCloser;
 import dev.vfyjxf.mcp.runtime.game.LiveClientPauseOnLostFocusService;
-import dev.vfyjxf.mcp.runtime.world.LiveClientWorldService;
+import dev.vfyjxf.mcp.runtime.input.MinecraftInputController;
 import dev.vfyjxf.mcp.runtime.tool.CommandToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.GameToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.InputToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.PauseOnLostFocusToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.UiToolProvider;
 import dev.vfyjxf.mcp.runtime.tool.WorldToolProvider;
-import dev.vfyjxf.mcp.runtime.ui.*;
+import dev.vfyjxf.mcp.runtime.ui.BuiltinUiCaptureProviders;
+import dev.vfyjxf.mcp.runtime.ui.BuiltinUiInteractionResolvers;
+import dev.vfyjxf.mcp.runtime.ui.FallbackRegionUiDriver;
+import dev.vfyjxf.mcp.runtime.ui.LiveClientScreenProbe;
+import dev.vfyjxf.mcp.runtime.ui.VanillaContainerUiDriver;
+import dev.vfyjxf.mcp.runtime.ui.VanillaScreenUiDriver;
+import dev.vfyjxf.mcp.runtime.world.LiveClientWorldService;
 import dev.vfyjxf.mcp.server.ModDevMcpServer;
 
 public final class ClientRuntimeBootstrap {
@@ -51,7 +56,7 @@ public final class ClientRuntimeBootstrap {
         var registries = mod.registries();
         mod.registerToolProvider(new UiToolProvider(registries, new LiveClientScreenProbe()));
         mod.registerToolProvider(new InputToolProvider(registries));
-        mod.registerToolProvider(new GameToolProvider(new LiveClientGameCloser()));
+        mod.registerToolProvider(GameToolProvider.clientOnly(new LiveClientGameCloser()));
         mod.registerToolProvider(new PauseOnLostFocusToolProvider(new LiveClientPauseOnLostFocusService()));
         mod.registerToolProvider(CommandToolProvider.clientOnly(new LiveClientCommandService()));
         mod.registerToolProvider(new WorldToolProvider(new LiveClientWorldService()));

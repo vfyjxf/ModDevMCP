@@ -2,6 +2,7 @@ package dev.vfyjxf.mcp.service.http;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import dev.vfyjxf.mcp.service.export.SkillExportService;
 import dev.vfyjxf.mcp.service.skill.SkillRegistry;
 
 import java.io.IOException;
@@ -16,9 +17,15 @@ public final class SkillsEndpoint implements HttpServiceServer.Endpoint {
     private static final String BASE_PATH = "/api/v1/skills";
 
     private final SkillRegistry skillRegistry;
+    private final SkillExportService skillExportService;
 
     public SkillsEndpoint(SkillRegistry skillRegistry) {
+        this(skillRegistry, null);
+    }
+
+    public SkillsEndpoint(SkillRegistry skillRegistry, SkillExportService skillExportService) {
         this.skillRegistry = Objects.requireNonNull(skillRegistry, "skillRegistry");
+        this.skillExportService = skillExportService;
     }
 
     @Override
@@ -27,13 +34,16 @@ public final class SkillsEndpoint implements HttpServiceServer.Endpoint {
     }
 
     private void handle(HttpExchange exchange) throws IOException {
+        var path = exchange.getRequestURI().getPath();
+        var rawPath = exchange.getRequestURI().getRawPath();
+        if ("POST".equals(exchange.getRequestMethod()) && (BASE_PATH + "/export").equals(path)) {
+            handleExport(exchange);
+            return;
+        }
         if (!"GET".equals(exchange.getRequestMethod())) {
             HttpJson.sendMethodNotAllowed(exchange);
             return;
         }
-
-        var path = exchange.getRequestURI().getPath();
-        var rawPath = exchange.getRequestURI().getRawPath();
         if (BASE_PATH.equals(path) || (BASE_PATH + "/").equals(path)) {
             handleList(exchange);
             return;
@@ -50,6 +60,20 @@ public final class SkillsEndpoint implements HttpServiceServer.Endpoint {
             return;
         }
         HttpJson.sendNotFound(exchange);
+    }
+
+    private void handleExport(HttpExchange exchange) throws IOException {
+        if (skillExportService == null) {
+            HttpJson.sendNotFound(exchange);
+            return;
+        }
+        var result = skillExportService.exportAll();
+        var payload = new LinkedHashMap<String, Object>();
+        payload.put("exported", result.exported());
+        payload.put("exportRoot", result.exportRoot().toString());
+        payload.put("categoryCount", result.categoryCount());
+        payload.put("skillCount", result.skillCount());
+        HttpJson.sendJson(exchange, 200, payload);
     }
 
     private void handleList(HttpExchange exchange) throws IOException {

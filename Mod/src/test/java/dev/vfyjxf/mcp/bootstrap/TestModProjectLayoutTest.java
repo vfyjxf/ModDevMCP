@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TestModProjectLayoutTest {
@@ -31,5 +32,8 @@ class TestModProjectLayoutTest {
         assertTrue(Files.exists(packMcmeta), packMcmeta.toString());
         assertTrue(Files.readString(settingsGradle).contains("rootProject.name = 'TestMod'"));
         assertTrue(Files.readString(settingsGradle).contains("mavenLocal()"));
+        assertFalse(Files.readString(buildGradle).contains("dev.vfyjxf.moddevmcp"));
+        assertFalse(Files.readString(buildGradle).contains("createMcpClientFiles"));
+        assertFalse(Files.readString(gradleProperties).contains("plugin_version="));
     }
 }

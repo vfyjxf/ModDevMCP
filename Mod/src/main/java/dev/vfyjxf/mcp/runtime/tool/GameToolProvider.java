@@ -14,9 +14,19 @@ import java.util.Objects;
 public final class GameToolProvider implements McpToolProvider {
 
     private final GameCloser gameCloser;
+    private final String runtimeSide;
 
-    public GameToolProvider(GameCloser gameCloser) {
+    private GameToolProvider(GameCloser gameCloser, String runtimeSide) {
         this.gameCloser = Objects.requireNonNull(gameCloser, "gameCloser");
+        this.runtimeSide = Objects.requireNonNull(runtimeSide, "runtimeSide");
+    }
+
+    public static GameToolProvider clientOnly(GameCloser gameCloser) {
+        return new GameToolProvider(gameCloser, "client");
+    }
+
+    public static GameToolProvider serverOnly(GameCloser gameCloser) {
+        return new GameToolProvider(gameCloser, "server");
     }
 
     @Override
@@ -46,7 +56,7 @@ public final class GameToolProvider implements McpToolProvider {
                                 "required", List.of("accepted", "runtimeId", "runtimeSide")
                         ),
                         List.of("game", "lifecycle"),
-                        "common",
+                        runtimeSide,
                         false,
                         false,
                         "public",

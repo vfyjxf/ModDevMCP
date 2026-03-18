@@ -8,6 +8,7 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.levelgen.presets.WorldPreset;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import net.minecraft.world.level.storage.LevelSummary;
+import net.minecraft.world.level.storage.LevelResource;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -50,7 +51,10 @@ public final class LiveClientWorldService implements WorldService {
         });
 
         waitForWorld(request.name(), "world_create_failed");
-        var created = findWorldByName(request.name());
+        var created = onClientThread(this::currentWorldInfo);
+        if (created == null) {
+            throw new WorldServiceException("world_create_failed", "Created world metadata is unavailable");
+        }
         return new WorldCreateResult(created.getLevelId(), created.getLevelName(), true, true);
     }
 
@@ -164,14 +168,6 @@ public final class LiveClientWorldService implements WorldService {
         return matches.getFirst();
     }
 
-    private LevelSummary findWorldByName(String name) {
-        var summaries = onClientThread(this::loadSummaries);
-        return summaries.stream()
-                .filter(summary -> name.equals(summary.getLevelName()))
-                .findFirst()
-                .orElseThrow(() -> new WorldServiceException("world_not_found", "Created world not found: " + name));
-    }
-
     private List<LevelSummary> loadSummaries() {
         try {
             var minecraft = requireMinecraft();
@@ -198,11 +194,21 @@ public final class LiveClientWorldService implements WorldService {
     }
 
     private String currentWorldName() {
+        var worldInfo = currentWorldInfo();
+        return worldInfo == null ? null : worldInfo.getLevelName();
+    }
+
+    private CurrentWorldInfo currentWorldInfo() {
         var minecraft = requireMinecraft();
         if (!minecraft.hasSingleplayerServer() || minecraft.getSingleplayerServer() == null) {
             return null;
         }
-        return minecraft.getSingleplayerServer().getWorldData().getLevelName();
+        var server = minecraft.getSingleplayerServer();
+        var levelDataPath = server.getWorldPath(LevelResource.LEVEL_DATA_FILE).toAbsolutePath().normalize();
+        var worldRoot = levelDataPath.getParent();
+        var fileName = worldRoot == null ? null : worldRoot.getFileName();
+        var levelId = fileName == null ? levelDataPath.toString() : fileName.toString();
+        return new CurrentWorldInfo(levelId, server.getWorldData().getLevelName());
     }
 
     private void waitForWorld(String expectedName, String errorCode) {
@@ -256,6 +262,16 @@ public final class LiveClientWorldService implements WorldService {
             throw exception;
         } catch (Exception exception) {
             throw new WorldServiceException("world_action_unavailable", Objects.toString(exception.getMessage(), exception.getClass().getSimpleName()));
+        }
+    }
+
+    private record CurrentWorldInfo(String levelId, String levelName) {
+        String getLevelId() {
+            return levelId;
+        }
+
+        String getLevelName() {
+            return levelName;
         }
     }
 }
