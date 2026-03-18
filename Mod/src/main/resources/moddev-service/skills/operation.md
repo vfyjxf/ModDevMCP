@@ -6,8 +6,7 @@ Category: `{{categoryId}}`
 
 {{summary}}
 
-Use this operation through ModDevMCP request APIs. Do not replace it with shell-driven keyboard input, mouse movement, or other OS-level automation.
-Use `moddev-usage` to resolve baseUrl before invoking this operation.
+Use this operation through ModDevMCP request APIs. Use `moddev-usage` to resolve `baseUrl` before invoking it, and do not replace it with shell-driven keyboard input, mouse movement, or other OS-level automation.
 
 Target side rule:
 

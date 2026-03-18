@@ -66,7 +66,7 @@ class BuiltinSkillCatalogTest {
         assertTrue(operationSkill.markdown().contains("curl -X POST"));
         assertTrue(operationSkill.markdown().contains("\"operationId\":\"command.execute\""));
         assertTrue(operationSkill.markdown().contains("Send `targetSide` when both client and server are connected."));
-        assertTrue(operationSkill.markdown().contains("Do not replace it with shell-driven keyboard input"));
+        assertTrue(operationSkill.markdown().contains("do not replace it with shell-driven keyboard input"));
     }
 
     @Test
@@ -78,7 +78,9 @@ class BuiltinSkillCatalogTest {
         assertTrue(usageSkill.contains("Probe each candidate `baseUrl` from the registry with `GET /api/v1/status`"));
         assertTrue(usageSkill.contains("targetSide` is required only when both eligible sides are live"));
         assertTrue(usageSkill.contains("1. Try the default probe `GET http://127.0.0.1:47812/api/v1/status`."));
-        assertTrue(usageSkill.contains("5. Read the exported entry skill"));
+        assertTrue(usageSkill.contains("5. After you have a live `baseUrl`, read the exported entry skill"));
+        assertTrue(usageSkill.contains("3. pick a live `baseUrl`"));
+        assertTrue(usageSkill.contains("4. `GET <baseUrl>/api/v1/skills/moddev-usage/markdown`"));
         assertFalse(usageSkill.contains("1. Read the exported entry skill"));
     }
 

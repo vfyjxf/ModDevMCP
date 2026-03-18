@@ -15,7 +15,7 @@ ModDevMCP is a loopback HTTP service exposed by the game mod itself. Resolve a l
 2. If the default probe fails, read `<gradleProject>/build/moddevmcp/game-instances.json`.
 3. Probe each candidate `baseUrl` from the registry with `GET /api/v1/status` and keep only live instances.
 4. Continue only if `serviceReady=true`.
-5. Read the exported entry skill from `~/.moddev/skills/skills/moddev-usage.md` when available, or fetch `GET /api/v1/skills/moddev-usage/markdown`.
+5. After you have a live `baseUrl`, read the exported entry skill from `~/.moddev/skills/skills/moddev-usage.md` when available, or fetch `GET <baseUrl>/api/v1/skills/moddev-usage/markdown`.
 6. Treat client UI work as ready only if `gameReady=true` and `connectedSides` includes `client`.
 7. Discover available skills and operations before guessing names:
    - `GET /api/v1/categories`
@@ -71,9 +71,10 @@ For any new session:
 
 1. `GET http://127.0.0.1:47812/api/v1/status`
 2. if needed, read `<gradleProject>/build/moddevmcp/game-instances.json` and probe listed candidates with `GET /api/v1/status`
-3. `GET /api/v1/skills/moddev-usage/markdown`
-4. read the relevant category or operation skill
-5. `POST /api/v1/requests`
+3. pick a live `baseUrl`
+4. `GET <baseUrl>/api/v1/skills/moddev-usage/markdown`
+5. read the relevant category or operation skill
+6. `POST <baseUrl>/api/v1/requests`
 
 For UI work:
 
