@@ -15,6 +15,7 @@ public record ServiceConfig(
     public static final String HOST_PROPERTY = "moddev.service.host";
     public static final String PORT_PROPERTY = "moddev.service.port";
     public static final String EXPORT_ROOT_PROPERTY = "moddev.skill.exportRoot";
+    public static final String PROJECT_ROOT_PROPERTY = "moddevmcp.project.root";
 
     public ServiceConfig {
         if (host == null || host.isBlank()) {
@@ -37,6 +38,15 @@ public record ServiceConfig(
         var exportRootText = defaultIfBlank(System.getProperty(EXPORT_ROOT_PROPERTY), defaultExportRoot().toString());
         var exportRoot = Path.of(exportRootText);
         return new ServiceConfig(host, port, exportRoot);
+    }
+
+    public Path projectRoot() {
+        var configuredProjectRoot = defaultIfBlank(System.getProperty(PROJECT_ROOT_PROPERTY), System.getProperty("user.dir"));
+        return Path.of(configuredProjectRoot).toAbsolutePath().normalize();
+    }
+
+    public Path gameInstancesPath() {
+        return projectRoot().resolve("build").resolve("moddevmcp").resolve("game-instances.json").toAbsolutePath().normalize();
     }
 
     private static String defaultIfBlank(String value, String defaultValue) {

@@ -62,6 +62,41 @@ class ServiceConfigTest {
                                 org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, ServiceConfig::loadResolved))));
     }
 
+    @Test
+    void loadResolvedDerivesGameInstancesPathFromProjectRootProperty() {
+        withProperty("moddevmcp.project.root", " D:/workspace/consumer ", () ->
+                withClearedProperty("moddev.service.host", () ->
+                        withClearedProperty("moddev.service.port", () ->
+                                withClearedProperty("moddev.skill.exportRoot", () -> {
+                                    var config = ServiceConfig.loadResolved();
+
+                                    assertEquals(
+                                            Path.of("D:/workspace/consumer", "build", "moddevmcp", "game-instances.json")
+                                                    .toAbsolutePath()
+                                                    .normalize(),
+                                            config.gameInstancesPath()
+                                    );
+                                }))));
+    }
+
+    @Test
+    void loadResolvedDerivesGameInstancesPathFromUserDirWhenProjectRootMissing() {
+        withClearedProperty("moddevmcp.project.root", () ->
+                withProperty("user.dir", "D:/workspace/current-module", () ->
+                        withClearedProperty("moddev.service.host", () ->
+                                withClearedProperty("moddev.service.port", () ->
+                                        withClearedProperty("moddev.skill.exportRoot", () -> {
+                                            var config = ServiceConfig.loadResolved();
+
+                                            assertEquals(
+                                                    Path.of("D:/workspace/current-module", "build", "moddevmcp", "game-instances.json")
+                                                            .toAbsolutePath()
+                                                            .normalize(),
+                                                    config.gameInstancesPath()
+                                            );
+                                        })))));
+    }
+
     private static void withClearedProperty(String key, Runnable testBody) {
         var previous = System.getProperty(key);
         try {
