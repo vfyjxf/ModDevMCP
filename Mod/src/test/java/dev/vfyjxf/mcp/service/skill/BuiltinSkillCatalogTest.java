@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -76,6 +77,13 @@ class BuiltinSkillCatalogTest {
         assertTrue(usageSkill.contains("<gradleProject>/build/moddevmcp/game-instances.json"));
         assertTrue(usageSkill.contains("Probe each candidate `baseUrl` from the registry with `GET /api/v1/status`"));
         assertTrue(usageSkill.contains("targetSide` is required only when both eligible sides are live"));
+    }
+
+    @Test
+    void entryMarkdownKeepsDefaultProbeWhenRenderedWithFallbackBaseUri() {
+        var markdown = new SkillMarkdownLoader().loadEntryMarkdown("http://127.0.0.1:57999");
+        assertTrue(markdown.contains("curl http://127.0.0.1:47812/api/v1/status"));
+        assertFalse(markdown.contains("curl http://127.0.0.1:57999/api/v1/status"));
     }
 
     private BuiltinSkillCatalog.Catalog catalog(OperationRegistry operationRegistry) {

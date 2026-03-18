@@ -7,7 +7,7 @@ All game interaction must go through ModDevMCP operations. Do not use shell scri
 1. Try the default probe:
 
 ```bash
-curl {{baseUri}}/api/v1/status
+curl http://127.0.0.1:47812/api/v1/status
 ```
 
 2. If default probe fails, read the project-local registry:
