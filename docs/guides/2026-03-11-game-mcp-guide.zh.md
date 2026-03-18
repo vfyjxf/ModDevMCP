@@ -31,7 +31,6 @@ Updated: 2026-03-18 14:50 CST
 
 ```powershell
 curl http://127.0.0.1:47812/api/v1/status
-curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
 ```
 
 如果默认探测不可用，走项目级回退：
@@ -42,14 +41,21 @@ curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
 
 当双端同时活跃时，client 和 server 使用独立端口。
 
+解析出可用 `baseUrl` 后，再读取入口 skill markdown：
+
+```powershell
+curl <baseUrl>/api/v1/skills/moddev-usage/markdown
+```
+
 ## 第一批请求
 
 推荐顺序：
 
-1. `GET /api/v1/status`
-2. `GET /api/v1/skills/moddev-usage/markdown`
-3. 用 `status.get` 调用 `POST /api/v1/requests`
-4. 如果需要当前客户端 screen，再用 `status.live_screen` 调用 `POST /api/v1/requests`
+1. `GET http://127.0.0.1:47812/api/v1/status`
+2. 若不可用，读取 `build/moddevmcp/game-instances.json` 并解析可用 `baseUrl`
+3. `GET <baseUrl>/api/v1/skills/moddev-usage/markdown`
+4. 用 `status.get` 调用 `POST <baseUrl>/api/v1/requests`
+5. 如果需要当前客户端 screen，再用 `status.live_screen` 调用 `POST <baseUrl>/api/v1/requests`
 
 最小请求示例：
 

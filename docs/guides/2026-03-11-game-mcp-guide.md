@@ -31,7 +31,6 @@ Then verify the local service directly:
 
 ```powershell
 curl http://127.0.0.1:47812/api/v1/status
-curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
 ```
 
 If the default probe is unavailable, use project-local fallback:
@@ -42,14 +41,21 @@ If the default probe is unavailable, use project-local fallback:
 
 When both sides are active, client and server use separate ports.
 
+After you resolve a live `baseUrl`, fetch the entry skill markdown:
+
+```powershell
+curl <baseUrl>/api/v1/skills/moddev-usage/markdown
+```
+
 ## First Requests
 
 Recommended order:
 
-1. `GET /api/v1/status`
-2. `GET /api/v1/skills/moddev-usage/markdown`
-3. `POST /api/v1/requests` with `status.get`
-4. `POST /api/v1/requests` with `status.live_screen` if you need the current client screen
+1. `GET http://127.0.0.1:47812/api/v1/status`
+2. if unavailable, use `build/moddevmcp/game-instances.json` and resolve a live `baseUrl`
+3. `GET <baseUrl>/api/v1/skills/moddev-usage/markdown`
+4. `POST <baseUrl>/api/v1/requests` with `status.get`
+5. `POST <baseUrl>/api/v1/requests` with `status.live_screen` if you need the current client screen
 
 Minimal request example:
 

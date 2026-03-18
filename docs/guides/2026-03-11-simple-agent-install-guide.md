@@ -48,13 +48,21 @@ Agents should read the exported entry skill first when the files are available l
 
 ## Minimal Verification
 
+Resolve `baseUrl` with the same sequence:
+
+1. `GET http://127.0.0.1:47812/api/v1/status`
+2. if unavailable, read `<gradleProject>/build/moddevmcp/game-instances.json`
+3. probe listed candidates with `GET /api/v1/status` and pick a live `baseUrl`
+
+Then run:
+
 ```powershell
-curl http://127.0.0.1:47812/api/v1/status
-curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
+curl <baseUrl>/api/v1/status
+curl <baseUrl>/api/v1/skills/moddev-usage/markdown
 ```
 
 ```powershell
-curl -X POST http://127.0.0.1:47812/api/v1/requests `
+curl -X POST <baseUrl>/api/v1/requests `
   -H "Content-Type: application/json" `
   -d '{"requestId":"check-1","operationId":"status.get","input":{}}'
 ```

@@ -32,7 +32,6 @@ $env:GRADLE_USER_HOME='..\.gradle-user'
 
 ```powershell
 curl http://127.0.0.1:47812/api/v1/status
-curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
 ```
 
 如果默认探测失败，走项目级回退：
@@ -43,16 +42,22 @@ curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
 
 当双端同时活跃时，client 和 server 使用独立端口。
 
+解析出可用 `baseUrl` 后，再读取入口 skill markdown：
+
+```powershell
+curl <baseUrl>/api/v1/skills/moddev-usage/markdown
+```
+
 可选请求探测：
 
 ```powershell
-curl -X POST http://127.0.0.1:47812/api/v1/requests `
+curl -X POST <baseUrl>/api/v1/requests `
   -H "Content-Type: application/json" `
   -d '{"requestId":"probe-1","operationId":"status.get","input":{}}'
 ```
 
 ```powershell
-curl -X POST http://127.0.0.1:47812/api/v1/requests `
+curl -X POST <baseUrl>/api/v1/requests `
   -H "Content-Type: application/json" `
   -d '{"requestId":"probe-2","operationId":"status.live_screen","input":{}}'
 ```

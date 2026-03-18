@@ -32,7 +32,6 @@ After the game reaches the title screen or a world:
 
 ```powershell
 curl http://127.0.0.1:47812/api/v1/status
-curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
 ```
 
 If the default probe fails, use project-local fallback:
@@ -43,16 +42,22 @@ If the default probe fails, use project-local fallback:
 
 When both sides are active, client and server use separate ports.
 
+After you resolve a live `baseUrl`, read the entry skill markdown:
+
+```powershell
+curl <baseUrl>/api/v1/skills/moddev-usage/markdown
+```
+
 Optional request probes:
 
 ```powershell
-curl -X POST http://127.0.0.1:47812/api/v1/requests `
+curl -X POST <baseUrl>/api/v1/requests `
   -H "Content-Type: application/json" `
   -d '{"requestId":"probe-1","operationId":"status.get","input":{}}'
 ```
 
 ```powershell
-curl -X POST http://127.0.0.1:47812/api/v1/requests `
+curl -X POST <baseUrl>/api/v1/requests `
   -H "Content-Type: application/json" `
   -d '{"requestId":"probe-2","operationId":"status.live_screen","input":{}}'
 ```

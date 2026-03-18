@@ -48,13 +48,21 @@ dependencies {
 
 ## 最小验证
 
+先按同一流程解析 `baseUrl`：
+
+1. `GET http://127.0.0.1:47812/api/v1/status`
+2. 若不可用，读取 `<gradleProject>/build/moddevmcp/game-instances.json`
+3. 对候选地址执行 `GET /api/v1/status`，选中可用 `baseUrl`
+
+然后执行：
+
 ```powershell
-curl http://127.0.0.1:47812/api/v1/status
-curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
+curl <baseUrl>/api/v1/status
+curl <baseUrl>/api/v1/skills/moddev-usage/markdown
 ```
 
 ```powershell
-curl -X POST http://127.0.0.1:47812/api/v1/requests `
+curl -X POST <baseUrl>/api/v1/requests `
   -H "Content-Type: application/json" `
   -d '{"requestId":"check-1","operationId":"status.get","input":{}}'
 ```
