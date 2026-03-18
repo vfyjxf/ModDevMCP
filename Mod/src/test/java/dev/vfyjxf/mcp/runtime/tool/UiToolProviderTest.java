@@ -51,6 +51,7 @@ class UiToolProviderTest {
         var tooltip = registry.findTool("moddev.ui_get_tooltip").orElseThrow().definition();
         var interactionState = registry.findTool("moddev.ui_get_interaction_state").orElseThrow().definition();
         var liveScreen = registry.findTool("moddev.ui_get_live_screen").orElseThrow().definition();
+        var query = registry.findTool("moddev.ui_query").orElseThrow().definition();
         var sessionOpen = registry.findTool("moddev.ui_session_open").orElseThrow().definition();
         var sessionRefresh = registry.findTool("moddev.ui_session_refresh").orElseThrow().definition();
         var clickRef = registry.findTool("moddev.ui_click_ref").orElseThrow().definition();
@@ -66,7 +67,10 @@ class UiToolProviderTest {
 
         assertEquals("object", snapshot.inputSchema().get("type"));
         assertTrue(((Map<?, ?>) snapshot.inputSchema().get("properties")).containsKey("screenClass"));
+        assertTrue(((Map<?, ?>) snapshot.inputSchema().get("properties")).containsKey("includeDrivers"));
+        assertTrue(((Map<?, ?>) snapshot.inputSchema().get("properties")).containsKey("excludeDrivers"));
         assertTrue(((Map<?, ?>) snapshot.outputSchema().get("properties")).containsKey("snapshotRef"));
+        assertTrue(((Map<?, ?>) snapshot.outputSchema().get("properties")).containsKey("drivers"));
 
         assertEquals("object", capture.inputSchema().get("type"));
         assertTrue(((Map<?, ?>) capture.inputSchema().get("properties")).containsKey("source"));
@@ -94,6 +98,12 @@ class UiToolProviderTest {
         assertEquals("object", liveScreen.inputSchema().get("type"));
         assertTrue(((Map<?, ?>) liveScreen.outputSchema().get("properties")).containsKey("screenClass"));
         assertTrue(((Map<?, ?>) liveScreen.outputSchema().get("properties")).containsKey("active"));
+        assertTrue(((Map<?, ?>) liveScreen.outputSchema().get("properties")).containsKey("drivers"));
+
+        assertEquals("object", query.inputSchema().get("type"));
+        assertTrue(((Map<?, ?>) query.inputSchema().get("properties")).containsKey("includeDrivers"));
+        assertTrue(((Map<?, ?>) query.inputSchema().get("properties")).containsKey("excludeDrivers"));
+        assertTrue(((Map<?, ?>) query.outputSchema().get("properties")).containsKey("drivers"));
 
         assertEquals("object", sessionOpen.inputSchema().get("type"));
         assertTrue(((Map<?, ?>) sessionOpen.outputSchema().get("properties")).containsKey("sessionId"));

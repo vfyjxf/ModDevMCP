@@ -763,6 +763,85 @@ class UiToolInvocationTest {
     }
 
     @Test
+    void uiQueryAggregatesAcrossFilteredDrivers() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "base",
+                100,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("base", "play", "Play"))
+        ));
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "addon",
+                300,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("addon", "pin", "Pin"))
+        ));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.CompositeScreen", 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_query").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "selector", Map.of("role", "button"),
+                "includeDrivers", List.of("base", "addon")
+        ));
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("addon", payload.get("driverId"));
+        assertEquals(
+                Set.of("base:play", "addon:pin"),
+                targetKeys((List<Map<String, Object>>) payload.get("targets"))
+        );
+        assertEquals(
+                List.of("addon", "base"),
+                driverIds((List<Map<String, Object>>) payload.get("drivers"))
+        );
+    }
+
+    @Test
+    void uiSnapshotCanExcludeSpecificDrivers() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "base",
+                100,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("base", "root", "Base Root"))
+        ));
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "addon",
+                300,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("addon", "pin", "Pin"))
+        ));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.CompositeScreen", 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_snapshot").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "excludeDrivers", List.of("addon")
+        ));
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("base", payload.get("driverId"));
+        assertEquals(
+                List.of("base"),
+                driverIds((List<Map<String, Object>>) payload.get("drivers"))
+        );
+        assertEquals(
+                Set.of("base:root"),
+                targetKeys((List<Map<String, Object>>) payload.get("targets"))
+        );
+    }
+
+    @Test
     void uiCaptureUsesLiveScreenWhenScreenClassIsOmitted() {
         var server = new ModDevMcpServer(new McpToolRegistry());
         var registries = new RuntimeRegistries();
@@ -1676,6 +1755,39 @@ class UiToolInvocationTest {
     }
 
     @Test
+    void uiGetLiveScreenReturnsAllActiveDrivers() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "base",
+                100,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("base", "play", "Play"))
+        ));
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "addon",
+                300,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("addon", "pin", "Pin"))
+        ));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.CompositeScreen", 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_get_live_screen").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of());
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("addon", payload.get("driverId"));
+        assertEquals(
+                List.of("addon", "base"),
+                driverIds((List<Map<String, Object>>) payload.get("drivers"))
+        );
+    }
+
+    @Test
     void uiGetLiveScreenReturnsInactivePayloadWhenNoScreenIsOpen() {
         var server = new ModDevMcpServer(new McpToolRegistry());
         var registries = new RuntimeRegistries();
@@ -2205,6 +2317,53 @@ class UiToolInvocationTest {
         }
     }
 
+    private static final class CompositeTestUiDriver implements UiDriver {
+
+        private final DriverDescriptor descriptor;
+        private final String screenClass;
+        private final List<UiTarget> targets;
+
+        private CompositeTestUiDriver(String driverId, int priority, String screenClass, List<UiTarget> targets) {
+            this.descriptor = new DriverDescriptor(driverId, "test", priority, Set.of("snapshot", "query"));
+            this.screenClass = screenClass;
+            this.targets = List.copyOf(targets);
+        }
+
+        @Override
+        public DriverDescriptor descriptor() {
+            return descriptor;
+        }
+
+        @Override
+        public boolean matches(UiContext context) {
+            return screenClass.equals(context.screenClass());
+        }
+
+        @Override
+        public UiSnapshot snapshot(UiContext context, SnapshotOptions options) {
+            return new UiSnapshot(
+                    "screen",
+                    context.screenClass(),
+                    descriptor.id(),
+                    targets,
+                    List.of(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    Map.of()
+            );
+        }
+
+        @Override
+        public List<UiTarget> query(UiContext context, TargetSelector selector) {
+            return targets.stream()
+                    .filter(target -> selector.role() == null || selector.role().equals(target.role()))
+                    .filter(target -> selector.id() == null || selector.id().equals(target.targetId()))
+                    .toList();
+        }
+    }
+
     private static final class MutableRefUiDriver implements UiDriver {
 
         private final String screenClass;
@@ -2642,5 +2801,32 @@ class UiToolInvocationTest {
         public ClientScreenMetrics metrics() {
             return metrics.get();
         }
+    }
+
+    private static UiTarget buttonTarget(String driverId, String targetId, String text) {
+        return new UiTarget(
+                targetId,
+                driverId,
+                "custom.CompositeScreen",
+                "minecraft",
+                "button",
+                text,
+                new Bounds(10, 10, 40, 20),
+                UiTargetState.defaultState(),
+                List.of("click"),
+                Map.of()
+        );
+    }
+
+    private static Set<String> targetKeys(List<Map<String, Object>> targets) {
+        return targets.stream()
+                .map(target -> target.get("driverId") + ":" + target.get("targetId"))
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
+    private static List<String> driverIds(List<Map<String, Object>> drivers) {
+        return drivers.stream()
+                .map(driver -> String.valueOf(driver.get("driverId")))
+                .toList();
     }
 }

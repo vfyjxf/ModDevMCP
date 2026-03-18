@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Snapshot of the current screen as understood by a selected UI driver.
+ * Snapshot of the current screen as understood by one UI driver or an aggregated driver composition.
  */
 public record UiSnapshot(
         String screenId,
