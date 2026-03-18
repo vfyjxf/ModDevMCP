@@ -58,6 +58,7 @@ public class ModDevMCP {
     private ServiceConfig httpServiceConfig;
     private GameInstanceRegistry gameInstanceRegistry;
     private String httpServiceSide;
+    private GameInstanceRecord httpServiceRecord;
     private String httpServiceLastError;
     private boolean commonRuntimeRegistered;
     private boolean commonProvidersRegistered;
@@ -111,15 +112,15 @@ public class ModDevMCP {
     }
 
     public synchronized void startHttpService() {
-        if (clientSideActive) {
+        if (clientSideActive && !serverSideActive) {
             startHttpService("client");
             return;
         }
-        if (serverSideActive) {
+        if (serverSideActive && !clientSideActive) {
             startHttpService("server");
             return;
         }
-        startHttpService("client");
+        throw new IllegalStateException("startHttpService() requires exactly one active side; use startHttpService(side)");
     }
 
     public synchronized void startHttpService(String side) {
@@ -151,20 +152,19 @@ public class ModDevMCP {
         try {
             serviceServer.start();
             var baseUri = serviceServer.baseUri();
-            registry.upsert(
-                    instanceSide,
-                    new GameInstanceRecord(
-                            baseUri.toString(),
-                            baseUri.getPort(),
-                            ProcessHandle.current().pid(),
-                            startedAt,
-                            startedAt
-                    )
+            var instanceRecord = new GameInstanceRecord(
+                    baseUri.toString(),
+                    baseUri.getPort(),
+                    ProcessHandle.current().pid(),
+                    startedAt,
+                    startedAt
             );
+            registry.upsert(instanceSide, instanceRecord);
             this.httpServiceServer = serviceServer;
             this.httpServiceConfig = config;
             this.gameInstanceRegistry = registry;
             this.httpServiceSide = instanceSide;
+            this.httpServiceRecord = instanceRecord;
             this.httpServiceLastError = null;
         } catch (RuntimeException exception) {
             serviceServer.stop();
@@ -180,13 +180,17 @@ public class ModDevMCP {
         try {
             httpServiceServer.stop();
         } finally {
-            if (gameInstanceRegistry != null && httpServiceSide != null) {
-                gameInstanceRegistry.remove(httpServiceSide);
+            if (gameInstanceRegistry != null && httpServiceSide != null && httpServiceRecord != null) {
+                var current = gameInstanceRegistry.find(httpServiceSide);
+                if (current.isPresent() && sameInstance(current.get(), httpServiceRecord)) {
+                    gameInstanceRegistry.remove(httpServiceSide);
+                }
             }
             httpServiceServer = null;
             httpServiceConfig = null;
             gameInstanceRegistry = null;
             httpServiceSide = null;
+            httpServiceRecord = null;
         }
     }
 
@@ -376,6 +380,13 @@ public class ModDevMCP {
             return side;
         }
         throw new IllegalArgumentException("side must be client or server");
+    }
+
+    private static boolean sameInstance(GameInstanceRecord left, GameInstanceRecord right) {
+        return left.pid() == right.pid()
+                && left.port() == right.port()
+                && left.baseUrl().equals(right.baseUrl())
+                && left.startedAt().equals(right.startedAt());
     }
 
     private java.util.List<String> connectedSides() {

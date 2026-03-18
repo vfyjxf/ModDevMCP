@@ -23,7 +23,9 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HttpServiceServerLifecycleTest {
@@ -105,6 +107,58 @@ class HttpServiceServerLifecycleTest {
             server.stopHttpService();
             assertFalse(Files.exists(registryPath));
         });
+    }
+
+    @Test
+    void olderClientShutdownDoesNotRemoveNewerClientRegistration() {
+        var projectRoot = tempDir.resolve("project-same-side");
+        var exportRoot = tempDir.resolve("skills-same-side");
+        var preferredPort = findOpenPort();
+
+        withProperties(Map.of(
+                ServiceConfig.HOST_PROPERTY, "127.0.0.1",
+                ServiceConfig.PORT_PROPERTY, String.valueOf(preferredPort),
+                ServiceConfig.EXPORT_ROOT_PROPERTY, exportRoot.toString(),
+                ServiceConfig.PROJECT_ROOT_PROPERTY, projectRoot.toString()
+        ), () -> {
+            var config = ServiceConfig.loadResolved();
+            var registry = new GameInstanceRegistry(config.gameInstancesPath());
+
+            var olderClient = new ModDevMCP(new ModDevMcpServer());
+            var newerClient = new ModDevMCP(new ModDevMcpServer());
+            mods.add(olderClient);
+            mods.add(newerClient);
+
+            olderClient.activateClientSide();
+            newerClient.activateClientSide();
+
+            olderClient.startHttpService("client");
+            var olderRecord = registry.find("client").orElseThrow();
+
+            newerClient.startHttpService("client");
+            var newerRecord = registry.find("client").orElseThrow();
+            assertNotEquals(olderRecord.baseUrl(), newerRecord.baseUrl());
+
+            olderClient.stopHttpService();
+            var remaining = registry.find("client").orElse(null);
+            assertNotNull(remaining);
+            assertTrue(remaining.baseUrl().equals(newerRecord.baseUrl()));
+            assertTrue(remaining.startedAt().equals(newerRecord.startedAt()));
+
+            newerClient.stopHttpService();
+            assertFalse(Files.exists(config.gameInstancesPath()));
+        });
+    }
+
+    @Test
+    void noArgStartHttpServiceRequiresSingleActiveSide() {
+        var mod = new ModDevMCP(new ModDevMcpServer());
+        mods.add(mod);
+        assertThrows(IllegalStateException.class, mod::startHttpService);
+
+        mod.activateClientSide();
+        mod.activateServerSide();
+        assertThrows(IllegalStateException.class, mod::startHttpService);
     }
 
     private static SkillDefinition entrySkill() {

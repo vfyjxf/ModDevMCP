@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Objects;
 
 public final class HttpServiceServer {
+    private static final int MAX_PORT_BIND_ATTEMPTS = 64;
 
     public interface Endpoint {
         void register(HttpServer server);
@@ -78,7 +79,11 @@ public final class HttpServiceServer {
 
     private static HttpServer createServer(ServiceConfig config) {
         IOException lastFailure = null;
-        for (int candidatePort = config.port(); candidatePort <= 65535; candidatePort++) {
+        for (int attempt = 0; attempt < MAX_PORT_BIND_ATTEMPTS; attempt++) {
+            var candidatePort = config.port() + attempt;
+            if (candidatePort > 65535) {
+                break;
+            }
             try {
                 return HttpServer.create(new InetSocketAddress(config.host(), candidatePort), 0);
             } catch (BindException bindException) {
@@ -87,7 +92,10 @@ public final class HttpServiceServer {
                 throw new IllegalStateException("failed to create HTTP service server", exception);
             }
         }
-        throw new IllegalStateException("failed to create HTTP service server", lastFailure);
+        throw new IllegalStateException(
+                "failed to create HTTP service server after " + MAX_PORT_BIND_ATTEMPTS + " bind attempts starting at port " + config.port(),
+                lastFailure
+        );
     }
 
     private void registerAll(List<Endpoint> endpoints) {
