@@ -157,6 +157,80 @@ class InputToolProviderTest {
         ), controller.lastArguments);
     }
 
+    @Test
+    void inputActionForwardsRawKeyUpArgumentsToController() {
+        var registries = new RuntimeRegistries();
+        var controller = new RecordingInputController(OperationResult.success(null));
+        registries.inputControllers().add(controller);
+
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        new InputToolProvider(registries).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.input_action").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "action", "key_up",
+                "keyCode", 341
+        ));
+
+        assertTrue(result.success());
+        assertEquals(Map.of(
+                "action", "key_up",
+                "keyCode", 341
+        ), controller.lastArguments);
+    }
+
+    @Test
+    void inputActionForwardsRawMouseDownArgumentsToController() {
+        var registries = new RuntimeRegistries();
+        var controller = new RecordingInputController(OperationResult.success(null));
+        registries.inputControllers().add(controller);
+
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        new InputToolProvider(registries).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.input_action").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "action", "mouse_down",
+                "x", 48,
+                "y", 72,
+                "button", 0
+        ));
+
+        assertTrue(result.success());
+        assertEquals(Map.of(
+                "action", "mouse_down",
+                "x", 48,
+                "y", 72,
+                "button", 0
+        ), controller.lastArguments);
+    }
+
+    @Test
+    void inputActionForwardsRawMouseUpArgumentsToController() {
+        var registries = new RuntimeRegistries();
+        var controller = new RecordingInputController(OperationResult.success(null));
+        registries.inputControllers().add(controller);
+
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        new InputToolProvider(registries).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.input_action").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "action", "mouse_up",
+                "x", 48,
+                "y", 72,
+                "button", 0
+        ));
+
+        assertTrue(result.success());
+        assertEquals(Map.of(
+                "action", "mouse_up",
+                "x", 48,
+                "y", 72,
+                "button", 0
+        ), controller.lastArguments);
+    }
+
     private static final class RecordingInputController implements InputController {
 
         private final OperationResult<Void> result;

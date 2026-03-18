@@ -147,6 +147,24 @@ class MinecraftInputControllerTest {
     }
 
     @Test
+    void keyUpDispatchesLiteralRawKeyCommandWithoutScreen() {
+        var bridge = new RecordingClientInputBridge(
+                new ClientScreenMetrics(null, 569, 320, 854, 480),
+                OperationResult.success(null)
+        );
+        var controller = new MinecraftInputController(bridge);
+
+        var result = controller.perform("key_up", Map.of(
+                "keyCode", 341,
+                "modifiers", 0
+        ));
+
+        assertTrue(result.accepted());
+        assertEquals("key_up", bridge.lastCommand.action());
+        assertEquals(341, bridge.lastCommand.keyCode());
+    }
+
+    @Test
     void keyClickDispatchesLiteralRawKeyClickCommandWithoutScreen() {
         var bridge = new RecordingClientInputBridge(
                 new ClientScreenMetrics(null, 569, 320, 854, 480),
@@ -163,6 +181,48 @@ class MinecraftInputControllerTest {
         assertEquals("key_click", bridge.lastCommand.action());
         assertEquals(88, bridge.lastCommand.keyCode());
         assertEquals(2, bridge.lastCommand.modifiers());
+    }
+
+    @Test
+    void mouseDownTracksPointerPositionForSubsequentUiTools() {
+        var bridge = new RecordingClientInputBridge(
+                new ClientScreenMetrics("net.minecraft.client.gui.screens.TitleScreen", 569, 320, 854, 480),
+                OperationResult.success(null)
+        );
+        var pointerStates = new UiPointerStateRegistry();
+        var controller = new MinecraftInputController(bridge, pointerStates);
+
+        var result = controller.perform("mouse_down", Map.of(
+                "x", 200,
+                "y", 110,
+                "button", 0
+        ));
+
+        assertTrue(result.accepted());
+        var pointer = pointerStates.stateFor("net.minecraft.client.gui.screens.TitleScreen", "minecraft");
+        assertEquals(200, pointer.mouseX());
+        assertEquals(110, pointer.mouseY());
+    }
+
+    @Test
+    void mouseUpTracksPointerPositionForSubsequentUiTools() {
+        var bridge = new RecordingClientInputBridge(
+                new ClientScreenMetrics("net.minecraft.client.gui.screens.TitleScreen", 569, 320, 854, 480),
+                OperationResult.success(null)
+        );
+        var pointerStates = new UiPointerStateRegistry();
+        var controller = new MinecraftInputController(bridge, pointerStates);
+
+        var result = controller.perform("mouse_up", Map.of(
+                "x", 220,
+                "y", 90,
+                "button", 0
+        ));
+
+        assertTrue(result.accepted());
+        var pointer = pointerStates.stateFor("net.minecraft.client.gui.screens.TitleScreen", "minecraft");
+        assertEquals(220, pointer.mouseX());
+        assertEquals(90, pointer.mouseY());
     }
 
     @Test

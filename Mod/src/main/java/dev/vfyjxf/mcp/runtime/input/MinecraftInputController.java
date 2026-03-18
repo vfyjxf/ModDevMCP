@@ -349,7 +349,11 @@ public final class MinecraftInputController implements InputController {
     }
 
     private boolean tracksPointer(String action) {
-        return "click".equals(action) || "move".equals(action) || "hover".equals(action);
+        return "click".equals(action)
+                || "move".equals(action)
+                || "hover".equals(action)
+                || "mouse_down".equals(action)
+                || "mouse_up".equals(action);
     }
 
     private record ResolvedPoint(double x, double y) {

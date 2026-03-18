@@ -138,6 +138,15 @@ final class LiveClientInputBridge implements ClientInputBridge {
         var minecraft = Minecraft.getInstance();
         var windowHandle = minecraft.getWindow().getWindow();
         try {
+            var onMove = minecraft.mouseHandler.getClass().getDeclaredMethod(
+                    "onMove",
+                    long.class,
+                    double.class,
+                    double.class
+            );
+            onMove.setAccessible(true);
+            onMove.invoke(minecraft.mouseHandler, windowHandle, command.x(), command.y());
+
             var onPress = minecraft.mouseHandler.getClass().getDeclaredMethod(
                     "onPress",
                     long.class,
