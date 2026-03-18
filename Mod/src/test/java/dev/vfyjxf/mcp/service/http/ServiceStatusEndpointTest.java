@@ -62,7 +62,8 @@ class ServiceStatusEndpointTest {
                 new StatusEndpoint(status),
                 new CategoriesEndpoint(List.of()),
                 new SkillsEndpoint(skillRegistry),
-                new OperationsEndpoint(new OperationRegistry(List.of()))
+                new OperationsEndpoint(new OperationRegistry(List.of())),
+                requestsEndpoint()
         );
         server.start();
 
@@ -84,7 +85,8 @@ class ServiceStatusEndpointTest {
                 new StatusEndpoint(status),
                 new CategoriesEndpoint(List.of()),
                 new SkillsEndpoint(new SkillRegistry(List.of(entrySkill()))),
-                new OperationsEndpoint(new OperationRegistry(List.of()))
+                new OperationsEndpoint(new OperationRegistry(List.of())),
+                requestsEndpoint()
         );
         server.start();
 
@@ -174,6 +176,14 @@ class ServiceStatusEndpointTest {
     private static HttpResponse<String> get(URI uri) throws IOException, InterruptedException {
         var request = HttpRequest.newBuilder(uri).GET().build();
         return HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static RequestsEndpoint requestsEndpoint() {
+        return new RequestsEndpoint(
+                new OperationRegistry(List.of()),
+                List::of,
+                (request, resolvedTargetSide) -> java.util.Map.of()
+        );
     }
 
     private static int findOpenPort() {

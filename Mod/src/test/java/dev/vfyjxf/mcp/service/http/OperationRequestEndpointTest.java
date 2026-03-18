@@ -1,17 +1,23 @@
 package dev.vfyjxf.mcp.service.http;
 
-import com.sun.net.httpserver.HttpServer;
+import dev.vfyjxf.mcp.service.config.ServiceConfig;
 import dev.vfyjxf.mcp.service.operation.OperationDefinition;
 import dev.vfyjxf.mcp.service.operation.OperationRegistry;
+import dev.vfyjxf.mcp.service.skill.SkillDefinition;
+import dev.vfyjxf.mcp.service.skill.SkillKind;
+import dev.vfyjxf.mcp.service.skill.SkillRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,12 +26,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class OperationRequestEndpointTest {
 
-    private HttpServer server;
+    @TempDir
+    Path tempDir;
+
+    private HttpServiceServer server;
 
     @AfterEach
     void tearDown() {
         if (server != null) {
-            server.stop(0);
+            server.stop();
         }
     }
 
@@ -80,14 +89,41 @@ class OperationRequestEndpointTest {
         assertFalse(response.body().contains("disconnected"));
     }
 
-    private void startServer(RequestsEndpoint endpoint) throws IOException {
-        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        endpoint.register(server);
+    @Test
+    void invalidRequestUsesStandardErrorEnvelope() throws Exception {
+        var operationRegistry = new OperationRegistry(List.of());
+        startServer(new RequestsEndpoint(
+                operationRegistry,
+                List::of,
+                (request, resolvedTargetSide) -> Map.of()
+        ));
+
+        var response = post(
+                baseUri().resolve("/api/v1/requests"),
+                "{\"operationId\":123,\"input\":[]}"
+        );
+
+        assertEquals(200, response.statusCode());
+        assertEquals(
+                "{\"requestId\":null,\"operationId\":null,\"targetSide\":null,\"status\":\"error\",\"output\":null,\"errorCode\":\"invalid_request\",\"errorMessage\":\"operationId must be a string\"}",
+                response.body()
+        );
+    }
+
+    private void startServer(RequestsEndpoint requestsEndpoint) throws IOException {
+        server = new HttpServiceServer(
+                new ServiceConfig("127.0.0.1", findOpenPort(), tempDir),
+                statusEndpoint(),
+                new CategoriesEndpoint(List.of()),
+                new SkillsEndpoint(new SkillRegistry(List.of(entrySkill()))),
+                new OperationsEndpoint(new OperationRegistry(List.of())),
+                requestsEndpoint
+        );
         server.start();
     }
 
     private URI baseUri() {
-        return URI.create("http://127.0.0.1:" + server.getAddress().getPort());
+        return server.baseUri();
     }
 
     private static HttpResponse<String> post(URI uri, String body) throws IOException, InterruptedException {
@@ -111,5 +147,64 @@ class OperationRequestEndpointTest {
                         ? Map.of("operationId", operationId, "targetSide", sides.iterator().next())
                         : Map.of("operationId", operationId)
         );
+    }
+
+    private static SkillDefinition entrySkill() {
+        return new SkillDefinition(
+                "moddev-entry",
+                "status",
+                SkillKind.GUIDANCE,
+                "Entry",
+                "Start here.",
+                null,
+                Set.of("entry"),
+                false,
+                "# Entry\n"
+        );
+    }
+
+    private StatusEndpoint statusEndpoint() {
+        return new StatusEndpoint(new StaticStatusProvider());
+    }
+
+    private final class StaticStatusProvider implements StatusEndpoint.StatusProvider {
+
+        @Override
+        public boolean serviceReady() {
+            return true;
+        }
+
+        @Override
+        public boolean gameReady() {
+            return false;
+        }
+
+        @Override
+        public List<String> connectedSides() {
+            return List.of();
+        }
+
+        @Override
+        public String entrySkillId() {
+            return "moddev-entry";
+        }
+
+        @Override
+        public Path exportRoot() {
+            return tempDir;
+        }
+
+        @Override
+        public String lastError() {
+            return null;
+        }
+    }
+
+    private static int findOpenPort() {
+        try (var socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        } catch (IOException exception) {
+            throw new IllegalStateException("failed to allocate test port", exception);
+        }
     }
 }

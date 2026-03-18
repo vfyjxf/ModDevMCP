@@ -10,7 +10,6 @@ import dev.vfyjxf.mcp.service.request.OperationResponse;
 import dev.vfyjxf.mcp.service.runtime.TargetSideResolver;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -69,7 +68,12 @@ public final class RequestsEndpoint implements HttpServiceServer.Endpoint {
         try {
             request = OperationRequest.fromPayload(jsonCodec.parseObject(exchange.getRequestBody().readAllBytes()));
         } catch (IllegalArgumentException exception) {
-            HttpJson.sendJson(exchange, 400, invalidRequestPayload(exception.getMessage()));
+            send(exchange, OperationResponse.error(
+                    null,
+                    null,
+                    null,
+                    new OperationError("invalid_request", exception.getMessage())
+            ));
             return;
         }
 
@@ -121,14 +125,6 @@ public final class RequestsEndpoint implements HttpServiceServer.Endpoint {
                     new OperationError("operation_execution_failed", message)
             ));
         }
-    }
-
-    private static Map<String, Object> invalidRequestPayload(String message) {
-        var payload = new LinkedHashMap<String, Object>();
-        payload.put("status", "error");
-        payload.put("errorCode", "invalid_request");
-        payload.put("errorMessage", message);
-        return payload;
     }
 
     private static void send(HttpExchange exchange, OperationResponse response) throws IOException {

@@ -91,7 +91,8 @@ class SkillDiscoveryEndpointTest {
                 statusEndpoint(tempDir),
                 new CategoriesEndpoint(List.of(category)),
                 new SkillsEndpoint(skillRegistry),
-                new OperationsEndpoint(operationRegistry)
+                new OperationsEndpoint(operationRegistry),
+                requestsEndpoint()
         );
         server.start();
 
@@ -139,7 +140,8 @@ class SkillDiscoveryEndpointTest {
                 statusEndpoint(tempDir),
                 new CategoriesEndpoint(List.of()),
                 new SkillsEndpoint(skillRegistry),
-                new OperationsEndpoint(new OperationRegistry(List.of()))
+                new OperationsEndpoint(new OperationRegistry(List.of())),
+                requestsEndpoint()
         );
         server.start();
 
@@ -182,7 +184,8 @@ class SkillDiscoveryEndpointTest {
                 statusEndpoint(tempDir),
                 new CategoriesEndpoint(List.of()),
                 new SkillsEndpoint(skillRegistry),
-                new OperationsEndpoint(new OperationRegistry(List.of()))
+                new OperationsEndpoint(new OperationRegistry(List.of())),
+                requestsEndpoint()
         );
         server.start();
 
@@ -213,7 +216,8 @@ class SkillDiscoveryEndpointTest {
                 statusEndpoint(tempDir),
                 new CategoriesEndpoint(List.of()),
                 new SkillsEndpoint(skillRegistry),
-                new OperationsEndpoint(new OperationRegistry(List.of()))
+                new OperationsEndpoint(new OperationRegistry(List.of())),
+                requestsEndpoint()
         );
         server.start();
 
@@ -244,7 +248,8 @@ class SkillDiscoveryEndpointTest {
                 statusEndpoint(tempDir),
                 new CategoriesEndpoint(List.of()),
                 new SkillsEndpoint(skillRegistry),
-                new OperationsEndpoint(new OperationRegistry(List.of()))
+                new OperationsEndpoint(new OperationRegistry(List.of())),
+                requestsEndpoint()
         );
         server.start();
 
@@ -272,6 +277,14 @@ class SkillDiscoveryEndpointTest {
 
     private static StatusEndpoint statusEndpoint(Path exportRoot) {
         return new StatusEndpoint(new StaticStatusProvider(exportRoot));
+    }
+
+    private static RequestsEndpoint requestsEndpoint() {
+        return new RequestsEndpoint(
+                new OperationRegistry(List.of()),
+                List::of,
+                (request, resolvedTargetSide) -> Map.of()
+        );
     }
 
     private static final class StaticStatusProvider implements StatusEndpoint.StatusProvider {

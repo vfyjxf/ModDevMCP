@@ -23,7 +23,8 @@ public final class HttpServiceServer {
             StatusEndpoint statusEndpoint,
             CategoriesEndpoint categoriesEndpoint,
             SkillsEndpoint skillsEndpoint,
-            OperationsEndpoint operationsEndpoint
+            OperationsEndpoint operationsEndpoint,
+            RequestsEndpoint requestsEndpoint
     ) {
         this.config = Objects.requireNonNull(config, "config");
         this.server = createServer(config);
@@ -31,7 +32,8 @@ public final class HttpServiceServer {
                 Objects.requireNonNull(statusEndpoint, "statusEndpoint"),
                 Objects.requireNonNull(categoriesEndpoint, "categoriesEndpoint"),
                 Objects.requireNonNull(skillsEndpoint, "skillsEndpoint"),
-                Objects.requireNonNull(operationsEndpoint, "operationsEndpoint")
+                Objects.requireNonNull(operationsEndpoint, "operationsEndpoint"),
+                Objects.requireNonNull(requestsEndpoint, "requestsEndpoint")
         ));
     }
 
