@@ -1,4 +1,4 @@
-package dev.vfyjxf.mcp.runtime;
+package dev.vfyjxf.mcp.runtime.ui;
 
 import dev.vfyjxf.mcp.api.runtime.DriverDescriptor;
 import dev.vfyjxf.mcp.api.runtime.UiContext;
@@ -7,6 +7,7 @@ import dev.vfyjxf.mcp.api.ui.SnapshotOptions;
 import dev.vfyjxf.mcp.api.ui.TargetSelector;
 import dev.vfyjxf.mcp.api.ui.UiSnapshot;
 import dev.vfyjxf.mcp.api.ui.UiTarget;
+import dev.vfyjxf.mcp.runtime.UiDriverRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -15,40 +16,23 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
-class UiDriverRegistryTest {
-
-    @Test
-    void selectPrefersHigherPriorityDriverThatMatchesLiveScreenHandle() {
-        var registry = new UiDriverRegistry();
-        var expectedHandle = new Object();
-        var fallbackDriver = new TestUiDriver("fallback", 100, context -> true);
-        var handleAwareDriver = new TestUiDriver("handle-aware", 1_000, context -> context.screenHandle() == expectedHandle);
-
-        registry.register(fallbackDriver);
-        registry.register(handleAwareDriver);
-
-        assertSame(handleAwareDriver, registry.select(contextWithHandle(expectedHandle)).orElseThrow());
-    }
+class UiDriverCompositionResolverTest {
 
     @Test
-    void matchingDriversReturnsAllMatchesInPriorityOrder() {
+    void compositionResolverKeepsDefaultDriverAsHighestPriorityMatch() {
         var registry = new UiDriverRegistry();
         var expectedHandle = new Object();
-        var baseDriver = new TestUiDriver("base", 100, context -> true);
-        var addonDriver = new TestUiDriver("addon", 300, context -> context.screenHandle() == expectedHandle);
-        var unrelatedDriver = new TestUiDriver("other", 500, context -> false);
+        registry.register(new TestUiDriver("base", 100, context -> true));
+        registry.register(new TestUiDriver("addon", 300, context -> context.screenHandle() == expectedHandle));
 
-        registry.register(baseDriver);
-        registry.register(addonDriver);
-        registry.register(unrelatedDriver);
+        var resolver = new UiDriverCompositionResolver(registry);
+        var composition = resolver.resolve(contextWithHandle(expectedHandle));
 
+        assertEquals("addon", composition.defaultDriverId());
         assertEquals(
                 List.of("addon", "base"),
-                registry.matchingDrivers(contextWithHandle(expectedHandle)).stream()
-                        .map(driver -> driver.descriptor().id())
-                        .toList()
+                composition.drivers().stream().map(driver -> driver.descriptor().id()).toList()
         );
     }
 

@@ -25,7 +25,13 @@ public final class UiDriverRegistry {
         return List.copyOf(drivers);
     }
 
+    public List<UiDriver> matchingDrivers(UiContext context) {
+        return drivers.stream()
+                .filter(driver -> driver.matches(context))
+                .toList();
+    }
+
     public Optional<UiDriver> select(UiContext context) {
-        return drivers.stream().filter(driver -> driver.matches(context)).findFirst();
+        return matchingDrivers(context).stream().findFirst();
     }
 }
