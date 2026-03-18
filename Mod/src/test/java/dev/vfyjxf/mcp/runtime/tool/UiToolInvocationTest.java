@@ -901,6 +901,45 @@ class UiToolInvocationTest {
     }
 
     @Test
+    void uiSnapshotClearsFocusedTargetIdWhenDifferentDriversReportSameId() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "base",
+                100,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("base", "root", "Base Root")),
+                "shared-focus",
+                null,
+                null,
+                null
+        ));
+        registries.uiDrivers().register(new CompositeTestUiDriver(
+                "addon",
+                300,
+                "custom.CompositeScreen",
+                List.of(buttonTarget("addon", "pin", "Pin")),
+                "shared-focus",
+                null,
+                null,
+                null
+        ));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.CompositeScreen", 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_snapshot").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "includeDrivers", List.of("base", "addon")
+        ));
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("", payload.get("focusedTargetId"));
+    }
+
+    @Test
     void uiSnapshotPreservesInteractionIdsForSingleDriverComposition() {
         var server = new ModDevMcpServer(new McpToolRegistry());
         var registries = new RuntimeRegistries();

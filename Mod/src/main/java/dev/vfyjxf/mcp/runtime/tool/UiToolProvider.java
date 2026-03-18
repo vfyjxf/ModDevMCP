@@ -16,7 +16,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public final class UiToolProvider implements McpToolProvider {
@@ -1238,13 +1237,24 @@ public final class UiToolProvider implements McpToolProvider {
         );
     }
 
-    private String mergeInteractionId(List<UiSnapshot> snapshots, Function<UiSnapshot, String> accessor) {
-        var candidates = snapshots.stream()
-                .map(accessor)
-                .filter(candidate -> candidate != null && !candidate.isBlank())
+    private String mergeInteractionId(List<UiSnapshot> snapshots, java.util.function.Function<UiSnapshot, String> accessor) {
+        var scopedCandidates = snapshots.stream()
+                .map(snapshot -> {
+                    var interactionId = accessor.apply(snapshot);
+                    if (interactionId == null || interactionId.isBlank()) {
+                        return null;
+                    }
+                    return snapshot.driverId() + ":" + interactionId;
+                })
+                .filter(candidate -> candidate != null)
                 .distinct()
                 .toList();
-        return candidates.size() == 1 ? candidates.getFirst() : null;
+        if (scopedCandidates.size() != 1) {
+            return null;
+        }
+        var scoped = scopedCandidates.getFirst();
+        var separator = scoped.indexOf(':');
+        return separator < 0 ? scoped : scoped.substring(separator + 1);
     }
 
     private List<UiTarget> aggregateQueryTargets(UiContext context, UiDriverComposition composition, TargetSelector selector) {
