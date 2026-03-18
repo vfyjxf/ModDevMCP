@@ -7,15 +7,15 @@ description: Use when an agent needs to operate a local ModDevMCP game session t
 
 ## Overview
 
-ModDevMCP is a loopback HTTP service exposed by the game mod itself. Start with `moddev-usage`, verify `/api/v1/status`, then execute concrete operations through `POST /api/v1/requests`.
+ModDevMCP is a loopback HTTP service exposed by the game mod itself. Resolve a live baseUrl first, then read skills and execute operations through `POST /api/v1/requests`.
 
 ## Required Flow
 
-1. Read the exported entry skill from `~/.moddev/skills/skills/moddev-usage.md` when available, or fetch `GET /api/v1/skills/moddev-usage/markdown`.
-2. Try the default probe `GET http://127.0.0.1:47812/api/v1/status`.
-3. If the default probe fails, read `<gradleProject>/build/moddevmcp/game-instances.json`.
-4. Probe each candidate `baseUrl` from the registry with `GET /api/v1/status` and keep only live instances.
-5. Continue only if `serviceReady=true`.
+1. Try the default probe `GET http://127.0.0.1:47812/api/v1/status`.
+2. If the default probe fails, read `<gradleProject>/build/moddevmcp/game-instances.json`.
+3. Probe each candidate `baseUrl` from the registry with `GET /api/v1/status` and keep only live instances.
+4. Continue only if `serviceReady=true`.
+5. Read the exported entry skill from `~/.moddev/skills/skills/moddev-usage.md` when available, or fetch `GET /api/v1/skills/moddev-usage/markdown`.
 6. Treat client UI work as ready only if `gameReady=true` and `connectedSides` includes `client`.
 7. Discover available skills and operations before guessing names:
    - `GET /api/v1/categories`
@@ -69,10 +69,11 @@ curl -X POST http://127.0.0.1:47812/api/v1/requests \
 
 For any new session:
 
-1. `GET /api/v1/status`
-2. `GET /api/v1/skills/moddev-usage/markdown`
-3. read the relevant category or operation skill
-4. `POST /api/v1/requests`
+1. `GET http://127.0.0.1:47812/api/v1/status`
+2. if needed, read `<gradleProject>/build/moddevmcp/game-instances.json` and probe listed candidates with `GET /api/v1/status`
+3. `GET /api/v1/skills/moddev-usage/markdown`
+4. read the relevant category or operation skill
+5. `POST /api/v1/requests`
 
 For UI work:
 
@@ -120,4 +121,3 @@ For local world failures:
 - if the game visibly entered the new world but the response reports `world_not_found`, treat that as a runtime bug, not a caller mistake
 
 Do not claim a skill or operation exists unless it is visible from the current service or exported skill tree.
-
