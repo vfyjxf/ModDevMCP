@@ -367,7 +367,7 @@ class SkillDiscoveryEndpointTest {
         }
 
         @Override
-        public String entrySkillId() {
+        public String usageSkillId() {
             return "moddev-usage";
         }
 
@@ -390,4 +390,5 @@ class SkillDiscoveryEndpointTest {
         }
     }
 }
+
 

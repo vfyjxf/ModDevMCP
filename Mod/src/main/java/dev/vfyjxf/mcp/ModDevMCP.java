@@ -360,7 +360,7 @@ public class ModDevMCP {
         }
 
         @Override
-        public String entrySkillId() {
+        public String usageSkillId() {
             return "moddev-usage";
         }
 
@@ -375,4 +375,5 @@ public class ModDevMCP {
         }
     }
 }
+
 

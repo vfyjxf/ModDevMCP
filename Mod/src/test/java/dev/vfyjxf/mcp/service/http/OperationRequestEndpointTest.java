@@ -288,7 +288,7 @@ class OperationRequestEndpointTest {
         }
 
         @Override
-        public String entrySkillId() {
+        public String usageSkillId() {
             return "moddev-usage";
         }
 
@@ -311,4 +311,5 @@ class OperationRequestEndpointTest {
         }
     }
 }
+
 

@@ -210,7 +210,7 @@ The service returns markdown directly for skill text and JSON for metadata, disc
 - `serviceReady`
 - `gameReady`
 - `connectedSides`
-- `entrySkillId`
+- `usageSkillId`
 - `availableCategoryIds`
 - `availableOperationIds`
 - `exportRoot`
@@ -334,4 +334,5 @@ The implementation should preserve runtime capabilities first, then remove obsol
 ## Recommendation
 
 Implement the HTTP skill-first architecture in `Mod` as the new primary and final architecture. Keep migration scoped around parity-first operation handlers, but do not preserve the old gateway/plugin model longer than needed to get the new service stable.
+
 

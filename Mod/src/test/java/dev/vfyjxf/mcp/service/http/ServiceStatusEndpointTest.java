@@ -72,7 +72,7 @@ class ServiceStatusEndpointTest {
         assertEquals(200, response.statusCode());
         assertTrue(response.headers().firstValue("Content-Type").orElse("none").startsWith("application/json"));
         assertEquals(
-                "{\"serviceReady\":true,\"gameReady\":true,\"connectedSides\":[\"client\"],\"entrySkillId\":\"moddev-usage\",\"exportRoot\":\"" + tempDir.toAbsolutePath().normalize().toString().replace("\\", "\\\\") + "\",\"lastError\":\"no game instance\"}",
+                "{\"serviceReady\":true,\"gameReady\":true,\"connectedSides\":[\"client\"],\"usageSkillId\":\"moddev-usage\",\"exportRoot\":\"" + tempDir.toAbsolutePath().normalize().toString().replace("\\", "\\\\") + "\",\"lastError\":\"no game instance\"}",
                 response.body()
         );
     }
@@ -92,20 +92,20 @@ class ServiceStatusEndpointTest {
 
         var first = get(server.baseUri().resolve("/api/v1/status"));
         assertEquals(
-                "{\"serviceReady\":true,\"gameReady\":false,\"connectedSides\":[],\"entrySkillId\":\"moddev-usage\",\"exportRoot\":\"" + tempDir.toAbsolutePath().normalize().toString().replace("\\", "\\\\") + "\",\"lastError\":null}",
+                "{\"serviceReady\":true,\"gameReady\":false,\"connectedSides\":[],\"usageSkillId\":\"moddev-usage\",\"exportRoot\":\"" + tempDir.toAbsolutePath().normalize().toString().replace("\\", "\\\\") + "\",\"lastError\":null}",
                 first.body()
         );
 
         status.serviceReady = false;
         status.gameReady = true;
         status.connectedSides = List.of("server");
-        status.entrySkillId = "moddev-usage-alt";
+        status.usageSkillId = "moddev-usage-alt";
         status.exportRoot = tempDir.resolve("next");
         status.lastError = "updated";
 
         var second = get(server.baseUri().resolve("/api/v1/status"));
         assertEquals(
-                "{\"serviceReady\":false,\"gameReady\":true,\"connectedSides\":[\"server\"],\"entrySkillId\":\"moddev-usage-alt\",\"exportRoot\":\"" + tempDir.resolve("next").toAbsolutePath().normalize().toString().replace("\\", "\\\\") + "\",\"lastError\":\"updated\"}",
+                "{\"serviceReady\":false,\"gameReady\":true,\"connectedSides\":[\"server\"],\"usageSkillId\":\"moddev-usage-alt\",\"exportRoot\":\"" + tempDir.resolve("next").toAbsolutePath().normalize().toString().replace("\\", "\\\\") + "\",\"lastError\":\"updated\"}",
                 second.body()
         );
     }
@@ -134,7 +134,7 @@ class ServiceStatusEndpointTest {
         private boolean serviceReady = true;
         private boolean gameReady;
         private List<String> connectedSides = List.of();
-        private String entrySkillId = "moddev-usage";
+        private String usageSkillId = "moddev-usage";
         private Path exportRoot;
         private String lastError;
 
@@ -158,8 +158,8 @@ class ServiceStatusEndpointTest {
         }
 
         @Override
-        public String entrySkillId() {
-            return entrySkillId;
+        public String usageSkillId() {
+            return usageSkillId;
         }
 
         @Override
@@ -194,4 +194,5 @@ class ServiceStatusEndpointTest {
         }
     }
 }
+
 

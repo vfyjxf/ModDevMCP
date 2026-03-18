@@ -91,7 +91,7 @@ Expected: PASS
 
 **Step 1: Write the failing tests**
 
-- Verify `GET /api/v1/status` returns `serviceReady`, `gameReady`, `connectedSides`, `entrySkillId`, `exportRoot`, and `lastError`.
+- Verify `GET /api/v1/status` returns `serviceReady`, `gameReady`, `connectedSides`, `usageSkillId`, `exportRoot`, and `lastError`.
 - Verify `GET /api/v1/categories`, `GET /api/v1/skills`, and `GET /api/v1/operations` return stable JSON metadata.
 - Verify `GET /api/v1/skills/{skillId}/markdown` returns markdown instead of JSON.
 
@@ -349,4 +349,5 @@ Expected: JSON response with `serviceReady=true`
 
 Run: `curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown`
 Expected: markdown body for the entry skill
+
 

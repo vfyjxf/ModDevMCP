@@ -35,7 +35,7 @@ public final class RuntimeOperationBindings {
             boolean serviceReady,
             boolean gameReady,
             List<String> connectedSides,
-            String entrySkillId,
+            String usageSkillId,
             Path exportRoot,
             String lastError
     ) {
@@ -136,3 +136,4 @@ public final class RuntimeOperationBindings {
         return Map.copyOf(schema);
     }
 }
+

@@ -18,7 +18,7 @@ public final class StatusEndpoint implements HttpServiceServer.Endpoint {
 
         List<String> connectedSides();
 
-        String entrySkillId();
+        String usageSkillId();
 
         Path exportRoot();
 
@@ -43,15 +43,16 @@ public final class StatusEndpoint implements HttpServiceServer.Endpoint {
         }
 
         var connectedSides = List.copyOf(Objects.requireNonNull(statusProvider.connectedSides(), "connectedSides"));
-        var entrySkillId = Objects.requireNonNull(statusProvider.entrySkillId(), "entrySkillId");
+        var usageSkillId = Objects.requireNonNull(statusProvider.usageSkillId(), "usageSkillId");
         var exportRoot = Objects.requireNonNull(statusProvider.exportRoot(), "exportRoot").toAbsolutePath().normalize();
         var payload = new LinkedHashMap<String, Object>();
         payload.put("serviceReady", statusProvider.serviceReady());
         payload.put("gameReady", statusProvider.gameReady());
         payload.put("connectedSides", connectedSides);
-        payload.put("entrySkillId", entrySkillId);
+        payload.put("usageSkillId", usageSkillId);
         payload.put("exportRoot", exportRoot.toString());
         payload.put("lastError", statusProvider.lastError());
         HttpJson.sendJson(exchange, 200, payload);
     }
 }
+

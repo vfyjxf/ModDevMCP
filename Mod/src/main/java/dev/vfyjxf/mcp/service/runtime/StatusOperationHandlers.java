@@ -35,7 +35,7 @@ final class StatusOperationHandlers {
                             payload.put("serviceReady", snapshot.serviceReady());
                             payload.put("gameReady", snapshot.gameReady());
                             payload.put("connectedSides", snapshot.connectedSides());
-                            payload.put("entrySkillId", snapshot.entrySkillId());
+                            payload.put("usageSkillId", snapshot.usageSkillId());
                             payload.put("exportRoot", snapshot.exportRoot().toAbsolutePath().normalize().toString());
                             payload.put("lastError", snapshot.lastError());
                             return Collections.unmodifiableMap(payload);
@@ -86,3 +86,4 @@ final class StatusOperationHandlers {
         );
     }
 }
+
