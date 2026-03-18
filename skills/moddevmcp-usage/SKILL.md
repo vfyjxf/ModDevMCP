@@ -32,6 +32,13 @@ ModDevMCP is a loopback HTTP service exposed by the game mod itself. Start with 
 
 Send all executable work through `POST /api/v1/requests`.
 
+Do not control the game through OS-level or shell-level input injection.
+
+- do not use PowerShell, Windows APIs, or external automation helpers to send keyboard input
+- do not use PowerShell, Windows APIs, or external automation helpers to move or click the mouse
+- do not treat simulated user input outside ModDevMCP as an acceptable fallback
+- if a game interaction is needed, use the exposed ModDevMCP operations and the skill guidance for them
+
 Envelope fields:
 
 - `requestId`
@@ -69,6 +76,8 @@ For UI work:
 2. use `status.live_screen`
 3. use `ui.inspect`
 4. use `ui.snapshot` or `ui.action` only when needed
+
+UI interactions must stay inside ModDevMCP. Do not bypass `ui.*` operations with shell scripts or system automation.
 
 For commands:
 

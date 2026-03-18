@@ -27,6 +27,8 @@ class BuiltinSkillCatalogTest {
         assertEquals(SkillKind.GUIDANCE, entrySkill.kind());
         assertNull(entrySkill.operationId());
         assertTrue(entrySkill.markdown().contains("http://127.0.0.1:47812/api/v1/status"));
+        assertTrue(entrySkill.markdown().contains("Do not use shell scripts"));
+        assertTrue(entrySkill.markdown().contains("game_control_policy: declared_operations_only"));
     }
 
     @Test
@@ -59,6 +61,8 @@ class BuiltinSkillCatalogTest {
         assertTrue(operationSkill.markdown().contains("Operation id: `command.execute`"));
         assertTrue(operationSkill.markdown().contains("curl -X POST"));
         assertTrue(operationSkill.markdown().contains("\"operationId\":\"command.execute\""));
+        assertTrue(operationSkill.markdown().contains("Do not replace it with shell-driven keyboard input"));
+        assertTrue(operationSkill.markdown().contains("forbidden_fallbacks:"));
     }
 
     private BuiltinSkillCatalog.Catalog catalog(OperationRegistry operationRegistry) {
