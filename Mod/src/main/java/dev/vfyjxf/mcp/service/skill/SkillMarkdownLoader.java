@@ -10,10 +10,12 @@ import java.util.List;
 import java.util.Map;
 
 public final class SkillMarkdownLoader {
+    private static final String PROJECT_REGISTRY_PATH_HINT = "<gradleProject>/build/moddevmcp/game-instances.json";
 
     public String loadEntryMarkdown(String baseUri) {
         return renderResource("moddev-service/skills/moddev-usage.md", Map.of(
-                "baseUri", baseUri
+                "baseUri", baseUri,
+                "projectRegistryPathHint", PROJECT_REGISTRY_PATH_HINT
         ));
     }
 
@@ -26,6 +28,7 @@ public final class SkillMarkdownLoader {
     ) {
         return renderResource("moddev-service/categories/" + categoryId + ".md", Map.of(
                 "baseUri", baseUri,
+                "projectRegistryPathHint", PROJECT_REGISTRY_PATH_HINT,
                 "categoryId", categoryId,
                 "title", title,
                 "summary", summary,
@@ -37,6 +40,7 @@ public final class SkillMarkdownLoader {
     public String loadOperationMarkdown(OperationDefinition operation, String baseUri) {
         return renderResource("moddev-service/skills/operation.md", Map.of(
                 "baseUri", baseUri,
+                "projectRegistryPathHint", PROJECT_REGISTRY_PATH_HINT,
                 "operationId", operation.operationId(),
                 "categoryId", operation.categoryId(),
                 "title", operation.title(),

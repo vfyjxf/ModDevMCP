@@ -1,4 +1,5 @@
 interface:
   display_name: "ModDevMCP Usage"
   short_description: "Use the local ModDevMCP HTTP service safely"
-  default_prompt: "Use $moddevmcp-usage to verify local service readiness, read exported skills, and send safe request API calls."
+  default_prompt: "Use $moddevmcp-usage to probe 127.0.0.1 first, then fall back to project-local game-instances discovery before requests."
+

@@ -4,26 +4,36 @@ Start with the local HTTP service, not an external bridge.
 
 All game interaction must go through ModDevMCP operations. Do not use shell scripts, PowerShell input helpers, or OS-level mouse and keyboard injection as a fallback.
 
-1. Check readiness:
+1. Try the default probe:
 
 ```bash
 curl {{baseUri}}/api/v1/status
 ```
 
-2. Discover categories and skills:
+2. If default probe fails, read the project-local registry:
+
+```text
+{{projectRegistryPathHint}}
+```
+
+3. Probe each candidate baseUrl from the registry with `/api/v1/status` and keep only live instances.
+
+4. Route by operation side support. If both sides are eligible and live, send `targetSide` explicitly.
+
+5. Discover categories and skills:
 
 ```bash
 curl {{baseUri}}/api/v1/categories
 curl {{baseUri}}/api/v1/skills
 ```
 
-3. Read a skill markdown page:
+6. Read a skill markdown page:
 
 ```bash
 curl {{baseUri}}/api/v1/skills/status/markdown
 ```
 
-4. Execute an operation:
+7. Execute an operation:
 
 ```bash
 curl -X POST {{baseUri}}/api/v1/requests \
@@ -31,4 +41,4 @@ curl -X POST {{baseUri}}/api/v1/requests \
   -d '{"operationId":"status.get","input":{}}'
 ```
 
-`targetSide` is optional unless multiple eligible sides are connected for the requested operation. If both client and server can handle the operation, send `targetSide` explicitly.
+`targetSide` is required only when both eligible sides are live for the operation. Omit it when the operation does not support side routing or only one eligible side is live.

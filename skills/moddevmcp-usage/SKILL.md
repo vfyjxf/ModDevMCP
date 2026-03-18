@@ -12,14 +12,16 @@ ModDevMCP is a loopback HTTP service exposed by the game mod itself. Start with 
 ## Required Flow
 
 1. Read the exported entry skill from `~/.moddev/skills/skills/moddev-usage.md` when available, or fetch `GET /api/v1/skills/moddev-usage/markdown`.
-2. Call `GET /api/v1/status`.
-3. Continue only if `serviceReady=true`.
-4. Treat client UI work as ready only if `gameReady=true` and `connectedSides` includes `client`.
-5. Discover available skills and operations before guessing names:
+2. Try the default probe `GET http://127.0.0.1:47812/api/v1/status`.
+3. If the default probe fails, read `<gradleProject>/build/moddevmcp/game-instances.json`.
+4. Probe each candidate `baseUrl` from the registry with `GET /api/v1/status` and keep only live instances.
+5. Continue only if `serviceReady=true`.
+6. Treat client UI work as ready only if `gameReady=true` and `connectedSides` includes `client`.
+7. Discover available skills and operations before guessing names:
    - `GET /api/v1/categories`
    - `GET /api/v1/skills`
    - `GET /api/v1/operations`
-6. Prefer reading the specific skill markdown before issuing a request.
+8. Prefer reading the specific skill markdown before issuing a request.
 
 ## Discovery Rules
 
@@ -52,6 +54,8 @@ Interpret `targetSide` strictly:
 - omit it when exactly one eligible side is connected
 - send it when multiple eligible sides are connected
 - if the service returns `target_side_required`, retry with an explicit side
+
+`targetSide` is required only when both eligible sides are live for that operation.
 
 Minimal example:
 

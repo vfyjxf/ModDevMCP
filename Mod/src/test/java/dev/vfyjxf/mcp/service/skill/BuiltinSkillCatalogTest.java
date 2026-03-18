@@ -6,6 +6,7 @@ import dev.vfyjxf.mcp.service.operation.OperationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +28,9 @@ class BuiltinSkillCatalogTest {
         assertEquals(SkillKind.GUIDANCE, entrySkill.kind());
         assertNull(entrySkill.operationId());
         assertTrue(entrySkill.markdown().contains("http://127.0.0.1:47812/api/v1/status"));
+        assertTrue(entrySkill.markdown().contains("build/moddevmcp/game-instances.json"));
+        assertTrue(entrySkill.markdown().contains("Probe each candidate"));
+        assertTrue(entrySkill.markdown().contains("required only when both eligible sides are live"));
         assertTrue(entrySkill.markdown().contains("Do not use shell scripts"));
     }
 
@@ -60,7 +64,18 @@ class BuiltinSkillCatalogTest {
         assertTrue(operationSkill.markdown().contains("Operation id: `command.execute`"));
         assertTrue(operationSkill.markdown().contains("curl -X POST"));
         assertTrue(operationSkill.markdown().contains("\"operationId\":\"command.execute\""));
+        assertTrue(operationSkill.markdown().contains("required only when both eligible sides are live"));
         assertTrue(operationSkill.markdown().contains("Do not replace it with shell-driven keyboard input"));
+    }
+
+    @Test
+    void reusableUsageSkillDocumentsProjectLocalDiscoveryFlow() throws Exception {
+        var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
+        var usageSkill = Files.readString(rootDir.resolve("skills/moddevmcp-usage/SKILL.md"));
+        assertTrue(usageSkill.contains("GET http://127.0.0.1:47812/api/v1/status"));
+        assertTrue(usageSkill.contains("<gradleProject>/build/moddevmcp/game-instances.json"));
+        assertTrue(usageSkill.contains("Probe each candidate `baseUrl` from the registry with `GET /api/v1/status`"));
+        assertTrue(usageSkill.contains("targetSide` is required only when both eligible sides are live"));
     }
 
     private BuiltinSkillCatalog.Catalog catalog(OperationRegistry operationRegistry) {
