@@ -89,7 +89,7 @@ class RuntimeOperationBindingsTest {
                 true,
                 true,
                 List.of("client", "server"),
-                "moddev-entry",
+                "moddev-usage",
                 Path.of("build/export"),
                 null
         );
@@ -113,3 +113,4 @@ class RuntimeOperationBindingsTest {
     ) {
     }
 }
+

@@ -87,7 +87,7 @@ class ModDevMcpStdioMainTest {
 
         assertTrue(readme.contains("skill-first service model"));
         assertTrue(readme.contains("/api/v1/status"));
-        assertTrue(readme.contains("moddev-entry"));
+        assertTrue(readme.contains("moddev-usage"));
         assertFalse(readme.contains("host-first architecture"));
         assertFalse(readme.contains(":Server:runStdioMcp"));
         assertFalse(readme.contains("ModDevMcpStdioMain"));
@@ -119,6 +119,7 @@ class ModDevMcpStdioMainTest {
         throw new AssertionError("Timed out waiting for stdio output");
     }
 }
+
 
 
 

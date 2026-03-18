@@ -32,7 +32,7 @@ $env:GRADLE_USER_HOME='..\.gradle-user'
 
 ```powershell
 curl http://127.0.0.1:47812/api/v1/status
-curl http://127.0.0.1:47812/api/v1/skills/moddev-entry/markdown
+curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
 ```
 
 可选请求探测：
@@ -54,5 +54,6 @@ curl -X POST http://127.0.0.1:47812/api/v1/requests `
 1. `GET /api/v1/status`
 2. 确认 `serviceReady=true`
 3. 如果任务依赖真实游戏状态，再确认 `gameReady=true`
-4. 阅读 `moddev-entry`
+4. 阅读 `moddev-usage`
 5. 再继续执行 request API 调用
+

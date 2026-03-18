@@ -34,7 +34,7 @@ class LegacyArchitectureCleanupTest {
         for (var guide : guides) {
             var content = Files.readString(guide);
             assertTrue(content.contains("/api/v1/status"), guide + " should point to the status endpoint");
-            assertTrue(content.contains("moddev-entry"), guide + " should point to the entry skill");
+            assertTrue(content.contains("moddev-usage"), guide + " should point to the entry skill");
             assertTrue(content.contains("/api/v1/requests"), guide + " should describe request execution");
             assertFalse(content.contains("createMcpClientFiles"), guide + " should not mention generated MCP client files");
             assertFalse(content.contains("moddev.status"), guide + " should not mention legacy tool names");
@@ -44,3 +44,4 @@ class LegacyArchitectureCleanupTest {
         }
     }
 }
+

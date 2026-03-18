@@ -16,7 +16,7 @@ class OperationRegistryTest {
 
     @Test
     void categoryDefinitionOwnsSkillIdsAndOperationIds() {
-        var skillIds = List.of("moddev-entry", "ui-snapshot");
+        var skillIds = List.of("moddev-usage", "ui-snapshot");
         var operationIds = List.of("ui.snapshot", "ui.query");
         var definition = new CategoryDefinition(
                 "ui",
@@ -26,7 +26,7 @@ class OperationRegistryTest {
                 operationIds
         );
 
-        assertEquals(List.of("moddev-entry", "ui-snapshot"), definition.skillIds());
+        assertEquals(List.of("moddev-usage", "ui-snapshot"), definition.skillIds());
         assertEquals(List.of("ui.snapshot", "ui.query"), definition.operationIds());
     }
 
@@ -740,7 +740,7 @@ class OperationRegistryTest {
                 "status",
                 "Status",
                 "Service status.",
-                List.of("moddev-entry"),
+                List.of("moddev-usage"),
                 List.of()
         ));
 
@@ -816,3 +816,4 @@ class OperationRegistryTest {
         ));
     }
 }
+

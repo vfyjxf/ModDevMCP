@@ -28,7 +28,7 @@ class SkillExportServiceTest {
         service.exportAll();
 
         assertTrue(Files.exists(tempDir.resolve("manifest.json")));
-        assertTrue(Files.exists(tempDir.resolve("skills").resolve("moddev-entry.md")));
+        assertTrue(Files.exists(tempDir.resolve("skills").resolve("moddev-usage.md")));
         assertTrue(Files.exists(tempDir.resolve("skills").resolve("status.md")));
         assertTrue(Files.exists(tempDir.resolve("categories").resolve("status.md")));
         assertTrue(Files.exists(tempDir.resolve("indexes").resolve("skills.md")));
@@ -40,11 +40,11 @@ class SkillExportServiceTest {
         var service = exportService();
 
         service.exportAll();
-        Files.writeString(tempDir.resolve("skills").resolve("moddev-entry.md"), "stale");
+        Files.writeString(tempDir.resolve("skills").resolve("moddev-usage.md"), "stale");
 
         service.exportAll();
 
-        assertEquals("# Entry\n", Files.readString(tempDir.resolve("skills").resolve("moddev-entry.md")));
+        assertEquals("# Entry\n", Files.readString(tempDir.resolve("skills").resolve("moddev-usage.md")));
     }
 
     private SkillExportService exportService() {
@@ -60,7 +60,7 @@ class SkillExportServiceTest {
                 "status",
                 "Status",
                 "Service status and discovery.",
-                List.of("moddev-entry", "status"),
+                List.of("moddev-usage", "status"),
                 List.of()
         ));
     }
@@ -68,7 +68,7 @@ class SkillExportServiceTest {
     private static SkillRegistry skills() {
         return new SkillRegistry(List.of(
                 new SkillDefinition(
-                        "moddev-entry",
+                        "moddev-usage",
                         "status",
                         SkillKind.GUIDANCE,
                         "Entry",
@@ -92,3 +92,4 @@ class SkillExportServiceTest {
         ));
     }
 }
+

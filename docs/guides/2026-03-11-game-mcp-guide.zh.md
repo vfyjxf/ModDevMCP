@@ -16,7 +16,7 @@ Updated: 2026-03-18 14:50 CST
 - 启动你平时使用的游戏运行任务，例如 `runClient`
 - 让 mod 在游戏内部暴露 loopback HTTP service
 - 先探测 `/api/v1/status`
-- 再阅读 `moddev-entry`
+- 再阅读 `moddev-usage`
 - 最后通过 `POST /api/v1/requests` 执行 operation
 
 ## 启动流程
@@ -31,7 +31,7 @@ Updated: 2026-03-18 14:50 CST
 
 ```powershell
 curl http://127.0.0.1:47812/api/v1/status
-curl http://127.0.0.1:47812/api/v1/skills/moddev-entry/markdown
+curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
 ```
 
 ## 第一批请求
@@ -39,7 +39,7 @@ curl http://127.0.0.1:47812/api/v1/skills/moddev-entry/markdown
 推荐顺序：
 
 1. `GET /api/v1/status`
-2. `GET /api/v1/skills/moddev-entry/markdown`
+2. `GET /api/v1/skills/moddev-usage/markdown`
 3. 用 `status.get` 调用 `POST /api/v1/requests`
 4. 如果需要当前客户端 screen，再用 `status.live_screen` 调用 `POST /api/v1/requests`
 
@@ -58,7 +58,7 @@ curl -X POST http://127.0.0.1:47812/api/v1/requests `
 只有在下面条件满足后才继续：
 
 - `serviceReady=true`
-- 可以读取 `moddev-entry`
+- 可以读取 `moddev-usage`
 - 任务依赖真实游戏状态时，`gameReady=true`
 
 ## Target Side 规则
@@ -74,3 +74,4 @@ curl -X POST http://127.0.0.1:47812/api/v1/requests `
 - 即使 integrated server 已连上，本地世界 operation 仍然按 client 侧能力处理
 - `world.create` 成功后，后续进入应优先复用返回的 `worldId`
 - `worldId` 是本地存档目录 id，不只是显示名称
+

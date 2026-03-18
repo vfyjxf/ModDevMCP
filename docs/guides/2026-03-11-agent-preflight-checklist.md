@@ -16,7 +16,7 @@ Updated: 2026-03-18 09:40 CST
 3. call `GET /api/v1/status`
 4. continue only if `serviceReady=true`
 5. if the task needs the live game, continue only if `gameReady=true`
-6. read `moddev-entry`
+6. read `moddev-usage`
 7. read the specific category or operation skill before sending a request
 
 ## Hard Rules for Agents
@@ -38,8 +38,9 @@ Preflight rules:
 1. Call GET /api/v1/status first.
 2. Continue only if serviceReady=true.
 3. If the task needs the running game, continue only if gameReady=true.
-4. Read moddev-entry, then the relevant category or operation skill.
+4. Read moddev-usage, then the relevant category or operation skill.
 5. Send executable work through POST /api/v1/requests.
 6. Respect targetSide exactly as the service requires.
 7. If any check fails, stop and report the exact failing layer.
 ```
+

@@ -28,7 +28,7 @@ The mod exposes a loopback HTTP service from inside the running game.
 1. start your normal game run, such as `runClient`
 2. wait for the mod to finish loading
 3. call `GET http://127.0.0.1:47812/api/v1/status`
-4. read `moddev-entry`
+4. read `moddev-usage`
 5. continue with `POST /api/v1/requests`
 
 ## Exported Skills
@@ -36,7 +36,7 @@ The mod exposes a loopback HTTP service from inside the running game.
 By default the mod exports a local skill tree to:
 
 - `~/.moddev/skills/manifest.json`
-- `~/.moddev/skills/skills/moddev-entry.md`
+- `~/.moddev/skills/skills/moddev-usage.md`
 - `~/.moddev/skills/skills/<skillId>.md`
 - `~/.moddev/skills/categories/<categoryId>.md`
 
@@ -46,7 +46,7 @@ Agents should read the exported entry skill first when the files are available l
 
 ```powershell
 curl http://127.0.0.1:47812/api/v1/status
-curl http://127.0.0.1:47812/api/v1/skills/moddev-entry/markdown
+curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
 ```
 
 ```powershell
@@ -59,3 +59,4 @@ curl -X POST http://127.0.0.1:47812/api/v1/requests `
 
 - `docs/guides/2026-03-11-agent-preflight-checklist.md`
 - `docs/guides/2026-03-11-testmod-runclient-guide.md`
+

@@ -88,7 +88,7 @@ public final class SkillExportService {
 
     private void writeManifest() throws IOException {
         var payload = new LinkedHashMap<String, Object>();
-        payload.put("entrySkillId", "moddev-entry");
+        payload.put("entrySkillId", "moddev-usage");
         payload.put("exportRoot", config.exportRoot().toAbsolutePath().normalize().toString());
         payload.put("skills", skillRegistry.all().stream().map(skill -> skill.skillId()).toList());
         payload.put("categories", categories.stream().map(category -> category.categoryId()).toList());
@@ -173,3 +173,4 @@ public final class SkillExportService {
     ) {
     }
 }
+

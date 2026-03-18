@@ -17,7 +17,7 @@ class SkillFirstDocsTest {
         var readmeZh = Files.readString(rootDir.resolve("README.zh.md"));
 
         assertTrue(readme.contains("skill-first service model"));
-        assertTrue(readme.contains("moddev-entry"));
+        assertTrue(readme.contains("moddev-usage"));
         assertTrue(readme.contains("/api/v1/status"));
         assertTrue(readme.toLowerCase().contains("exported skills"));
         assertTrue(readme.toLowerCase().contains("local http service"));
@@ -31,7 +31,7 @@ class SkillFirstDocsTest {
         assertFalse(readme.contains("docs/guides/2026-03-11-agent-preflight-checklist.md"));
 
         assertTrue(readmeZh.contains("skill-first 服务模型"));
-        assertTrue(readmeZh.contains("moddev-entry"));
+        assertTrue(readmeZh.contains("moddev-usage"));
         assertTrue(readmeZh.contains("/api/v1/status"));
         assertTrue(readmeZh.contains("面向最终用户的运行时产品：`:Mod`"));
         assertTrue(readmeZh.contains("导出技能"));
@@ -46,3 +46,4 @@ class SkillFirstDocsTest {
         assertFalse(readmeZh.contains("docs/guides/2026-03-11-agent-preflight-checklist.md"));
     }
 }
+

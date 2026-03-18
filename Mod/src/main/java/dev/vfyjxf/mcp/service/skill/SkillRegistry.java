@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public final class SkillRegistry {
 
-    private static final String ENTRY_SKILL_ID = "moddev-entry";
+    private static final String ENTRY_SKILL_ID = "moddev-usage";
 
     private final List<SkillDefinition> all;
     private final Map<String, SkillDefinition> byId;
@@ -129,3 +129,4 @@ public final class SkillRegistry {
         }
     }
 }
+

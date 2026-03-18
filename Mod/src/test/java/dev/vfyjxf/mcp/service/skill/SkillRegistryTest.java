@@ -34,7 +34,7 @@ class SkillRegistryTest {
     @Test
     void registryRejectsExecutableModdevEntrySkill() {
         var executableEntry = new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.ACTION,
                 "Entry",
@@ -51,7 +51,7 @@ class SkillRegistryTest {
     @Test
     void registryRejectsGameRequiredModdevEntrySkill() {
         var gameRequiredEntry = new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -70,7 +70,7 @@ class SkillRegistryTest {
         assertThrows(IllegalArgumentException.class, () -> new SkillRegistry(null));
         var withNullMember = new java.util.ArrayList<SkillDefinition>();
         withNullMember.add(new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -87,7 +87,7 @@ class SkillRegistryTest {
     @Test
     void registryApiRejectsBlankIdsAndNullCategoryValidationInput() {
         var entry = new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -101,7 +101,7 @@ class SkillRegistryTest {
 
         assertThrows(IllegalArgumentException.class, () -> registry.findById(null));
         assertThrows(IllegalArgumentException.class, () -> registry.findById(" "));
-        assertThrows(IllegalArgumentException.class, () -> registry.findById(" moddev-entry "));
+        assertThrows(IllegalArgumentException.class, () -> registry.findById(" moddev-usage "));
         assertThrows(IllegalArgumentException.class, () -> registry.findByCategoryId(null));
         assertThrows(IllegalArgumentException.class, () -> registry.findByCategoryId(" "));
         assertThrows(IllegalArgumentException.class, () -> registry.findByCategoryId(" status "));
@@ -115,7 +115,7 @@ class SkillRegistryTest {
         tags.add("guide");
         tags.add("entry");
         var definition = new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -126,7 +126,7 @@ class SkillRegistryTest {
                 markdown
         );
 
-        assertEquals("moddev-entry", definition.skillId());
+        assertEquals("moddev-usage", definition.skillId());
         assertEquals(List.of("entry", "guide"), List.copyOf(definition.tags()));
         assertTrue(definition.markdown().contains("Entry"));
         assertEquals(markdown, definition.markdown());
@@ -165,7 +165,7 @@ class SkillRegistryTest {
     @Test
     void skillRequiresNonBlankMarkdownAndNonNullTags() {
         assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -176,7 +176,7 @@ class SkillRegistryTest {
                 "This is the entry skill."
         ));
         assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -191,7 +191,7 @@ class SkillRegistryTest {
     @Test
     void skillRejectsBlankOrNullTagMembers() {
         assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -205,7 +205,7 @@ class SkillRegistryTest {
         tagsWithNull.add("entry");
         tagsWithNull.add(null);
         assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -216,7 +216,7 @@ class SkillRegistryTest {
                 "This is the entry skill."
         ));
         assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -231,7 +231,7 @@ class SkillRegistryTest {
     @Test
     void registryExposesReadOnlyDefinitions() {
         var entry = new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -255,14 +255,14 @@ class SkillRegistryTest {
         var registry = new SkillRegistry(List.of(entry, action));
 
         assertEquals(2, registry.all().size());
-        assertTrue(registry.findById("moddev-entry").isPresent());
+        assertTrue(registry.findById("moddev-usage").isPresent());
         assertThrows(UnsupportedOperationException.class, () -> registry.all().add(entry));
     }
 
     @Test
     void validateCategoryOwnershipRejectsMismatch() {
         var entry = new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -298,7 +298,7 @@ class SkillRegistryTest {
     @Test
     void validateCategoryOwnershipRejectsMismatchedOrdering() {
         var entry = new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "ui",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -320,7 +320,7 @@ class SkillRegistryTest {
                 "Capture UI metadata."
         );
         var registry = new SkillRegistry(List.of(entry, action));
-        var reversedSkillIds = List.of("ui-snapshot", "moddev-entry");
+        var reversedSkillIds = List.of("ui-snapshot", "moddev-usage");
         var category = new CategoryDefinition(
                 "ui",
                 "UI",
@@ -335,7 +335,7 @@ class SkillRegistryTest {
     @Test
     void validateOperationBindingsRejectsMissingOperationReference() {
         var entry = new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -365,7 +365,7 @@ class SkillRegistryTest {
     @Test
     void validateOperationBindingsRejectsCrossCategoryReference() {
         var entry = new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -406,7 +406,7 @@ class SkillRegistryTest {
     @Test
     void validateDeclaredCategoriesRejectsOrphanSkillCategoryId() {
         var entry = new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -432,7 +432,7 @@ class SkillRegistryTest {
                 "status",
                 "Status",
                 "Service status.",
-                List.of("moddev-entry"),
+                List.of("moddev-usage"),
                 List.of()
         ));
 
@@ -442,7 +442,7 @@ class SkillRegistryTest {
     @Test
     void validateDeclaredCategoriesRejectsOwnershipMismatchWithoutSeparateCall() {
         var entry = new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -465,8 +465,8 @@ class SkillRegistryTest {
         );
         var registry = new SkillRegistry(List.of(entry, action));
         var categories = List.of(
-                new CategoryDefinition("status", "Status", "Service status.", List.of("moddev-entry"), List.of()),
-                new CategoryDefinition("ui", "UI", "Screen tools.", List.of("moddev-entry"), List.of("ui.snapshot"))
+                new CategoryDefinition("status", "Status", "Service status.", List.of("moddev-usage"), List.of()),
+                new CategoryDefinition("ui", "UI", "Screen tools.", List.of("moddev-usage"), List.of("ui.snapshot"))
         );
 
         assertThrows(IllegalArgumentException.class, () -> registry.validateDeclaredCategories(categories));
@@ -475,7 +475,7 @@ class SkillRegistryTest {
     @Test
     void validateDeclaredCategoriesRejectsDuplicateCategoryIds() {
         var entry = new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -487,8 +487,8 @@ class SkillRegistryTest {
         );
         var registry = new SkillRegistry(List.of(entry));
         var categories = List.of(
-                new CategoryDefinition("status", "Status", "Service status.", List.of("moddev-entry"), List.of()),
-                new CategoryDefinition("status", "Status Duplicate", "Duplicate.", List.of("moddev-entry"), List.of())
+                new CategoryDefinition("status", "Status", "Service status.", List.of("moddev-usage"), List.of()),
+                new CategoryDefinition("status", "Status Duplicate", "Duplicate.", List.of("moddev-usage"), List.of())
         );
 
         assertThrows(IllegalArgumentException.class, () -> registry.validateDeclaredCategories(categories));
@@ -497,7 +497,7 @@ class SkillRegistryTest {
     @Test
     void skillDefinitionRejectsPaddedIdentifiers() {
         assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
-                " moddev-entry",
+                " moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -508,7 +508,7 @@ class SkillRegistryTest {
                 "This is the entry skill."
         ));
         assertThrows(IllegalArgumentException.class, () -> new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 " status ",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -531,3 +531,4 @@ class SkillRegistryTest {
         ));
     }
 }
+

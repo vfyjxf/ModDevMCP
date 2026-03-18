@@ -23,7 +23,7 @@ class BuiltinSkillCatalogTest {
     void alwaysIncludesModdevEntrySkill() {
         var catalog = catalog(sampleOperations());
 
-        var entrySkill = catalog.skillRegistry().findById("moddev-entry").orElseThrow();
+        var entrySkill = catalog.skillRegistry().findById("moddev-usage").orElseThrow();
         assertEquals(SkillKind.GUIDANCE, entrySkill.kind());
         assertNull(entrySkill.operationId());
         assertTrue(entrySkill.markdown().contains("http://127.0.0.1:47812/api/v1/status"));
@@ -44,7 +44,7 @@ class BuiltinSkillCatalogTest {
     void guidanceOnlySkillsDoNotNeedOperationIds() {
         var catalog = catalog(sampleOperations());
 
-        var entrySkill = catalog.skillRegistry().findById("moddev-entry").orElseThrow();
+        var entrySkill = catalog.skillRegistry().findById("moddev-usage").orElseThrow();
         assertEquals(SkillKind.GUIDANCE, entrySkill.kind());
         assertNull(entrySkill.operationId());
     }
@@ -101,3 +101,4 @@ class BuiltinSkillCatalogTest {
         ));
     }
 }
+

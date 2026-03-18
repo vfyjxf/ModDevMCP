@@ -43,7 +43,7 @@ public final class BuiltinSkillCatalog {
         var categories = new ArrayList<CategoryDefinition>();
 
         skills.add(new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "ModDev Entry",
@@ -101,7 +101,7 @@ public final class BuiltinSkillCatalog {
         skillIds.add(spec.categoryId());
         skillIds.addAll(operations.stream().map(OperationDefinition::operationId).toList());
         if ("status".equals(spec.categoryId())) {
-            skillIds.addFirst("moddev-entry");
+            skillIds.addFirst("moddev-usage");
         }
         return new CategoryDefinition(
                 spec.categoryId(),
@@ -139,3 +139,4 @@ public final class BuiltinSkillCatalog {
     ) {
     }
 }
+

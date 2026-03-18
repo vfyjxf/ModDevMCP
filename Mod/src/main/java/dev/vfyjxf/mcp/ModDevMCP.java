@@ -320,7 +320,7 @@ public class ModDevMCP {
                 httpServiceServer != null,
                 !connectedSides.isEmpty(),
                 connectedSides,
-                "moddev-entry",
+                "moddev-usage",
                 ServiceConfig.loadResolved().exportRoot(),
                 httpServiceLastError
         );
@@ -361,7 +361,7 @@ public class ModDevMCP {
 
         @Override
         public String entrySkillId() {
-            return "moddev-entry";
+            return "moddev-usage";
         }
 
         @Override
@@ -375,3 +375,4 @@ public class ModDevMCP {
         }
     }
 }
+

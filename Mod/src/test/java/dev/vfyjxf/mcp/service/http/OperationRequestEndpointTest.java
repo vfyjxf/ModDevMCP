@@ -254,7 +254,7 @@ class OperationRequestEndpointTest {
 
     private static SkillDefinition entrySkill() {
         return new SkillDefinition(
-                "moddev-entry",
+                "moddev-usage",
                 "status",
                 SkillKind.GUIDANCE,
                 "Entry",
@@ -289,7 +289,7 @@ class OperationRequestEndpointTest {
 
         @Override
         public String entrySkillId() {
-            return "moddev-entry";
+            return "moddev-usage";
         }
 
         @Override
@@ -311,3 +311,4 @@ class OperationRequestEndpointTest {
         }
     }
 }
+

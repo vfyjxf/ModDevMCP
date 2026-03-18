@@ -22,7 +22,7 @@
 **Step 1: Write the failing test**
 
 - Add assertions that the primary architecture is a local HTTP service inside `Mod`.
-- Add assertions that the public docs reference `moddev-entry`, `/api/v1/status`, and exported skills.
+- Add assertions that the public docs reference `moddev-usage`, `/api/v1/status`, and exported skills.
 - Add assertions that root build docs no longer describe `:Server` or `:Plugin` as required end-user products.
 
 **Step 2: Run test to verify it fails**
@@ -57,7 +57,7 @@ Expected: PASS
 **Step 1: Write the failing tests**
 
 - Verify default host, port, and export-root resolution.
-- Verify `moddev-entry` is mandatory.
+- Verify `moddev-usage` is mandatory.
 - Verify `guidance`, `action`, and `hybrid` rules for `operationId`.
 - Verify operation metadata exposes `supportsTargetSide` and explicit category ownership.
 
@@ -150,7 +150,7 @@ Expected: PASS
 **Files:**
 - Create: `Mod/src/main/java/dev/vfyjxf/mcp/service/skill/BuiltinSkillCatalog.java`
 - Create: `Mod/src/main/java/dev/vfyjxf/mcp/service/skill/SkillMarkdownLoader.java`
-- Create: `Mod/src/main/resources/moddev-service/skills/moddev-entry.md`
+- Create: `Mod/src/main/resources/moddev-service/skills/moddev-usage.md`
 - Create: `Mod/src/main/resources/moddev-service/categories/status.md`
 - Create: `Mod/src/main/resources/moddev-service/categories/ui.md`
 - Create: `Mod/src/main/resources/moddev-service/categories/command.md`
@@ -160,7 +160,7 @@ Expected: PASS
 
 **Step 1: Write the failing tests**
 
-- Verify `moddev-entry` is always present.
+- Verify `moddev-usage` is always present.
 - Verify category skills and operation skills resolve markdown from bundled resources.
 - Verify guidance-only skills can exist without an operation.
 - Verify action/hybrid skills embed the correct operation id and `curl` examples.
@@ -192,7 +192,7 @@ Expected: PASS
 
 **Step 1: Write the failing tests**
 
-- Verify startup export writes `manifest.json`, `skills/moddev-entry.md`, per-skill markdown, per-category markdown, and index files.
+- Verify startup export writes `manifest.json`, `skills/moddev-usage.md`, per-skill markdown, per-category markdown, and index files.
 - Verify `POST /api/v1/skills/export` regenerates the tree.
 - Verify export content is derived from the in-memory registries and not loaded back from disk.
 
@@ -306,7 +306,7 @@ Expected: only intentional historical-plan references remain
 
 **Step 2: Run test to verify it fails**
 
-Run: `rg -n "moddev-entry|/api/v1/status|/api/v1/requests|targetSide|curl" skills docs/guides README.md README.zh.md -g "*.md" -g "*.yaml"`
+Run: `rg -n "moddev-usage|/api/v1/status|/api/v1/requests|targetSide|curl" skills docs/guides README.md README.zh.md -g "*.md" -g "*.yaml"`
 Expected: missing or outdated matches before cleanup.
 
 **Step 3: Write minimal implementation**
@@ -317,7 +317,7 @@ Expected: missing or outdated matches before cleanup.
 
 **Step 4: Run test to verify it passes**
 
-Run: `rg -n "moddev-entry|/api/v1/status|/api/v1/requests|targetSide|curl" skills docs/guides README.md README.zh.md -g "*.md" -g "*.yaml"`
+Run: `rg -n "moddev-usage|/api/v1/status|/api/v1/requests|targetSide|curl" skills docs/guides README.md README.zh.md -g "*.md" -g "*.yaml"`
 Expected: the new flow is documented consistently
 
 ### Task 10: Run end-to-end verification from `Mod` and `TestMod`
@@ -347,5 +347,6 @@ Expected: JSON response with `serviceReady=true`
 
 **Step 5: Probe entry skill markdown manually**
 
-Run: `curl http://127.0.0.1:47812/api/v1/skills/moddev-entry/markdown`
+Run: `curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown`
 Expected: markdown body for the entry skill
+

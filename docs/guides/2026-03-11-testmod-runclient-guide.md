@@ -32,7 +32,7 @@ After the game reaches the title screen or a world:
 
 ```powershell
 curl http://127.0.0.1:47812/api/v1/status
-curl http://127.0.0.1:47812/api/v1/skills/moddev-entry/markdown
+curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
 ```
 
 Optional request probes:
@@ -54,5 +54,6 @@ curl -X POST http://127.0.0.1:47812/api/v1/requests `
 1. `GET /api/v1/status`
 2. verify `serviceReady=true`
 3. if the task needs live game state, verify `gameReady=true`
-4. read `moddev-entry`
+4. read `moddev-usage`
 5. continue with request API calls
+

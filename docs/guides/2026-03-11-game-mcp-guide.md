@@ -16,7 +16,7 @@ Updated: 2026-03-18 14:50 CST
 - start your normal game run, such as `runClient`
 - let the mod expose the loopback HTTP service from inside the game
 - probe `/api/v1/status`
-- read `moddev-entry`
+- read `moddev-usage`
 - execute operations through `POST /api/v1/requests`
 
 ## Startup Flow
@@ -31,7 +31,7 @@ Then verify the local service directly:
 
 ```powershell
 curl http://127.0.0.1:47812/api/v1/status
-curl http://127.0.0.1:47812/api/v1/skills/moddev-entry/markdown
+curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
 ```
 
 ## First Requests
@@ -39,7 +39,7 @@ curl http://127.0.0.1:47812/api/v1/skills/moddev-entry/markdown
 Recommended order:
 
 1. `GET /api/v1/status`
-2. `GET /api/v1/skills/moddev-entry/markdown`
+2. `GET /api/v1/skills/moddev-usage/markdown`
 3. `POST /api/v1/requests` with `status.get`
 4. `POST /api/v1/requests` with `status.live_screen` if you need the current client screen
 
@@ -58,7 +58,7 @@ Do not use UI, input, inventory, capture, command, world, or hotswap operations 
 Continue only if:
 
 - `serviceReady=true`
-- `moddev-entry` is reachable
+- `moddev-usage` is reachable
 - `gameReady=true` when the task depends on live game state
 
 ## Target Side Rule
@@ -74,3 +74,4 @@ Continue only if:
 - treat local world operations as client-side operations even when an integrated server is already connected
 - after `world.create` succeeds, reuse the returned `worldId` for later joins
 - `worldId` is the local save-folder id, not just a display label
+

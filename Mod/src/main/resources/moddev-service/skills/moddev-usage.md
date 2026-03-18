@@ -1,4 +1,4 @@
-# moddev-entry
+# moddev-usage
 
 Start with the local HTTP service, not an external bridge.
 
@@ -30,3 +30,4 @@ curl -X POST {{baseUri}}/api/v1/requests \
 ```
 
 `targetSide` is optional unless multiple eligible sides are connected for the requested operation. If both client and server can handle the operation, send `targetSide` explicitly.
+

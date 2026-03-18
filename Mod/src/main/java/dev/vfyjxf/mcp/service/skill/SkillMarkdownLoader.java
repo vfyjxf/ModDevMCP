@@ -12,7 +12,7 @@ import java.util.Map;
 public final class SkillMarkdownLoader {
 
     public String loadEntryMarkdown(String baseUri) {
-        return renderResource("moddev-service/skills/moddev-entry.md", Map.of(
+        return renderResource("moddev-service/skills/moddev-usage.md", Map.of(
                 "baseUri", baseUri
         ));
     }
@@ -179,3 +179,4 @@ public final class SkillMarkdownLoader {
                 .replace("\t", "\\t");
     }
 }
+

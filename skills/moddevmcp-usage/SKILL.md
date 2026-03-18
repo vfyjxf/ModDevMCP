@@ -7,11 +7,11 @@ description: Use when an agent needs to operate a local ModDevMCP game session t
 
 ## Overview
 
-ModDevMCP is a loopback HTTP service exposed by the game mod itself. Start with `moddev-entry`, verify `/api/v1/status`, then execute concrete operations through `POST /api/v1/requests`.
+ModDevMCP is a loopback HTTP service exposed by the game mod itself. Start with `moddev-usage`, verify `/api/v1/status`, then execute concrete operations through `POST /api/v1/requests`.
 
 ## Required Flow
 
-1. Read the exported entry skill from `~/.moddev/skills/skills/moddev-entry.md` when available, or fetch `GET /api/v1/skills/moddev-entry/markdown`.
+1. Read the exported entry skill from `~/.moddev/skills/skills/moddev-usage.md` when available, or fetch `GET /api/v1/skills/moddev-usage/markdown`.
 2. Call `GET /api/v1/status`.
 3. Continue only if `serviceReady=true`.
 4. Treat client UI work as ready only if `gameReady=true` and `connectedSides` includes `client`.
@@ -23,7 +23,7 @@ ModDevMCP is a loopback HTTP service exposed by the game mod itself. Start with 
 
 ## Discovery Rules
 
-- `moddev-entry` is the required starting skill.
+- `moddev-usage` is the required starting skill.
 - Some exported skills are guidance-only. They explain workflow and do not map to an executable operation.
 - Category skills summarize a capability area and point to operation skills.
 - Operation skills show the exact `operationId`, input shape, and a minimal `curl` example.
@@ -59,7 +59,7 @@ curl -X POST http://127.0.0.1:47812/api/v1/requests \
 For any new session:
 
 1. `GET /api/v1/status`
-2. `GET /api/v1/skills/moddev-entry/markdown`
+2. `GET /api/v1/skills/moddev-usage/markdown`
 3. read the relevant category or operation skill
 4. `POST /api/v1/requests`
 
@@ -107,3 +107,4 @@ For local world failures:
 - if the game visibly entered the new world but the response reports `world_not_found`, treat that as a runtime bug, not a caller mistake
 
 Do not claim a skill or operation exists unless it is visible from the current service or exported skill tree.
+

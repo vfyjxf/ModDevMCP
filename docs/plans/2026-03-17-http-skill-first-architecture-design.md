@@ -12,7 +12,7 @@ Replace the current gateway/tool-list-first flow with a Mod-only local HTTP serv
 - The service listens only on loopback and serves JSON plus markdown.
 - The exported and HTTP-visible terminology must use `service`, `skills`, `categories`, `operations`, `requests`, and `status`.
 - The exported flow must avoid old gateway/tool-list wording.
-- There must be exactly one primary entry skill: `moddev-entry`.
+- There must be exactly one primary entry skill: `moddev-usage`.
 - Skills are built into `Mod` as source-of-truth definitions and markdown text.
 - Exported files are projections, not editable source.
 - Some skills are guidance-only and have no executable operation.
@@ -82,7 +82,7 @@ Rules:
 - `guidance` skills must not require an `operationId`
 - `action` skills must point to exactly one `operationId`
 - `hybrid` skills combine guidance text with one primary `operationId`
-- `moddev-entry` is always present and points users to category skills plus request conventions
+- `moddev-usage` is always present and points users to category skills plus request conventions
 
 ## Category Model
 
@@ -226,7 +226,7 @@ On startup the service exports the current skill view to the local export root.
 Recommended layout:
 
 - `manifest.json`
-- `skills/moddev-entry.md`
+- `skills/moddev-usage.md`
 - `skills/<skillId>.md`
 - `categories/<categoryId>.md`
 - `indexes/skills.md`
@@ -241,7 +241,7 @@ Export rules:
 
 ## Entry Skill
 
-`moddev-entry` is the only required starting point.
+`moddev-usage` is the only required starting point.
 
 It must:
 
@@ -334,3 +334,4 @@ The implementation should preserve runtime capabilities first, then remove obsol
 ## Recommendation
 
 Implement the HTTP skill-first architecture in `Mod` as the new primary and final architecture. Keep migration scoped around parity-first operation handlers, but do not preserve the old gateway/plugin model longer than needed to get the new service stable.
+

@@ -28,7 +28,7 @@ dependencies {
 1. 启动你平时使用的游戏运行任务，例如 `runClient`
 2. 等待 mod 完成加载
 3. 调用 `GET http://127.0.0.1:47812/api/v1/status`
-4. 阅读 `moddev-entry`
+4. 阅读 `moddev-usage`
 5. 再继续调用 `POST /api/v1/requests`
 
 ## 导出技能
@@ -36,7 +36,7 @@ dependencies {
 默认会把本地 skill 树导出到：
 
 - `~/.moddev/skills/manifest.json`
-- `~/.moddev/skills/skills/moddev-entry.md`
+- `~/.moddev/skills/skills/moddev-usage.md`
 - `~/.moddev/skills/skills/<skillId>.md`
 - `~/.moddev/skills/categories/<categoryId>.md`
 
@@ -46,7 +46,7 @@ dependencies {
 
 ```powershell
 curl http://127.0.0.1:47812/api/v1/status
-curl http://127.0.0.1:47812/api/v1/skills/moddev-entry/markdown
+curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
 ```
 
 ```powershell
@@ -59,3 +59,4 @@ curl -X POST http://127.0.0.1:47812/api/v1/requests `
 
 - `docs/guides/2026-03-11-agent-preflight-checklist.md`
 - `docs/guides/2026-03-11-testmod-runclient-guide.md`
+

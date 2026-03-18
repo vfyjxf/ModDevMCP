@@ -21,7 +21,7 @@ On branch `feat/http-skill-first-architecture`, the active product is a local HT
 
 ## Entry Skill and Status
 
-- Required entry skill: `moddev-entry`
+- Required entry skill: `moddev-usage`
 - Service readiness endpoint: `/api/v1/status`
 - Entry markdown explains discovery, request format, and `targetSide` routing rules
 
@@ -31,7 +31,7 @@ The service exports skills to local disk as generated projections. Exported skil
 
 Typical exported layout:
 
-- `skills/moddev-entry.md`
+- `skills/moddev-usage.md`
 - `skills/<skillId>.md`
 - `categories/<categoryId>.md`
 - `manifest.json`
@@ -56,10 +56,11 @@ Typical exported layout:
 curl http://127.0.0.1:47812/api/v1/status
 ```
 
-If `serviceReady=true`, read `moddev-entry` first and continue with category or operation skills.
+If `serviceReady=true`, read `moddev-usage` first and continue with category or operation skills.
 
 ## Notes
 
 - This README locks the current product boundary and service terminology.
 - Consumer projects only need the published `dev.vfyjxf:moddevmcp` dependency.
 - Chinese version: `README.zh.md`
+

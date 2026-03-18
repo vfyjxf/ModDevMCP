@@ -48,12 +48,12 @@ class SkillDiscoveryEndpointTest {
                 "status",
                 "Status",
                 "Service status and discovery.",
-                List.of("moddev-entry", "status-check"),
+                List.of("moddev-usage", "status-check"),
                 List.of("status.check")
         );
         var skillRegistry = new SkillRegistry(List.of(
                 new SkillDefinition(
-                        "moddev-entry",
+                        "moddev-usage",
                         "status",
                         SkillKind.GUIDANCE,
                         "Entry",
@@ -104,13 +104,13 @@ class SkillDiscoveryEndpointTest {
 
         assertEquals(200, categoriesResponse.statusCode());
         assertEquals(
-                "{\"categories\":[{\"categoryId\":\"status\",\"title\":\"Status\",\"summary\":\"Service status and discovery.\",\"skillIds\":[\"moddev-entry\",\"status-check\"],\"operationIds\":[\"status.check\"]}]}",
+                "{\"categories\":[{\"categoryId\":\"status\",\"title\":\"Status\",\"summary\":\"Service status and discovery.\",\"skillIds\":[\"moddev-usage\",\"status-check\"],\"operationIds\":[\"status.check\"]}]}",
                 categoriesResponse.body()
         );
 
         assertEquals(200, skillsResponse.statusCode());
         assertEquals(
-                "{\"skills\":[{\"skillId\":\"moddev-entry\",\"categoryId\":\"status\",\"kind\":\"guidance\",\"title\":\"Entry\",\"summary\":\"Start here.\",\"operationId\":null,\"tags\":[\"entry\",\"status\"],\"requiresGame\":false},{\"skillId\":\"status-check\",\"categoryId\":\"status\",\"kind\":\"action\",\"title\":\"Status Check\",\"summary\":\"Inspect status.\",\"operationId\":\"status.check\",\"tags\":[\"check\",\"status\"],\"requiresGame\":false}]}",
+                "{\"skills\":[{\"skillId\":\"moddev-usage\",\"categoryId\":\"status\",\"kind\":\"guidance\",\"title\":\"Entry\",\"summary\":\"Start here.\",\"operationId\":null,\"tags\":[\"entry\",\"status\"],\"requiresGame\":false},{\"skillId\":\"status-check\",\"categoryId\":\"status\",\"kind\":\"action\",\"title\":\"Status Check\",\"summary\":\"Inspect status.\",\"operationId\":\"status.check\",\"tags\":[\"check\",\"status\"],\"requiresGame\":false}]}",
                 skillsResponse.body()
         );
 
@@ -125,7 +125,7 @@ class SkillDiscoveryEndpointTest {
     void skillMarkdownEndpointReturnsRawMarkdown() throws Exception {
         var skillRegistry = new SkillRegistry(List.of(
                 new SkillDefinition(
-                        "moddev-entry",
+                        "moddev-usage",
                         "status",
                         SkillKind.GUIDANCE,
                         "Entry",
@@ -147,7 +147,7 @@ class SkillDiscoveryEndpointTest {
         );
         server.start();
 
-        var response = get(server.baseUri().resolve("/api/v1/skills/moddev-entry/markdown"));
+        var response = get(server.baseUri().resolve("/api/v1/skills/moddev-usage/markdown"));
 
         assertEquals(200, response.statusCode());
         assertTrue(response.headers().firstValue("Content-Type").orElse("none").startsWith("text/markdown"));
@@ -158,7 +158,7 @@ class SkillDiscoveryEndpointTest {
     void skillMarkdownPathDecodingKeepsPlusCharacter() throws Exception {
         var skillRegistry = new SkillRegistry(List.of(
                 new SkillDefinition(
-                        "moddev-entry",
+                        "moddev-usage",
                         "status",
                         SkillKind.GUIDANCE,
                         "Entry",
@@ -201,7 +201,7 @@ class SkillDiscoveryEndpointTest {
     void unknownSkillMarkdownReturnsNotFound() throws Exception {
         var skillRegistry = new SkillRegistry(List.of(
                 new SkillDefinition(
-                        "moddev-entry",
+                        "moddev-usage",
                         "status",
                         SkillKind.GUIDANCE,
                         "Entry",
@@ -233,7 +233,7 @@ class SkillDiscoveryEndpointTest {
     void markdownEndpointRejectsNonGetMethod() throws Exception {
         var skillRegistry = new SkillRegistry(List.of(
                 new SkillDefinition(
-                        "moddev-entry",
+                        "moddev-usage",
                         "status",
                         SkillKind.GUIDANCE,
                         "Entry",
@@ -255,7 +255,7 @@ class SkillDiscoveryEndpointTest {
         );
         server.start();
 
-        var response = request(server.baseUri().resolve("/api/v1/skills/moddev-entry/markdown"), "POST");
+        var response = request(server.baseUri().resolve("/api/v1/skills/moddev-usage/markdown"), "POST");
 
         assertEquals(405, response.statusCode());
         assertEquals("GET", response.headers().firstValue("Allow").orElse("missing"));
@@ -268,12 +268,12 @@ class SkillDiscoveryEndpointTest {
                 "status",
                 "Status",
                 "Service status and discovery.",
-                List.of("moddev-entry", "status"),
+                List.of("moddev-usage", "status"),
                 List.of()
         );
         var skillRegistry = new SkillRegistry(List.of(
                 new SkillDefinition(
-                        "moddev-entry",
+                        "moddev-usage",
                         "status",
                         SkillKind.GUIDANCE,
                         "Entry",
@@ -307,13 +307,13 @@ class SkillDiscoveryEndpointTest {
                 exportService
         );
         server.start();
-        Files.writeString(tempDir.resolve("skills").resolve("moddev-entry.md"), "stale");
+        Files.writeString(tempDir.resolve("skills").resolve("moddev-usage.md"), "stale");
 
         var response = request(server.baseUri().resolve("/api/v1/skills/export"), "POST");
 
         assertEquals(200, response.statusCode());
         assertTrue(response.body().contains("\"exported\":true"));
-        assertEquals("# Entry\n", Files.readString(tempDir.resolve("skills").resolve("moddev-entry.md")));
+        assertEquals("# Entry\n", Files.readString(tempDir.resolve("skills").resolve("moddev-usage.md")));
     }
 
     private static HttpResponse<String> get(URI uri) throws IOException, InterruptedException {
@@ -368,7 +368,7 @@ class SkillDiscoveryEndpointTest {
 
         @Override
         public String entrySkillId() {
-            return "moddev-entry";
+            return "moddev-usage";
         }
 
         @Override
@@ -390,3 +390,4 @@ class SkillDiscoveryEndpointTest {
         }
     }
 }
+
