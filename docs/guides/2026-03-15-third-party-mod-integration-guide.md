@@ -243,6 +243,14 @@ public final class ExampleScreenUiDriver implements UiDriver {
 
 If your UI library can attach to arbitrary screen classes, prefer matching by inspecting `screenHandle()` instead of relying only on `screenClass()`.
 
+When multiple UI drivers can be active on one live screen, built-in read-only UI tools can narrow results with:
+
+- `driverId`
+- `includeDrivers`
+- `excludeDrivers`
+
+Downstream adapters should expect `moddev.ui_get_live_screen` to report `drivers[]`, while `driverId` remains the default or recommended driver rather than the only possible match.
+
 ### Minimal Capture Provider Shape
 
 ```java
@@ -315,5 +323,7 @@ Recommended downstream verification:
 4. connect an MCP client and call `moddev.status`
 5. call your new tool
 6. if you added UI adapters, also verify `moddev.ui_get_live_screen`, `moddev.ui_snapshot`, and `moddev.ui_capture`
+7. when multiple drivers can coexist, also verify `driverId`, `includeDrivers`, and `excludeDrivers`
+8. use `moddev.input_action` instead of UI-semantic tools when you need raw keyboard or mouse event injection
 
 If Gradle resolution fails, treat repository, TLS, or network failures separately from code failures.

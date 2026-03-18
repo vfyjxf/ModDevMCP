@@ -207,6 +207,14 @@ event.publishEvent(new EventEnvelope("examplemod", "registered", System.currentT
 
 当你希望直接接入 ModDevMCP 内置的 UI / capture 工具，而不是另写一套独立 tool 时，这层 API 才真正有价值。
 
+如果同一个 live screen 上可能同时激活多个 UI driver，内置只读 UI 工具现在可以用这些参数收窄结果：
+
+- `driverId`
+- `includeDrivers`
+- `excludeDrivers`
+
+下游 adapter 也应该预期 `moddev.ui_get_live_screen` 会返回 `drivers[]`，而 `driverId` 现在表示默认或推荐 driver，不再意味着它是唯一匹配。
+
 ### 最小 `UiDriver` 形状
 
 ```java
@@ -307,5 +315,7 @@ public final class ExampleOffscreenCaptureProvider implements UiOffscreenCapture
 4. 连接 MCP client，先调用 `moddev.status`
 5. 调用你新增的 tool
 6. 如果你还加了 UI adapter，再验证 `moddev.ui_get_live_screen`、`moddev.ui_snapshot`、`moddev.ui_capture`
+7. 如果多个 driver 可以共存，再验证 `driverId`、`includeDrivers`、`excludeDrivers`
+8. 如果你需要的是原始键盘或鼠标事件注入，改用 `moddev.input_action`，不要混进 UI 语义工具
 
 如果 Gradle 解析失败，要把仓库、TLS、网络问题和代码问题分开处理。

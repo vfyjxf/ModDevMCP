@@ -36,6 +36,7 @@ Updated: 2026-03-15 00:05 CST
 - `moddev.ui_wait_for`
 - `moddev.ui_batch`
 - `moddev.ui_trace_get`
+- 需要绕过 UI 语义检查时，用 `moddev.input_action` 发送原始键盘/鼠标事件
 
 ## 推荐流程
 
@@ -43,12 +44,15 @@ Updated: 2026-03-15 00:05 CST
 2. 调用 `moddev.status`
 3. 只有在 `gameConnected=true` 时才继续
 4. 调用 `moddev.ui_get_live_screen`
-5. 如果需要进入顶层界面，例如 `inventory`、`chat`、`pause_menu`，调用 `moddev.ui_run_intent`
-6. 调用 `moddev.ui_inspect`
-7. 调用 `moddev.ui_act`
-8. 调用 `moddev.ui_wait`
-9. 在检查点调用 `moddev.ui_screenshot`
-10. 如果需要一段简短的动作历史，调用 `moddev.ui_trace_recent`
+5. 如果同时有多个 driver 活跃，先决定默认 `driverId`，或在只读调用里用 `includeDrivers` / `excludeDrivers` 收窄范围
+6. 如果需要进入顶层界面，例如 `inventory`、`chat`、`pause_menu`，调用 `moddev.ui_run_intent`
+7. 调用 `moddev.ui_inspect`
+8. 调用 `moddev.ui_act`
+9. 调用 `moddev.ui_wait`
+10. 在检查点调用 `moddev.ui_screenshot`
+11. 如果需要一段简短的动作历史，调用 `moddev.ui_trace_recent`
+
+如果你要的是直接给游戏发底层按键或鼠标事件，而不是走当前 UI 的语义检查，改用 `moddev.input_action`，不要把这类需求塞进 `moddev.ui_press_key` 或 `moddev.ui_type_text`。
 
 ## 最小示例
 
@@ -139,11 +143,12 @@ Updated: 2026-03-15 00:05 CST
 1. 先安装生成的 MCP 配置
 2. `moddev.status`
 3. `moddev.ui_get_live_screen`
-4. `moddev.ui_run_intent`
-5. `moddev.ui_inspect`
-6. `moddev.ui_act`
-7. `moddev.ui_wait`
-8. `moddev.ui_screenshot`
-9. `moddev.ui_trace_recent`
+4. 多 driver 场景下先用 `includeDrivers` / `excludeDrivers`
+5. `moddev.ui_run_intent`
+6. `moddev.ui_inspect`
+7. `moddev.ui_act`
+8. `moddev.ui_wait`
+9. `moddev.ui_screenshot`
+10. `moddev.ui_trace_recent`
 
 普通消费者接入时，不需要为了使用这条流程而额外写 `modDevMcp {}`。

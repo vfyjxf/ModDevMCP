@@ -9,15 +9,22 @@ Use `moddev.ui_get_live_screen` to ask the running Minecraft client:
 
 - whether a screen is active
 - which `screenClass` is currently open
-- which UI driver is handling it
+- which UI driver is the default match
+- which active UI drivers are present in `drivers[]`
 - the current GUI and framebuffer dimensions
+- which `includeDrivers` / `excludeDrivers` filters you may want to apply to follow-up UI reads
 
 ## Call Shape
 
 ```json
 {
   "name": "moddev.ui_get_live_screen",
-  "arguments": {}
+  "arguments": {
+    "includeDrivers": [
+      "vanilla-screen"
+    ],
+    "excludeDrivers": []
+  }
 }
 ```
 
@@ -29,6 +36,19 @@ Use `moddev.ui_get_live_screen` to ask the running Minecraft client:
   "screenClass": "net.minecraft.client.gui.screens.TitleScreen",
   "modId": "minecraft",
   "driverId": "vanilla-screen",
+  "drivers": [
+    {
+      "driverId": "vanilla-screen",
+      "modId": "minecraft",
+      "priority": 100,
+      "capabilities": [
+        "snapshot",
+        "query",
+        "capture",
+        "action"
+      ]
+    }
+  ],
   "guiWidth": 427,
   "guiHeight": 240,
   "framebufferWidth": 854,
@@ -44,7 +64,8 @@ Use `moddev.ui_get_live_screen` to ask the running Minecraft client:
 4. call `moddev.status`
 5. continue only if `gameConnected=true`
 6. call `moddev.ui_get_live_screen`
-7. use the returned `screenClass` before sending UI actions
+7. use the returned `screenClass`, `driverId`, and `drivers[]` before sending UI actions
+8. if multiple drivers are active, narrow later read-only calls with `driverId`, `includeDrivers`, or `excludeDrivers`
 
 If MCP connection fails, or either readiness check fails, treat the game as not ready.
 

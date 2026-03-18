@@ -36,6 +36,7 @@ Use lower-level session and ref tools only when a longer same-screen flow really
 - `moddev.ui_wait_for`
 - `moddev.ui_batch`
 - `moddev.ui_trace_get`
+- `moddev.input_action` for raw key and mouse event injection outside UI-semantic flows
 
 ## Recommended Flow
 
@@ -43,12 +44,15 @@ Use lower-level session and ref tools only when a longer same-screen flow really
 2. call `moddev.status`
 3. continue only if `gameConnected=true`
 4. call `moddev.ui_get_live_screen`
-5. call `moddev.ui_run_intent` if you need to enter a top-level screen such as `inventory`, `chat`, or `pause_menu`
-6. call `moddev.ui_inspect`
-7. call `moddev.ui_act`
-8. call `moddev.ui_wait`
-9. call `moddev.ui_screenshot` at checkpoints
-10. call `moddev.ui_trace_recent` if you need a short action history
+5. if multiple drivers are active, choose the default `driverId` or narrow read-only calls with `includeDrivers` / `excludeDrivers`
+6. call `moddev.ui_run_intent` if you need to enter a top-level screen such as `inventory`, `chat`, or `pause_menu`
+7. call `moddev.ui_inspect`
+8. call `moddev.ui_act`
+9. call `moddev.ui_wait`
+10. call `moddev.ui_screenshot` at checkpoints
+11. call `moddev.ui_trace_recent` if you need a short action history
+
+Use `moddev.input_action` instead of `moddev.ui_press_key` or `moddev.ui_type_text` when you need raw key or mouse event injection that should bypass UI-semantic screen checks.
 
 ## Minimal Example
 
@@ -139,11 +143,12 @@ Prefer:
 1. install the generated MCP config
 2. `moddev.status`
 3. `moddev.ui_get_live_screen`
-4. `moddev.ui_run_intent`
-5. `moddev.ui_inspect`
-6. `moddev.ui_act`
-7. `moddev.ui_wait`
-8. `moddev.ui_screenshot`
-9. `moddev.ui_trace_recent`
+4. `includeDrivers` / `excludeDrivers` when multiple UI drivers are active
+5. `moddev.ui_run_intent`
+6. `moddev.ui_inspect`
+7. `moddev.ui_act`
+8. `moddev.ui_wait`
+9. `moddev.ui_screenshot`
+10. `moddev.ui_trace_recent`
 
 For a normal consumer setup, you do not need a `modDevMcp {}` block to use this flow.

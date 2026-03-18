@@ -59,5 +59,36 @@ class LegacyArchitectureCleanupTest {
             assertFalse(content.contains("modDevMcp {"), guide + " should not mention the removed Gradle extension");
         }
     }
+
+    @Test
+    void uiGuidesDocumentDriverFilteringAndRawInputBoundary() throws Exception {
+        var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
+        var guides = List.of(
+                rootDir.resolve("docs/guides/2026-03-11-live-screen-tool-guide.md"),
+                rootDir.resolve("docs/guides/2026-03-12-playwright-style-ui-automation-guide.md"),
+                rootDir.resolve("docs/guides/2026-03-15-third-party-mod-integration-guide.md"),
+                rootDir.resolve("docs/guides/2026-03-11-live-screen-tool-guide.zh.md"),
+                rootDir.resolve("docs/guides/2026-03-12-playwright-style-ui-automation-guide.zh.md"),
+                rootDir.resolve("docs/guides/2026-03-15-third-party-mod-integration-guide.zh.md")
+        );
+
+        for (var guide : guides) {
+            var content = Files.readString(guide);
+            assertTrue(content.contains("includeDrivers"), guide + " should mention includeDrivers");
+            assertTrue(content.contains("excludeDrivers"), guide + " should mention excludeDrivers");
+        }
+
+        var liveScreenGuide = Files.readString(rootDir.resolve("docs/guides/2026-03-11-live-screen-tool-guide.md"));
+        assertTrue(liveScreenGuide.contains("drivers[]"), "live screen guide should describe drivers[]");
+
+        var liveScreenGuideZh = Files.readString(rootDir.resolve("docs/guides/2026-03-11-live-screen-tool-guide.zh.md"));
+        assertTrue(liveScreenGuideZh.contains("drivers[]"), "zh live screen guide should describe drivers[]");
+
+        var playwrightGuide = Files.readString(rootDir.resolve("docs/guides/2026-03-12-playwright-style-ui-automation-guide.md"));
+        assertTrue(playwrightGuide.contains("moddev.input_action"), "playwright guide should point raw input to moddev.input_action");
+
+        var playwrightGuideZh = Files.readString(rootDir.resolve("docs/guides/2026-03-12-playwright-style-ui-automation-guide.zh.md"));
+        assertTrue(playwrightGuideZh.contains("moddev.input_action"), "zh playwright guide should point raw input to moddev.input_action");
+    }
 }
 
