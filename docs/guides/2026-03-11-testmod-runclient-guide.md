@@ -64,9 +64,9 @@ curl -X POST <baseUrl>/api/v1/requests `
 
 ## Agent Readiness Check
 
-1. `GET /api/v1/status`
+1. `GET <baseUrl>/api/v1/status`
 2. verify `serviceReady=true`
-3. if the task needs live game state, verify `gameReady=true`
-4. read `moddev-usage`
-5. continue with request API calls
+3. if the task needs live game state, verify `gameReady=true` from that `<baseUrl>`
+4. read `GET <baseUrl>/api/v1/skills/moddev-usage/markdown`
+5. continue with `POST <baseUrl>/api/v1/requests`
 

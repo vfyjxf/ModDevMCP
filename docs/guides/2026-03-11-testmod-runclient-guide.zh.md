@@ -64,8 +64,8 @@ curl -X POST <baseUrl>/api/v1/requests `
 
 ## Agent 就绪检查
 
-1. `GET /api/v1/status`
+1. `GET <baseUrl>/api/v1/status`
 2. 确认 `serviceReady=true`
-3. 如果任务依赖真实游戏状态，再确认 `gameReady=true`
-4. 阅读 `moddev-usage`
-5. 再继续执行 request API 调用
+3. 如果任务依赖真实游戏状态，再确认该 `<baseUrl>` 返回的 `gameReady=true`
+4. 读取 `GET <baseUrl>/api/v1/skills/moddev-usage/markdown`
+5. 再继续执行 `POST <baseUrl>/api/v1/requests`
