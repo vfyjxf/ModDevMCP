@@ -20,6 +20,10 @@ class HostArchitectureDocsTest {
         assertTrue(readme.contains("End-user runtime product: `:Mod`"));
         assertTrue(readme.contains("Legacy `Server` and `Plugin` modules are removed from the active build."));
         assertTrue(readme.contains("/api/v1/status"));
+        assertTrue(readme.contains("build/moddevmcp/game-instances.json"));
+        assertTrue(readme.toLowerCase().contains("client and server use separate ports"));
+        assertTrue(readme.contains("default probe"));
+        assertTrue(readme.contains("project-local fallback"));
         assertFalse(readme.contains("host-first architecture"));
         assertFalse(readme.contains(":Server:runStdioMcp"));
         assertFalse(readme.contains(":Server"));

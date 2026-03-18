@@ -34,6 +34,14 @@ curl http://127.0.0.1:47812/api/v1/status
 curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
 ```
 
+如果默认探测不可用，走项目级回退：
+
+- 读取 `<gradleProject>/build/moddevmcp/game-instances.json`
+- 对文件里每个 `baseUrl` 执行 `GET /api/v1/status` 探测
+- 选中可用实例后继续请求
+
+当双端同时活跃时，client 和 server 使用独立端口。
+
 ## 第一批请求
 
 推荐顺序：

@@ -34,6 +34,14 @@ curl http://127.0.0.1:47812/api/v1/status
 curl http://127.0.0.1:47812/api/v1/skills/moddev-usage/markdown
 ```
 
+If the default probe is unavailable, use project-local fallback:
+
+- read `<gradleProject>/build/moddevmcp/game-instances.json`
+- probe each listed `baseUrl` with `GET /api/v1/status`
+- then continue with the live `baseUrl`
+
+When both sides are active, client and server use separate ports.
+
 ## First Requests
 
 Recommended order:

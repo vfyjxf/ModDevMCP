@@ -25,6 +25,13 @@ On branch `feat/http-skill-first-architecture`, the active product is a local HT
 - Service readiness endpoint: `/api/v1/status`
 - Entry markdown explains discovery, request format, and `targetSide` routing rules
 
+## Discovery
+
+- Start with the default probe: `http://127.0.0.1:47812/api/v1/status`
+- If unavailable, use project-local fallback: `<gradleProject>/build/moddevmcp/game-instances.json`
+- Probe each candidate `baseUrl` from that file with `GET /api/v1/status`
+- Client and server use separate ports when both sides are running
+
 ## Exported Skills
 
 The service exports skills to local disk as generated projections. Exported skills are not source-of-truth files.

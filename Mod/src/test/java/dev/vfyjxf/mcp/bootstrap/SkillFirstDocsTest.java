@@ -19,6 +19,10 @@ class SkillFirstDocsTest {
         assertTrue(readme.contains("skill-first service model"));
         assertTrue(readme.contains("moddev-usage"));
         assertTrue(readme.contains("/api/v1/status"));
+        assertTrue(readme.contains("build/moddevmcp/game-instances.json"));
+        assertTrue(readme.toLowerCase().contains("client and server use separate ports"));
+        assertTrue(readme.contains("default probe"));
+        assertTrue(readme.contains("project-local fallback"));
         assertTrue(readme.toLowerCase().contains("exported skills"));
         assertTrue(readme.toLowerCase().contains("local http service"));
         assertFalse(readme.contains(":Server:runStdioMcp"));
@@ -33,6 +37,10 @@ class SkillFirstDocsTest {
         assertTrue(readmeZh.contains("skill-first 服务模型"));
         assertTrue(readmeZh.contains("moddev-usage"));
         assertTrue(readmeZh.contains("/api/v1/status"));
+        assertTrue(readmeZh.contains("build/moddevmcp/game-instances.json"));
+        assertTrue(readmeZh.contains("client 和 server 使用独立端口"));
+        assertTrue(readmeZh.contains("默认探测"));
+        assertTrue(readmeZh.contains("项目级回退"));
         assertTrue(readmeZh.contains("面向最终用户的运行时产品：`:Mod`"));
         assertTrue(readmeZh.contains("导出技能"));
         assertTrue(readmeZh.contains("本地 HTTP 服务"));

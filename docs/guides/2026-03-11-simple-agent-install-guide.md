@@ -27,9 +27,13 @@ The mod exposes a loopback HTTP service from inside the running game.
 
 1. start your normal game run, such as `runClient`
 2. wait for the mod to finish loading
-3. call `GET http://127.0.0.1:47812/api/v1/status`
-4. read `moddev-usage`
-5. continue with `POST /api/v1/requests`
+3. call the default probe `GET http://127.0.0.1:47812/api/v1/status`
+4. if unavailable, use project-local fallback `<gradleProject>/build/moddevmcp/game-instances.json`
+5. probe listed candidates with `GET /api/v1/status` and pick a live `baseUrl`
+6. read `moddev-usage`
+7. continue with `POST /api/v1/requests`
+
+When both sides are active, client and server use separate ports.
 
 ## Exported Skills
 

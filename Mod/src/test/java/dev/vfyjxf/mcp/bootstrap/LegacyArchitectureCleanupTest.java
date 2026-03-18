@@ -36,6 +36,22 @@ class LegacyArchitectureCleanupTest {
             assertTrue(content.contains("/api/v1/status"), guide + " should point to the status endpoint");
             assertTrue(content.contains("moddev-usage"), guide + " should point to the entry skill");
             assertTrue(content.contains("/api/v1/requests"), guide + " should describe request execution");
+            assertTrue(content.contains("build/moddevmcp/game-instances.json"), guide + " should document project-local discovery fallback");
+            assertTrue(
+                    content.contains("default probe")
+                            || content.contains("默认探测"),
+                    guide + " should document default probe first"
+            );
+            assertTrue(
+                    content.contains("project-local fallback")
+                            || content.contains("项目级回退"),
+                    guide + " should document project-local fallback"
+            );
+            assertTrue(
+                    content.contains("separate ports")
+                            || content.contains("独立端口"),
+                    guide + " should document separate client/server ports"
+            );
             assertFalse(content.contains("createMcpClientFiles"), guide + " should not mention generated MCP client files");
             assertFalse(content.contains("moddev.status"), guide + " should not mention legacy tool names");
             assertFalse(content.contains("moddev.ui_get_live_screen"), guide + " should not mention legacy tool names");
