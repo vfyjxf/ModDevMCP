@@ -60,6 +60,11 @@ public final class MinecraftInputController implements InputController {
                     case "move" -> moveCommand(arguments, metrics);
                     case "hover" -> hoverCommand(arguments, metrics);
                     case "key_press" -> keyPressCommand(arguments);
+                    case "key_down" -> keyDownCommand(arguments);
+                    case "key_up" -> keyUpCommand(arguments);
+                    case "key_click" -> keyClickCommand(arguments);
+                    case "mouse_down" -> mouseDownCommand(arguments, metrics);
+                    case "mouse_up" -> mouseUpCommand(arguments, metrics);
                     case "type_text" -> typeTextCommand(arguments);
                     default -> null;
                 };
@@ -139,9 +144,6 @@ public final class MinecraftInputController implements InputController {
     }
 
     private ResolvedPoint resolvePoint(Map<String, Object> arguments, ClientScreenMetrics metrics) {
-        if (metrics.screenClass() == null || metrics.screenClass().isBlank()) {
-            throw new IllegalArgumentException("game_unavailable: no active client screen");
-        }
         var rawX = numberArgument(arguments, "x");
         var rawY = numberArgument(arguments, "y");
         var coordinateSpace = stringArgument(arguments, "coordinateSpace", "gui");
@@ -157,13 +159,59 @@ public final class MinecraftInputController implements InputController {
     }
 
     private InputCommand keyPressCommand(Map<String, Object> arguments) {
+        return keyClickCommand("key_press", arguments);
+    }
+
+    private InputCommand keyDownCommand(Map<String, Object> arguments) {
+        return keyClickCommand("key_down", arguments);
+    }
+
+    private InputCommand keyUpCommand(Map<String, Object> arguments) {
+        return keyClickCommand("key_up", arguments);
+    }
+
+    private InputCommand keyClickCommand(Map<String, Object> arguments) {
+        return keyClickCommand("key_click", arguments);
+    }
+
+    private InputCommand keyClickCommand(String action, Map<String, Object> arguments) {
         return new InputCommand(
-                "key_press",
+                action,
                 0.0d,
                 0.0d,
                 0,
                 intArgument(arguments, "keyCode", -1),
                 intArgument(arguments, "scanCode", 0),
+                intArgument(arguments, "modifiers", 0),
+                null,
+                0
+        );
+    }
+
+    private InputCommand mouseDownCommand(Map<String, Object> arguments, ClientScreenMetrics metrics) {
+        var point = resolvePoint(arguments, metrics);
+        return new InputCommand(
+                "mouse_down",
+                point.x(),
+                point.y(),
+                intArgument(arguments, "button", 0),
+                0,
+                0,
+                intArgument(arguments, "modifiers", 0),
+                null,
+                0
+        );
+    }
+
+    private InputCommand mouseUpCommand(Map<String, Object> arguments, ClientScreenMetrics metrics) {
+        var point = resolvePoint(arguments, metrics);
+        return new InputCommand(
+                "mouse_up",
+                point.x(),
+                point.y(),
+                intArgument(arguments, "button", 0),
+                0,
+                0,
                 intArgument(arguments, "modifiers", 0),
                 null,
                 0

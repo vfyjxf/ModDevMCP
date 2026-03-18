@@ -482,7 +482,9 @@ class UiToolInvocationTest {
         var registries = new RuntimeRegistries();
         var controller = new RecordingInputController(OperationResult.success(null));
         registries.inputControllers().add(controller);
-        new UiToolProvider(registries).register(server.registry());
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.InputScreen", 320, 240, 854, 480)
+        )).register(server.registry());
 
         var tool = server.registry().findTool("moddev.ui_press_key").orElseThrow();
         var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
@@ -504,7 +506,9 @@ class UiToolInvocationTest {
         var registries = new RuntimeRegistries();
         var controller = new RecordingInputController(OperationResult.success(null));
         registries.inputControllers().add(controller);
-        new UiToolProvider(registries).register(server.registry());
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics("custom.InputScreen", 320, 240, 854, 480)
+        )).register(server.registry());
 
         var tool = server.registry().findTool("moddev.ui_type_text").orElseThrow();
         var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
@@ -516,6 +520,22 @@ class UiToolInvocationTest {
         var payload = (Map<String, Object>) result.value();
         assertEquals("type_text", payload.get("action"));
         assertEquals("type_text", controller.lastAction.get());
+    }
+
+    @Test
+    void uiPressKeyFailsWhenNoActiveScreenIsAvailable() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.inputControllers().add(new RecordingInputController(OperationResult.success(null)));
+        new UiToolProvider(registries).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_press_key").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "keyCode", 69
+        ));
+
+        assertFalse(result.success());
+        assertEquals("screen_unavailable", result.error());
     }
 
     @Test

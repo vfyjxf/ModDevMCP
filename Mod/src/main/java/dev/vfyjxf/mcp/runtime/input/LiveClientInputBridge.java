@@ -57,7 +57,11 @@ final class LiveClientInputBridge implements ClientInputBridge {
             case "click" -> click(screen, command);
             case "move" -> move(screen, command);
             case "hover" -> hover(screen, command);
-            case "key_press" -> keyPress(screen, command);
+            case "mouse_down" -> mouseDown(command);
+            case "mouse_up" -> mouseUp(command);
+            case "key_press", "key_click" -> keyClick(screen, command);
+            case "key_down" -> keyDown(command);
+            case "key_up" -> keyUp(command);
             case "type_text" -> typeText(screen, command);
             default -> OperationResult.rejected("unsupported input action: " + command.action());
         };
@@ -99,7 +103,7 @@ final class LiveClientInputBridge implements ClientInputBridge {
                 : OperationResult.rejected("click was not handled by current screen");
     }
 
-    private OperationResult<Void> keyPress(Screen screen, InputCommand command) {
+    private OperationResult<Void> keyClick(Screen screen, InputCommand command) {
         var minecraft = Minecraft.getInstance();
         if (screen != null) {
             var focusedTextInput = focusedTextInput(screen);
@@ -107,11 +111,46 @@ final class LiveClientInputBridge implements ClientInputBridge {
                 return OperationResult.success(null);
             }
         }
-        return KeyboardInputRouter.keyPress(
+        return KeyboardInputRouter.keyClick(
                 command,
                 screen == null ? null : new ScreenKeyboardInput(screen),
                 new MinecraftKeyboardInput(minecraft)
         );
+    }
+
+    private OperationResult<Void> keyDown(InputCommand command) {
+        return KeyboardInputRouter.keyDown(command, new MinecraftKeyboardInput(Minecraft.getInstance()));
+    }
+
+    private OperationResult<Void> keyUp(InputCommand command) {
+        return KeyboardInputRouter.keyUp(command, new MinecraftKeyboardInput(Minecraft.getInstance()));
+    }
+
+    private OperationResult<Void> mouseDown(InputCommand command) {
+        return mouseButton(command, GLFW.GLFW_PRESS);
+    }
+
+    private OperationResult<Void> mouseUp(InputCommand command) {
+        return mouseButton(command, GLFW.GLFW_RELEASE);
+    }
+
+    private OperationResult<Void> mouseButton(InputCommand command, int action) {
+        var minecraft = Minecraft.getInstance();
+        var windowHandle = minecraft.getWindow().getWindow();
+        try {
+            var onPress = minecraft.mouseHandler.getClass().getDeclaredMethod(
+                    "onPress",
+                    long.class,
+                    int.class,
+                    int.class,
+                    int.class
+            );
+            onPress.setAccessible(true);
+            onPress.invoke(minecraft.mouseHandler, windowHandle, command.button(), action, command.modifiers());
+            return OperationResult.success(null);
+        } catch (ReflectiveOperationException exception) {
+            return OperationResult.rejected("mouse button injection failed: " + exception.getMessage());
+        }
     }
 
     private FocusedTextShortcutHandler.FocusedTextInput focusedTextInput(Screen screen) {

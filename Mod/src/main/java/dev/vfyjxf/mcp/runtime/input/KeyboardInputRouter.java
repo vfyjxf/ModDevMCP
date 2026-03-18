@@ -20,11 +20,29 @@ final class KeyboardInputRouter {
             ScreenInput screenInput,
             FallbackInput fallbackInput
     ) {
+        return keyClick(command, screenInput, fallbackInput);
+    }
+
+    static OperationResult<Void> keyClick(
+            InputCommand command,
+            ScreenInput screenInput,
+            FallbackInput fallbackInput
+    ) {
         if (command.modifiers() != 0) {
             dispatchModifiedKeyPress(command, fallbackInput);
             return OperationResult.success(null);
         }
         dispatchPlainKeyPress(command, fallbackInput);
+        return OperationResult.success(null);
+    }
+
+    static OperationResult<Void> keyDown(InputCommand command, FallbackInput fallbackInput) {
+        fallbackInput.dispatchKeyDown(command.keyCode(), command.scanCode(), command.modifiers());
+        return OperationResult.success(null);
+    }
+
+    static OperationResult<Void> keyUp(InputCommand command, FallbackInput fallbackInput) {
+        fallbackInput.dispatchKeyUp(command.keyCode(), command.scanCode(), command.modifiers());
         return OperationResult.success(null);
     }
 

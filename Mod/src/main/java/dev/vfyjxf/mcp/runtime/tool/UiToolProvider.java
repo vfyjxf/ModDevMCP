@@ -1566,6 +1566,10 @@ public final class UiToolProvider implements McpToolProvider {
     }
 
     private ToolResult inputActionResult(String action, Map<String, Object> arguments) {
+        var unavailable = unavailableScreenResult(arguments);
+        if (unavailable != null) {
+            return unavailable;
+        }
         var delegatedArguments = new java.util.LinkedHashMap<String, Object>();
         delegatedArguments.putAll(arguments);
         delegatedArguments.put("action", action);

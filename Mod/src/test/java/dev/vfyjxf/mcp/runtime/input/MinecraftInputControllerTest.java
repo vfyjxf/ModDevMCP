@@ -129,6 +129,43 @@ class MinecraftInputControllerTest {
     }
 
     @Test
+    void keyDownDispatchesLiteralRawKeyCommandWithoutScreen() {
+        var bridge = new RecordingClientInputBridge(
+                new ClientScreenMetrics(null, 569, 320, 854, 480),
+                OperationResult.success(null)
+        );
+        var controller = new MinecraftInputController(bridge);
+
+        var result = controller.perform("key_down", Map.of(
+                "keyCode", 341,
+                "modifiers", 0
+        ));
+
+        assertTrue(result.accepted());
+        assertEquals("key_down", bridge.lastCommand.action());
+        assertEquals(341, bridge.lastCommand.keyCode());
+    }
+
+    @Test
+    void keyClickDispatchesLiteralRawKeyClickCommandWithoutScreen() {
+        var bridge = new RecordingClientInputBridge(
+                new ClientScreenMetrics(null, 569, 320, 854, 480),
+                OperationResult.success(null)
+        );
+        var controller = new MinecraftInputController(bridge);
+
+        var result = controller.perform("key_click", Map.of(
+                "keyCode", 88,
+                "modifiers", 2
+        ));
+
+        assertTrue(result.accepted());
+        assertEquals("key_click", bridge.lastCommand.action());
+        assertEquals(88, bridge.lastCommand.keyCode());
+        assertEquals(2, bridge.lastCommand.modifiers());
+    }
+
+    @Test
     void uiIntentInventoryDispatchesKeyPressCommand() {
         var bridge = new RecordingClientInputBridge(
                 new ClientScreenMetrics("net.minecraft.client.gui.screens.inventory.InventoryScreen", 569, 320, 854, 480),

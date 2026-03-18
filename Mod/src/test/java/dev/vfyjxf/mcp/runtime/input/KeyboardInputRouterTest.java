@@ -79,6 +79,32 @@ class KeyboardInputRouterTest {
         );
     }
 
+    @Test
+    void keyDownDispatchesOnlyKeyDownEvent() {
+        var fallback = new RecordingFallbackInput();
+
+        var result = KeyboardInputRouter.keyDown(
+                new InputCommand("key_down", 0.0d, 0.0d, 0, KEY_A, 0, 0, null, 0),
+                fallback
+        );
+
+        assertTrue(result.accepted());
+        assertEquals(List.of("down:" + KEY_A), fallback.events);
+    }
+
+    @Test
+    void keyUpDispatchesOnlyKeyUpEvent() {
+        var fallback = new RecordingFallbackInput();
+
+        var result = KeyboardInputRouter.keyUp(
+                new InputCommand("key_up", 0.0d, 0.0d, 0, KEY_A, 0, 0, null, 0),
+                fallback
+        );
+
+        assertTrue(result.accepted());
+        assertEquals(List.of("up:" + KEY_A), fallback.events);
+    }
+
     private static final class RecordingScreenInput implements KeyboardInputRouter.ScreenInput {
 
         private final boolean keyPressedResult;

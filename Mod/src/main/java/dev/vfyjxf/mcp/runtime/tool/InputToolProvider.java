@@ -27,7 +27,22 @@ public final class InputToolProvider implements McpToolProvider {
                         Map.of(
                                 "type", "object",
                                 "properties", Map.ofEntries(
-                                        Map.entry("action", Map.of("type", "string")),
+                                        Map.entry("action", Map.of(
+                                                "type", "string",
+                                                "enum", List.of(
+                                                        "click",
+                                                        "move",
+                                                        "hover",
+                                                        "mouse_down",
+                                                        "mouse_up",
+                                                        "key_press",
+                                                        "key_down",
+                                                        "key_up",
+                                                        "key_click",
+                                                        "type_text",
+                                                        "ui_intent"
+                                                )
+                                        )),
                                         Map.entry("screenClass", Map.of("type", "string")),
                                         Map.entry("coordinateSpace", Map.of("type", "string")),
                                         Map.entry("x", Map.of("type", "number")),

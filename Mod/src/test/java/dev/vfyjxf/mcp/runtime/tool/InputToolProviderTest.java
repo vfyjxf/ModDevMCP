@@ -135,6 +135,28 @@ class InputToolProviderTest {
         assertEquals(1, second.calls.get());
     }
 
+    @Test
+    void inputActionForwardsRawKeyDownArgumentsToController() {
+        var registries = new RuntimeRegistries();
+        var controller = new RecordingInputController(OperationResult.success(null));
+        registries.inputControllers().add(controller);
+
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        new InputToolProvider(registries).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.input_action").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "action", "key_down",
+                "keyCode", 341
+        ));
+
+        assertTrue(result.success());
+        assertEquals(Map.of(
+                "action", "key_down",
+                "keyCode", 341
+        ), controller.lastArguments);
+    }
+
     private static final class RecordingInputController implements InputController {
 
         private final OperationResult<Void> result;
