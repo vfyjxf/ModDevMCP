@@ -1,0 +1,95 @@
+package dev.vfyjxf.moddev.runtime.tool;
+
+import dev.vfyjxf.moddev.runtime.game.GameCloser;
+import dev.vfyjxf.moddev.server.ModDevMcpServer;
+import dev.vfyjxf.moddev.server.api.ToolCallContext;
+import dev.vfyjxf.moddev.server.runtime.McpToolRegistry;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class GameToolProviderTest {
+
+    @Test
+    void gameCloseToolDefinesSideSpecificSchema() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        GameToolProvider.clientOnly(() -> true).register(server.registry());
+
+        var definition = server.registry().findTool("moddev.game_close", "client").orElseThrow().definition();
+
+        assertEquals("client", definition.side());
+        assertEquals(List.of("game", "lifecycle"), definition.tags());
+        assertEquals("object", definition.inputSchema().get("type"));
+        assertTrue(((Map<?, ?>) definition.inputSchema().get("properties")).containsKey("targetSide"));
+        assertEquals("object", definition.outputSchema().get("type"));
+        assertEquals(List.of("accepted", "runtimeId", "runtimeSide"), definition.outputSchema().get("required"));
+    }
+
+    @Test
+    void gameCloseToolRequestsShutdownAndReturnsAcceptedPayloadForClientRuntime() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var closer = new RecordingGameCloser(true);
+        GameToolProvider.clientOnly(closer).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.game_close", "client").orElseThrow();
+        var result = tool.handler().handle(new ToolCallContext("client", Map.of("runtimeId", "client-runtime")), Map.of("targetSide", "client"));
+
+        assertTrue(result.success());
+        assertEquals(1, closer.calls.get());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals(true, payload.get("accepted"));
+        assertEquals("client-runtime", payload.get("runtimeId"));
+        assertEquals("client", payload.get("runtimeSide"));
+    }
+
+    @Test
+    void gameCloseToolRequestsShutdownAndReturnsAcceptedPayloadForServerRuntime() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var closer = new RecordingGameCloser(true);
+        GameToolProvider.serverOnly(closer).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.game_close", "server").orElseThrow();
+        var result = tool.handler().handle(new ToolCallContext("server", Map.of("runtimeId", "server-runtime")), Map.of("targetSide", "server"));
+
+        assertTrue(result.success());
+        assertEquals(1, closer.calls.get());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals(true, payload.get("accepted"));
+        assertEquals("server-runtime", payload.get("runtimeId"));
+        assertEquals("server", payload.get("runtimeSide"));
+    }
+
+    @Test
+    void gameCloseToolReturnsFailureWhenRuntimeRejectsShutdown() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        GameToolProvider.clientOnly(() -> false).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.game_close", "client").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of());
+
+        assertFalse(result.success());
+        assertEquals("game_close_rejected", result.error());
+    }
+
+    private record RecordingGameCloser(AtomicInteger calls, boolean result) implements GameCloser {
+
+        private RecordingGameCloser(boolean result) {
+            this(new AtomicInteger(), result);
+        }
+
+        @Override
+        public boolean requestClose() {
+            calls.incrementAndGet();
+            return result;
+        }
+    }
+}
+

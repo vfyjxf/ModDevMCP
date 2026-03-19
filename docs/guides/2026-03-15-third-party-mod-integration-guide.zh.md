@@ -101,15 +101,15 @@ ModDevMCP 现在把 tool 注册拆成三类 side：
 ### 最小 Common Tool 示例
 
 ```java
-package com.example.examplemod.mcp;
+package com.example.examplemod.moddev;
 
-import dev.vfyjxf.mcp.api.event.RegisterCommonMcpToolsEvent;
-import dev.vfyjxf.mcp.api.registrar.CommonMcpRegistrar;
-import dev.vfyjxf.mcp.api.registrar.CommonMcpToolRegistrar;
-import dev.vfyjxf.mcp.server.api.McpToolDefinition;
-import dev.vfyjxf.mcp.server.api.McpToolProvider;
-import dev.vfyjxf.mcp.server.api.ToolResult;
-import dev.vfyjxf.mcp.server.runtime.McpToolRegistry;
+import dev.vfyjxf.moddev.api.event.RegisterCommonMcpToolsEvent;
+import dev.vfyjxf.moddev.api.registrar.CommonMcpRegistrar;
+import dev.vfyjxf.moddev.api.registrar.CommonMcpToolRegistrar;
+import dev.vfyjxf.moddev.server.api.McpToolDefinition;
+import dev.vfyjxf.moddev.server.api.McpToolProvider;
+import dev.vfyjxf.moddev.server.api.ToolResult;
+import dev.vfyjxf.moddev.server.runtime.McpToolRegistry;
 
 import java.util.List;
 import java.util.Map;
@@ -154,11 +154,11 @@ public final class ExampleCommonRegistrar implements CommonMcpToolRegistrar {
 ### 最小 Client Tool 示例
 
 ```java
-package com.example.examplemod.mcp;
+package com.example.examplemod.moddev;
 
-import dev.vfyjxf.mcp.api.event.RegisterClientMcpToolsEvent;
-import dev.vfyjxf.mcp.api.registrar.ClientMcpRegistrar;
-import dev.vfyjxf.mcp.api.registrar.ClientMcpToolRegistrar;
+import dev.vfyjxf.moddev.api.event.RegisterClientMcpToolsEvent;
+import dev.vfyjxf.moddev.api.registrar.ClientMcpRegistrar;
+import dev.vfyjxf.moddev.api.registrar.ClientMcpToolRegistrar;
 
 @ClientMcpRegistrar
 public final class ExampleClientRegistrar implements ClientMcpToolRegistrar {

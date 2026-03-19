@@ -1,0 +1,27 @@
+package dev.vfyjxf.moddev.runtime.ui;
+
+import dev.vfyjxf.moddev.api.runtime.UiContext;
+import dev.vfyjxf.moddev.api.ui.SnapshotOptions;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class FallbackRegionUiDriverTest {
+
+    @Test
+    void fallbackDriverMatchesUnknownScreensAndReturnsViewportTarget() {
+        var driver = new FallbackRegionUiDriver();
+        var context = new TestUiContext("custom.UnknownScreen");
+
+        assertTrue(driver.matches(context));
+
+        var snapshot = driver.snapshot(context, SnapshotOptions.DEFAULT);
+
+        assertEquals("fallback-region", snapshot.driverId());
+        assertFalse(snapshot.targets().isEmpty());
+    }
+
+    private record TestUiContext(String screenClass) implements UiContext {
+    }
+}
+
