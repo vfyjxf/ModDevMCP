@@ -37,13 +37,47 @@ final class KeyboardInputRouter {
     }
 
     static OperationResult<Void> keyDown(InputCommand command, FallbackInput fallbackInput) {
-        fallbackInput.dispatchKeyDown(command.keyCode(), command.scanCode(), command.modifiers());
+        return keyDown(command, fallbackInput, null);
+    }
+
+    static OperationResult<Void> keyDown(
+            InputCommand command,
+            FallbackInput fallbackInput,
+            VirtualModifierState virtualModifierState
+    ) {
+        fallbackInput.dispatchKeyDown(
+                command.keyCode(),
+                command.scanCode(),
+                mergedModifiers(command.modifiers(), virtualModifierState)
+        );
         return OperationResult.success(null);
     }
 
     static OperationResult<Void> keyUp(InputCommand command, FallbackInput fallbackInput) {
-        fallbackInput.dispatchKeyUp(command.keyCode(), command.scanCode(), command.modifiers());
+        return keyUp(command, fallbackInput, null);
+    }
+
+    static OperationResult<Void> keyUp(
+            InputCommand command,
+            FallbackInput fallbackInput,
+            VirtualModifierState virtualModifierState
+    ) {
+        fallbackInput.dispatchKeyUp(
+                command.keyCode(),
+                command.scanCode(),
+                mergedModifiers(command.modifiers(), virtualModifierState)
+        );
         return OperationResult.success(null);
+    }
+
+    /**
+     * Applies currently held virtual modifiers on top of per-command modifier bits.
+     */
+    private static int mergedModifiers(int commandModifiers, VirtualModifierState virtualModifierState) {
+        if (virtualModifierState == null) {
+            return commandModifiers;
+        }
+        return commandModifiers | virtualModifierState.modifierBits();
     }
 
     private static void dispatchPlainKeyPress(InputCommand command, FallbackInput fallbackInput) {

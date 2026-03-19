@@ -12,6 +12,7 @@ class KeyboardInputRouterTest {
 
     private static final int KEY_A = 65;
     private static final int KEY_LEFT_CONTROL = 341;
+    private static final int KEY_LEFT_SHIFT = 340;
     private static final int MOD_CONTROL = 2;
 
     @Test
@@ -105,6 +106,22 @@ class KeyboardInputRouterTest {
         assertEquals(List.of("up:" + KEY_A), fallback.events);
     }
 
+    @Test
+    void explicitModifierHoldAppliesToLaterPlainKeyEvents() {
+        var state = new VirtualModifierState();
+        var fallback = new RecordingFallbackInput();
+
+        state.keyDown(KEY_LEFT_SHIFT);
+        var result = KeyboardInputRouter.keyDown(command(KEY_A, 0), fallback, state);
+
+        assertTrue(result.accepted());
+        assertEquals(List.of("down:65:1"), fallback.eventsWithModifiers);
+    }
+
+    private static InputCommand command(int keyCode, int modifiers) {
+        return new InputCommand("key_down", 0.0d, 0.0d, 0, keyCode, 0, modifiers, null, 0);
+    }
+
     private static final class RecordingScreenInput implements KeyboardInputRouter.ScreenInput {
 
         private final boolean keyPressedResult;
@@ -142,15 +159,18 @@ class KeyboardInputRouterTest {
     private static final class RecordingFallbackInput implements KeyboardInputRouter.FallbackInput {
 
         private final List<String> events = new ArrayList<>();
+        private final List<String> eventsWithModifiers = new ArrayList<>();
 
         @Override
         public void dispatchKeyDown(int keyCode, int scanCode, int modifiers) {
             events.add("down:" + keyCode);
+            eventsWithModifiers.add("down:" + keyCode + ":" + modifiers);
         }
 
         @Override
         public void dispatchKeyUp(int keyCode, int scanCode, int modifiers) {
             events.add("up:" + keyCode);
+            eventsWithModifiers.add("up:" + keyCode + ":" + modifiers);
         }
     }
 }
