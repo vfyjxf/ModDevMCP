@@ -68,6 +68,8 @@ curl http://127.0.0.1:47812/api/v1/status
 ## 说明
 
 - 本 README 用来锁定当前产品边界与服务术语。
+- 	ools/ 下 legacy MCP/JSON-RPC 辅助脚本已经移出当前活跃流程。
 - 使用方只需要引入发布后的 `dev.vfyjxf:moddevmcp` 依赖。
 - 英文版本：`README.md`
+
 

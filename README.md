@@ -68,6 +68,8 @@ If `serviceReady=true`, read `moddev-usage` first and continue with category or 
 ## Notes
 
 - This README locks the current product boundary and service terminology.
+- Legacy MCP/JSON-RPC helper scripts under 	ools/ are removed from the active workflow.
 - Consumer projects only need the published `dev.vfyjxf:moddevmcp` dependency.
 - Chinese version: `README.zh.md`
+
 
