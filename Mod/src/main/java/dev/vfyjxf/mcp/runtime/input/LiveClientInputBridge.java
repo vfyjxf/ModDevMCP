@@ -106,9 +106,15 @@ final class LiveClientInputBridge implements ClientInputBridge {
 
     private OperationResult<Void> keyClick(Screen screen, InputCommand command) {
         var minecraft = Minecraft.getInstance();
+        var effectiveModifiers = KeyboardInputRouter.mergedModifiers(command.modifiers(), virtualModifierState);
         if (screen != null) {
             var focusedTextInput = focusedTextInput(screen);
-            if (focusedTextInput != null && FocusedTextShortcutHandler.tryHandle(command, focusedTextInput, new MinecraftClipboardAccess(minecraft))) {
+            if (focusedTextInput != null && FocusedTextShortcutHandler.tryHandle(
+                    command.keyCode(),
+                    effectiveModifiers,
+                    focusedTextInput,
+                    new MinecraftClipboardAccess(minecraft)
+            )) {
                 return OperationResult.success(null);
             }
         }

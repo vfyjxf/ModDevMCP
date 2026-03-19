@@ -97,7 +97,7 @@ final class KeyboardInputRouter {
     /**
      * Applies currently held virtual modifiers on top of per-command modifier bits.
      */
-    private static int mergedModifiers(int commandModifiers, VirtualModifierState virtualModifierState) {
+    static int mergedModifiers(int commandModifiers, VirtualModifierState virtualModifierState) {
         if (virtualModifierState == null) {
             return commandModifiers;
         }

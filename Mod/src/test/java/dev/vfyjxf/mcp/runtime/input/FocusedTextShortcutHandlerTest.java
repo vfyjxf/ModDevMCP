@@ -43,6 +43,23 @@ class FocusedTextShortcutHandlerTest {
         assertEquals("abc", input.value());
     }
 
+    @Test
+    void persistedPrimaryModifierCanTriggerShortcutEvenWhenCommandModifierIsEmpty() {
+        var input = new RecordingFocusedTextInput("abc");
+        var clipboard = new RecordingClipboardAccess();
+
+        var handled = FocusedTextShortcutHandler.tryHandle(
+                KEY_A,
+                MOD_CONTROL,
+                input,
+                clipboard
+        );
+        input.insertText("z");
+
+        assertTrue(handled);
+        assertEquals("z", input.value());
+    }
+
     private static final class RecordingFocusedTextInput implements FocusedTextShortcutHandler.FocusedTextInput {
 
         private String value;

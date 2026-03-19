@@ -10,13 +10,22 @@ final class FocusedTextShortcutHandler {
     }
 
     static boolean tryHandle(InputCommand command, FocusedTextInput focusedTextInput, ClipboardAccess clipboardAccess) {
+        return tryHandle(command.keyCode(), command.modifiers(), focusedTextInput, clipboardAccess);
+    }
+
+    static boolean tryHandle(
+            int keyCode,
+            int modifiers,
+            FocusedTextInput focusedTextInput,
+            ClipboardAccess clipboardAccess
+    ) {
         if (focusedTextInput == null || clipboardAccess == null) {
             return false;
         }
-        if (!isPrimaryShortcut(command.modifiers())) {
+        if (!isPrimaryShortcut(modifiers)) {
             return false;
         }
-        return switch (command.keyCode()) {
+        return switch (keyCode) {
             case GLFW.GLFW_KEY_A -> {
                 focusedTextInput.selectAll();
                 yield true;
