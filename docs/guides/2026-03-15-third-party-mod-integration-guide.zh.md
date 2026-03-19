@@ -15,7 +15,7 @@ Updated: 2026-03-16 00:55 CST
 
 典型场景：
 
-- 暴露新的 MCP tools
+- 暴露新的 runtime tools
 - 把 tool 调用路由到你自己 mod 的 client 或 server 逻辑
 - 为自定义 screen / UI 框架补充更丰富的 UI inspect 或 capture 支持
 
@@ -23,7 +23,7 @@ Updated: 2026-03-16 00:55 CST
 
 先按这个规则判断：
 
-- 如果你是要暴露新的 MCP tool，用 tool registrar
+- 如果你是要暴露新的 runtime tool，用 tool registrar
 - 如果你是要让 ModDevMCP 现有的 UI、input、capture 工具直接理解你的 runtime 对象，用 runtime adapter
 
 当前推荐：
@@ -68,15 +68,15 @@ ModDevMCP 现在把 tool 注册拆成三类 side：
 
 对应接口：
 
-- `CommonMcpToolRegistrar`
-- `ClientMcpToolRegistrar`
-- `ServerMcpToolRegistrar`
+- `CommonOperationRegistrar`
+- `ClientOperationRegistrar`
+- `ServerOperationRegistrar`
 
 对应注册事件：
 
-- `RegisterCommonMcpToolsEvent`
-- `RegisterClientMcpToolsEvent`
-- `RegisterServerMcpToolsEvent`
+- `RegisterCommonOperationsEvent`
+- `RegisterClientOperationsEvent`
+- `RegisterServerOperationsEvent`
 
 每个 registrar：
 
@@ -103,9 +103,9 @@ ModDevMCP 现在把 tool 注册拆成三类 side：
 ```java
 package com.example.examplemod.moddev;
 
-import dev.vfyjxf.moddev.api.event.RegisterCommonMcpToolsEvent;
+import dev.vfyjxf.moddev.api.event.RegisterCommonOperationsEvent;
 import dev.vfyjxf.moddev.api.registrar.CommonMcpRegistrar;
-import dev.vfyjxf.moddev.api.registrar.CommonMcpToolRegistrar;
+import dev.vfyjxf.moddev.api.registrar.CommonOperationRegistrar;
 import dev.vfyjxf.moddev.server.api.McpToolDefinition;
 import dev.vfyjxf.moddev.server.api.McpToolProvider;
 import dev.vfyjxf.moddev.server.api.ToolResult;
@@ -115,10 +115,10 @@ import java.util.List;
 import java.util.Map;
 
 @CommonMcpRegistrar
-public final class ExampleCommonRegistrar implements CommonMcpToolRegistrar {
+public final class ExampleCommonRegistrar implements CommonOperationRegistrar {
 
     @Override
-    public void register(RegisterCommonMcpToolsEvent event) {
+    public void register(RegisterCommonOperationsEvent event) {
         event.registerToolProvider(new ExampleToolProvider());
         event.publishEvent(new EventEnvelope("examplemod", "common-registered", System.currentTimeMillis(), Map.of()));
     }
@@ -156,15 +156,15 @@ public final class ExampleCommonRegistrar implements CommonMcpToolRegistrar {
 ```java
 package com.example.examplemod.moddev;
 
-import dev.vfyjxf.moddev.api.event.RegisterClientMcpToolsEvent;
+import dev.vfyjxf.moddev.api.event.RegisterClientOperationsEvent;
 import dev.vfyjxf.moddev.api.registrar.ClientMcpRegistrar;
-import dev.vfyjxf.moddev.api.registrar.ClientMcpToolRegistrar;
+import dev.vfyjxf.moddev.api.registrar.ClientOperationRegistrar;
 
 @ClientMcpRegistrar
-public final class ExampleClientRegistrar implements ClientMcpToolRegistrar {
+public final class ExampleClientRegistrar implements ClientOperationRegistrar {
 
     @Override
-    public void register(RegisterClientMcpToolsEvent event) {
+    public void register(RegisterClientOperationsEvent event) {
         event.registerToolProvider(new ExampleClientToolProvider());
         event.registerUiDriver(new ExampleScreenUiDriver());
     }
@@ -182,7 +182,7 @@ public final class ExampleClientRegistrar implements ClientMcpToolRegistrar {
 - 返回结构化 payload，不要直接丢日志
 - 如果一个 tool 可能同时作用于 client 和 server runtime，side 路由要写清楚
 
-如果这本质上是你 mod 的专属操作，优先加新 tool，而不是去挤现有的通用 ModDevMCP tool。
+如果这本质上是你 mod 的专属操作，优先加新 tool，而不是去挤现有的通用 ModDevMCP runtime tool。
 
 ## Runtime Adapter API
 
@@ -213,7 +213,7 @@ event.publishEvent(new EventEnvelope("examplemod", "registered", System.currentT
 - `includeDrivers`
 - `excludeDrivers`
 
-下游 adapter 也应该预期 `moddev.ui_get_live_screen` 会返回 `drivers[]`，而 `driverId` 现在表示默认或推荐 driver，不再意味着它是唯一匹配。
+下游 adapter 也应该预期 `status.live_screen (via POST /api/v1/requests)` 会返回 `drivers[]`，而 `driverId` 现在表示默认或推荐 driver，不再意味着它是唯一匹配。
 
 ### 最小 `UiDriver` 形状
 
@@ -293,7 +293,7 @@ public final class ExampleOffscreenCaptureProvider implements UiOffscreenCapture
 建议按这个顺序做：
 
 1. 先加 registrar 和一个聚焦的 tool provider，先把 mod 专属能力暴露出来
-2. 在真实 MCP 会话里验证 tool contract
+2. 在真实 服务会话里验证 tool contract
 3. 只有在通用 UI 工具必须直接理解你的 screen 框架时，再补 `UiDriver` 或 capture provider
 
 这样集成更小，也能避免过早把你的 mod 绑死在 ModDevMCP 内部细节上。
@@ -310,11 +310,11 @@ public final class ExampleOffscreenCaptureProvider implements UiOffscreenCapture
 推荐下游验证顺序：
 
 1. 引入发布好的 `dev.vfyjxf:moddevmcp` 依赖和 `dev.vfyjxf.moddevmcp` 插件
-2. 用 `createMcpClientFiles` 生成 MCP client 配置
+2. 用 `service discovery probes` 生成 agent client 配置
 3. 启动 `runClient`
-4. 连接 MCP client，先调用 `moddev.status`
+4. 连接 agent client，先调用 `GET /api/v1/status`
 5. 调用你新增的 tool
-6. 如果你还加了 UI adapter，再验证 `moddev.ui_get_live_screen`、`moddev.ui_snapshot`、`moddev.ui_capture`
+6. 如果你还加了 UI adapter，再验证 `status.live_screen (via POST /api/v1/requests)`、`moddev.ui_snapshot`、`moddev.ui_capture`
 7. 如果多个 driver 可以共存，再验证 `driverId`、`includeDrivers`、`excludeDrivers`
 8. 如果你需要的是原始键盘或鼠标事件注入，改用 `moddev.input_action`，不要混进 UI 语义工具
 

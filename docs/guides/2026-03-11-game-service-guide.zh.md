@@ -1,4 +1,4 @@
-# 2026-03-11 Game MCP 指南
+# 2026-03-11 Game Service 指南
 
 Date: 2026-03-11 17:20 CST
 

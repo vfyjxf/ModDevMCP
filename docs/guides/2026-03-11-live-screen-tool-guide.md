@@ -5,7 +5,7 @@ Updated: 2026-03-15 00:05 CST
 
 ## Purpose
 
-Use `moddev.ui_get_live_screen` to ask the running Minecraft client:
+Use `status.live_screen (via POST /api/v1/requests)` to ask the running Minecraft client:
 
 - whether a screen is active
 - which `screenClass` is currently open
@@ -18,7 +18,7 @@ Use `moddev.ui_get_live_screen` to ask the running Minecraft client:
 
 ```json
 {
-  "name": "moddev.ui_get_live_screen",
+  "name": "status.live_screen (via POST /api/v1/requests)",
   "arguments": {
     "includeDrivers": [
       "vanilla-screen"
@@ -58,15 +58,15 @@ Use `moddev.ui_get_live_screen` to ask the running Minecraft client:
 
 ## Recommended Use
 
-1. install the generated MCP config into your MCP client
+1. install the generated service config into your agent client
 2. start the game
 3. connect the agent
-4. call `moddev.status`
-5. continue only if `gameConnected=true`
-6. call `moddev.ui_get_live_screen`
+4. call `GET /api/v1/status`
+5. continue only if `gameReady=true`
+6. call `status.live_screen (via POST /api/v1/requests)`
 7. use the returned `screenClass`, `driverId`, and `drivers[]` before sending UI actions
 8. if multiple drivers are active, narrow later read-only calls with `driverId`, `includeDrivers`, or `excludeDrivers`
 
-If MCP connection fails, or either readiness check fails, treat the game as not ready.
+If service connection fails, or either readiness check fails, treat the game as not ready.
 
-For a normal consumer setup, you do not need a `modDevMcp {}` block to use this flow.
+For a normal consumer setup, you do not need an extra Gradle override block to use this flow.

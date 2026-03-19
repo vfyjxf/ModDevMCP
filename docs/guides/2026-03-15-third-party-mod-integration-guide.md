@@ -15,7 +15,7 @@ Use this guide if you maintain another mod and want ModDevMCP to understand that
 
 Typical cases:
 
-- expose new MCP tools for your mod
+- expose new runtime tools for your mod
 - route tool calls to mod-specific client or server logic
 - add richer UI inspection or capture support for a custom screen framework
 
@@ -23,7 +23,7 @@ Typical cases:
 
 Use this rule first:
 
-- add a tool registrar when you want to expose new MCP tools
+- add a tool registrar when you want to expose new runtime tools
 - add runtime adapters when you need ModDevMCP's existing UI, input, or capture tools to understand your mod's runtime objects
 
 Current recommendation:
@@ -68,15 +68,15 @@ Available annotations:
 
 Matching interfaces:
 
-- `CommonMcpToolRegistrar`
-- `ClientMcpToolRegistrar`
-- `ServerMcpToolRegistrar`
+- `CommonOperationRegistrar`
+- `ClientOperationRegistrar`
+- `ServerOperationRegistrar`
 
 Matching registration events:
 
-- `RegisterCommonMcpToolsEvent`
-- `RegisterClientMcpToolsEvent`
-- `RegisterServerMcpToolsEvent`
+- `RegisterCommonOperationsEvent`
+- `RegisterClientOperationsEvent`
+- `RegisterServerOperationsEvent`
 
 Each registrar:
 
@@ -103,9 +103,9 @@ The client event also exposes direct runtime adapter helpers:
 ```java
 package com.example.examplemod.moddev;
 
-import dev.vfyjxf.moddev.api.event.RegisterCommonMcpToolsEvent;
+import dev.vfyjxf.moddev.api.event.RegisterCommonOperationsEvent;
 import dev.vfyjxf.moddev.api.registrar.CommonMcpRegistrar;
-import dev.vfyjxf.moddev.api.registrar.CommonMcpToolRegistrar;
+import dev.vfyjxf.moddev.api.registrar.CommonOperationRegistrar;
 import dev.vfyjxf.moddev.server.api.McpToolDefinition;
 import dev.vfyjxf.moddev.server.api.McpToolProvider;
 import dev.vfyjxf.moddev.server.api.ToolResult;
@@ -115,10 +115,10 @@ import java.util.List;
 import java.util.Map;
 
 @CommonMcpRegistrar
-public final class ExampleCommonRegistrar implements CommonMcpToolRegistrar {
+public final class ExampleCommonRegistrar implements CommonOperationRegistrar {
 
     @Override
-    public void register(RegisterCommonMcpToolsEvent event) {
+    public void register(RegisterCommonOperationsEvent event) {
         event.registerToolProvider(new ExampleToolProvider());
         event.publishEvent(new EventEnvelope("examplemod", "common-registered", System.currentTimeMillis(), Map.of()));
     }
@@ -156,15 +156,15 @@ public final class ExampleCommonRegistrar implements CommonMcpToolRegistrar {
 ```java
 package com.example.examplemod.moddev;
 
-import dev.vfyjxf.moddev.api.event.RegisterClientMcpToolsEvent;
+import dev.vfyjxf.moddev.api.event.RegisterClientOperationsEvent;
 import dev.vfyjxf.moddev.api.registrar.ClientMcpRegistrar;
-import dev.vfyjxf.moddev.api.registrar.ClientMcpToolRegistrar;
+import dev.vfyjxf.moddev.api.registrar.ClientOperationRegistrar;
 
 @ClientMcpRegistrar
-public final class ExampleClientRegistrar implements ClientMcpToolRegistrar {
+public final class ExampleClientRegistrar implements ClientOperationRegistrar {
 
     @Override
-    public void register(RegisterClientMcpToolsEvent event) {
+    public void register(RegisterClientOperationsEvent event) {
         event.registerToolProvider(new ExampleClientToolProvider());
         event.registerUiDriver(new ExampleScreenUiDriver());
     }
@@ -182,7 +182,7 @@ When you add tools for your mod:
 - return structured payloads, not log dumps
 - keep side routing explicit when one tool can act on both client and server runtime paths
 
-If your tool is really a mod-specific operation, prefer a new tool instead of overloading a generic ModDevMCP tool.
+If your tool is really a mod-specific operation, prefer a new tool instead of overloading a generic ModDevMCP runtime tool.
 
 ## Runtime Adapter APIs
 
@@ -249,7 +249,7 @@ When multiple UI drivers can be active on one live screen, built-in read-only UI
 - `includeDrivers`
 - `excludeDrivers`
 
-Downstream adapters should expect `moddev.ui_get_live_screen` to report `drivers[]`, while `driverId` remains the default or recommended driver rather than the only possible match.
+Downstream adapters should expect `status.live_screen (via POST /api/v1/requests)` to report `drivers[]`, while `driverId` remains the default or recommended driver rather than the only possible match.
 
 ### Minimal Capture Provider Shape
 
@@ -301,7 +301,7 @@ If your mod is completely external and you only need agent-facing operations, pr
 Use this order:
 
 1. add a registrar and a focused tool provider for the mod-specific capability
-2. validate the tool contract from a real MCP session
+2. validate the tool contract from a real service session
 3. only add a `UiDriver` or capture provider when the generic UI tools need to understand your screen framework directly
 
 This keeps the integration small and avoids over-coupling your mod to ModDevMCP internals too early.
@@ -318,11 +318,11 @@ This keeps the integration small and avoids over-coupling your mod to ModDevMCP 
 Recommended downstream verification:
 
 1. add the published `dev.vfyjxf:moddevmcp` dependency and the `dev.vfyjxf.moddevmcp` plugin
-2. generate MCP client files with `createMcpClientFiles`
+2. generate agent client files with `service discovery probes`
 3. start `runClient`
-4. connect an MCP client and call `moddev.status`
+4. connect an agent client and call `GET /api/v1/status`
 5. call your new tool
-6. if you added UI adapters, also verify `moddev.ui_get_live_screen`, `moddev.ui_snapshot`, and `moddev.ui_capture`
+6. if you added UI adapters, also verify `status.live_screen (via POST /api/v1/requests)`, `moddev.ui_snapshot`, and `moddev.ui_capture`
 7. when multiple drivers can coexist, also verify `driverId`, `includeDrivers`, and `excludeDrivers`
 8. use `moddev.input_action` instead of UI-semantic tools when you need raw keyboard or mouse event injection
 

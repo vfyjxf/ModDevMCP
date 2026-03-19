@@ -62,7 +62,7 @@ Create and join a creative test world:
   "operationId": "world.create",
   "targetSide": "client",
   "input": {
-    "name": "MCP Test World",
+    "name": "Service Test World",
     "gameMode": "creative",
     "allowCheats": true,
     "worldType": "default",

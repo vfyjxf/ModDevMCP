@@ -62,7 +62,7 @@ mod 内部运行时 provider 仍然使用 `moddev.world_list`、`moddev.world_cr
   "operationId": "world.create",
   "targetSide": "client",
   "input": {
-    "name": "MCP Test World",
+    "name": "Service Test World",
     "gameMode": "creative",
     "allowCheats": true,
     "worldType": "default",

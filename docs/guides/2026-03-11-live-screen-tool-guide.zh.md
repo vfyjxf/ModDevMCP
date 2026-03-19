@@ -5,7 +5,7 @@ Updated: 2026-03-15 00:05 CST
 
 ## 用途
 
-用 `moddev.ui_get_live_screen` 向正在运行的 Minecraft 客户端查询：
+用 `status.live_screen (via POST /api/v1/requests)` 向正在运行的 Minecraft 客户端查询：
 
 - 当前是否存在活动 screen
 - 当前打开的是哪个 `screenClass`
@@ -18,7 +18,7 @@ Updated: 2026-03-15 00:05 CST
 
 ```json
 {
-  "name": "moddev.ui_get_live_screen",
+  "name": "status.live_screen (via POST /api/v1/requests)",
   "arguments": {
     "includeDrivers": [
       "vanilla-screen"
@@ -58,15 +58,15 @@ Updated: 2026-03-15 00:05 CST
 
 ## 推荐用法
 
-1. 先把生成的 MCP 配置安装到你的 MCP client
+1. 先把生成的服务配置安装到你的 agent client
 2. 启动游戏
 3. 连接 agent
-4. 调用 `moddev.status`
-5. 只有在 `gameConnected=true` 时才继续
-6. 调用 `moddev.ui_get_live_screen`
+4. 调用 `GET /api/v1/status`
+5. 只有在 `gameReady=true` 时才继续
+6. 调用 `status.live_screen (via POST /api/v1/requests)`
 7. 在发送 UI 操作前，先利用返回的 `screenClass`、`driverId` 和 `drivers[]` 判断当前界面
 8. 如果同时有多个 driver 活跃，再在后续只读调用里用 `driverId`、`includeDrivers` 或 `excludeDrivers` 收窄范围
 
-如果 MCP 连接失败，或任一就绪检查失败，就把游戏视为尚未就绪。
+如果 服务连接失败，或任一就绪检查失败，就把游戏视为尚未就绪。
 
-普通消费者接入时，不需要为了使用这条流程而额外写 `modDevMcp {}`。
+普通消费者接入时，不需要为了使用这条流程而额外写 an extra Gradle override block。

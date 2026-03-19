@@ -40,10 +40,10 @@ Updated: 2026-03-15 00:05 CST
 
 ## 推荐流程
 
-1. 先把生成的 MCP 配置安装到你的 MCP client
-2. 调用 `moddev.status`
-3. 只有在 `gameConnected=true` 时才继续
-4. 调用 `moddev.ui_get_live_screen`
+1. 先把生成的服务配置安装到你的 agent client
+2. 调用 `GET /api/v1/status`
+3. 只有在 `gameReady=true` 时才继续
+4. 调用 `status.live_screen (via POST /api/v1/requests)`
 5. 如果同时有多个 driver 活跃，先决定默认 `driverId`，或在只读调用里用 `includeDrivers` / `excludeDrivers` 收窄范围
 6. 如果需要进入顶层界面，例如 `inventory`、`chat`、`pause_menu`，调用 `moddev.ui_run_intent`
 7. 对多 driver 场景，先用 `moddev.ui_query`，并通过 `driverId` / `includeDrivers` / `excludeDrivers` 精确锁定目标 driver
@@ -140,9 +140,9 @@ Updated: 2026-03-15 00:05 CST
 
 优先使用：
 
-1. 先安装生成的 MCP 配置
-2. `moddev.status`
-3. `moddev.ui_get_live_screen`
+1. 先安装生成的服务配置
+2. `GET /api/v1/status`
+3. `status.live_screen (via POST /api/v1/requests)`
 4. 多 driver 场景下先用 `includeDrivers` / `excludeDrivers`
 5. `moddev.ui_run_intent`
 6. 多 driver 场景下，用 `moddev.ui_query`，并通过 `driverId` / `includeDrivers` / `excludeDrivers` 锁定目标 driver
@@ -151,4 +151,4 @@ Updated: 2026-03-15 00:05 CST
 9. `moddev.ui_screenshot`
 10. `moddev.ui_trace_recent`
 
-普通消费者接入时，不需要为了使用这条流程而额外写 `modDevMcp {}`。
+普通消费者接入时，不需要为了使用这条流程而额外写 an extra Gradle override block。

@@ -23,8 +23,8 @@ class LegacyArchitectureCleanupTest {
     void coreGuidesUseServiceFirstFlow() throws Exception {
         var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
         var guides = List.of(
-                rootDir.resolve("docs/guides/2026-03-11-game-mcp-guide.md"),
-                rootDir.resolve("docs/guides/2026-03-11-game-mcp-guide.zh.md"),
+                rootDir.resolve("docs/guides/2026-03-11-game-service-guide.md"),
+                rootDir.resolve("docs/guides/2026-03-11-game-service-guide.zh.md"),
                 rootDir.resolve("docs/guides/2026-03-11-simple-agent-install-guide.md"),
                 rootDir.resolve("docs/guides/2026-03-11-simple-agent-install-guide.zh.md"),
                 rootDir.resolve("docs/guides/2026-03-11-testmod-runclient-guide.md"),

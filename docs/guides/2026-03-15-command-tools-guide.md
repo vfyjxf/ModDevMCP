@@ -4,7 +4,7 @@ Date: 2026-03-15
 
 ## Purpose
 
-Describe the command MCP tools used to discover and execute Minecraft commands inside the runtime selected by the normal gateway routing.
+Describe the command runtime tools used to discover and execute Minecraft commands inside the runtime selected by the normal gateway routing.
 
 ## Tools
 
@@ -21,7 +21,7 @@ Describe the command MCP tools used to discover and execute Minecraft commands i
 
 ## Recommended Flow
 
-1. call `moddev.status`
+1. call `GET /api/v1/status`
 2. confirm `gameConnected=true`
 3. choose `targetSide`
 4. call `moddev.command_list` with a small `query`
@@ -61,7 +61,7 @@ Execute a server command:
   "name": "moddev.command_execute",
   "arguments": {
     "targetSide": "server",
-    "command": "/say hello from MCP"
+    "command": "/say hello from service"
   }
 }
 ```

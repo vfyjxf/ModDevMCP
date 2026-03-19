@@ -40,10 +40,10 @@ Use lower-level session and ref tools only when a longer same-screen flow really
 
 ## Recommended Flow
 
-1. install the generated MCP config into your MCP client
-2. call `moddev.status`
-3. continue only if `gameConnected=true`
-4. call `moddev.ui_get_live_screen`
+1. install the generated service config into your agent client
+2. call `GET /api/v1/status`
+3. continue only if `gameReady=true`
+4. call `status.live_screen (via POST /api/v1/requests)`
 5. if multiple drivers are active, choose the default `driverId` or narrow read-only calls with `includeDrivers` / `excludeDrivers`
 6. call `moddev.ui_run_intent` if you need to enter a top-level screen such as `inventory`, `chat`, or `pause_menu`
 7. for mixed-driver screens, call `moddev.ui_query` with `driverId` / `includeDrivers` / `excludeDrivers` to target the intended driver
@@ -140,9 +140,9 @@ For common UI debugging flows, do not start with a raw full snapshot unless you 
 
 Prefer:
 
-1. install the generated MCP config
-2. `moddev.status`
-3. `moddev.ui_get_live_screen`
+1. install the generated service config
+2. `GET /api/v1/status`
+3. `status.live_screen (via POST /api/v1/requests)`
 4. `includeDrivers` / `excludeDrivers` when multiple UI drivers are active
 5. `moddev.ui_run_intent`
 6. for mixed-driver screens, use `moddev.ui_query` with `driverId` / `includeDrivers` / `excludeDrivers`
@@ -151,4 +151,4 @@ Prefer:
 9. `moddev.ui_screenshot`
 10. `moddev.ui_trace_recent`
 
-For a normal consumer setup, you do not need a `modDevMcp {}` block to use this flow.
+For a normal consumer setup, you do not need an extra Gradle override block to use this flow.

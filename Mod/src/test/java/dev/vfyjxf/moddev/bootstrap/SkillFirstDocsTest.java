@@ -30,7 +30,7 @@ class SkillFirstDocsTest {
         assertFalse(readme.contains(":Plugin"));
         assertFalse(readme.contains("createMcpClientFiles"));
         assertFalse(readme.contains("docs/guides/2026-03-11-simple-agent-install-guide.md"));
-        assertFalse(readme.contains("docs/guides/2026-03-11-game-mcp-guide.md"));
+        assertFalse(readme.contains("docs/guides/2026-03-11-game-service-guide.md"));
         assertFalse(readme.contains("docs/guides/2026-03-11-testmod-runclient-guide.md"));
         assertFalse(readme.contains("docs/guides/2026-03-11-agent-preflight-checklist.md"));
         assertFalse(readme.toLowerCase().contains("jsonrpc"));
@@ -52,7 +52,7 @@ class SkillFirstDocsTest {
         assertFalse(readmeZh.contains(":Plugin"));
         assertFalse(readmeZh.contains("createMcpClientFiles"));
         assertFalse(readmeZh.contains("docs/guides/2026-03-11-simple-agent-install-guide.md"));
-        assertFalse(readmeZh.contains("docs/guides/2026-03-11-game-mcp-guide.md"));
+        assertFalse(readmeZh.contains("docs/guides/2026-03-11-game-service-guide.md"));
         assertFalse(readmeZh.contains("docs/guides/2026-03-11-testmod-runclient-guide.md"));
         assertFalse(readmeZh.contains("docs/guides/2026-03-11-agent-preflight-checklist.md"));
         assertFalse(readmeZh.toLowerCase().contains("jsonrpc"));
