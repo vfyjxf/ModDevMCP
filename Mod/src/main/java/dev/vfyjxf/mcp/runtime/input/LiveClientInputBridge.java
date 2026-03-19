@@ -18,7 +18,7 @@ import java.util.concurrent.TimeoutException;
 final class LiveClientInputBridge implements ClientInputBridge {
 
     private static final long EXECUTION_TIMEOUT_SECONDS = 5L;
-    private final VirtualModifierState virtualModifierState = new VirtualModifierState();
+    private final VirtualModifierState virtualModifierState = VirtualModifierState.global();
 
     @Override
     public ClientScreenMetrics metrics() {

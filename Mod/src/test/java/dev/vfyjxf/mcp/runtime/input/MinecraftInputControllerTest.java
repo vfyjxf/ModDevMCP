@@ -5,11 +5,40 @@ import dev.vfyjxf.mcp.api.runtime.ClientScreenMetrics;
 import dev.vfyjxf.mcp.runtime.ui.UiPointerStateRegistry;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class MinecraftInputControllerTest {
+
+    private static final int GLFW_KEY_LEFT_SHIFT = 340;
+    private static final int GLFW_MOD_SHIFT = 0x0001;
+
+    @Test
+    void keyClickModifiersRemainRequestScopedAtControllerBoundary() {
+        var bridge = new RecordingClientInputBridge(
+                new ClientScreenMetrics(null, 569, 320, 854, 480),
+                OperationResult.success(null)
+        );
+        var controller = new MinecraftInputController(bridge, new UiPointerStateRegistry(), intent -> -1);
+
+        controller.perform("key_click", Map.of("keyCode", 88, "modifiers", GLFW_MOD_SHIFT));
+        controller.perform("key_down", Map.of("keyCode", 65));
+
+        assertEquals(GLFW_MOD_SHIFT, bridge.recordedCommands().get(0).modifiers());
+        assertEquals(0, bridge.recordedCommands().get(1).modifiers());
+    }
+
+    @Test
+    void clientStartupClearsStaleVirtualModifierState() {
+        VirtualModifierState.global().keyDown(GLFW_KEY_LEFT_SHIFT);
+
+        VirtualModifierState.global().clear();
+
+        assertEquals(0, VirtualModifierState.global().modifierBits());
+    }
 
     @Test
     void clickActionConvertsFramebufferCoordinatesBeforeDispatch() {
@@ -263,6 +292,7 @@ class MinecraftInputControllerTest {
 
         private final ClientScreenMetrics metrics;
         private final OperationResult<Void> result;
+        private final List<InputCommand> recordedCommands = new ArrayList<>();
         private InputCommand lastCommand;
 
         private RecordingClientInputBridge(ClientScreenMetrics metrics, OperationResult<Void> result) {
@@ -278,7 +308,12 @@ class MinecraftInputControllerTest {
         @Override
         public OperationResult<Void> execute(InputCommand command) {
             this.lastCommand = command;
+            this.recordedCommands.add(command);
             return result;
+        }
+
+        private List<InputCommand> recordedCommands() {
+            return List.copyOf(recordedCommands);
         }
     }
 }

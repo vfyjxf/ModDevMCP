@@ -8,12 +8,21 @@ import org.lwjgl.glfw.GLFW;
  * <p>Left/right variants are normalized into one logical modifier so callers
  * can reason about a single shift/control/alt/super state.</p>
  */
-final class VirtualModifierState {
+public final class VirtualModifierState {
+
+    private static final VirtualModifierState GLOBAL = new VirtualModifierState();
 
     private boolean shiftActive;
     private boolean controlActive;
     private boolean altActive;
     private boolean superActive;
+
+    /**
+     * Returns shared runtime modifier state used by lifecycle resets and query hooks.
+     */
+    public static VirtualModifierState global() {
+        return GLOBAL;
+    }
 
     void keyDown(int keyCode) {
         switch (keyCode) {
@@ -70,7 +79,7 @@ final class VirtualModifierState {
         return superActive;
     }
 
-    void clear() {
+    public void clear() {
         shiftActive = false;
         controlActive = false;
         altActive = false;

@@ -1,5 +1,6 @@
 package dev.vfyjxf.mcp;
 
+import dev.vfyjxf.mcp.runtime.input.VirtualModifierState;
 import dev.vfyjxf.mcp.runtime.ui.ClientAutomationPauseGuard;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.Mod;
@@ -11,6 +12,8 @@ public class ClientEntrypoint extends ModDevMCP {
     private final IntegratedServerRuntimeHost integratedServerRuntimeHost;
 
     public ClientEntrypoint() {
+        // Clear any stale virtual modifier holds before the new client runtime attaches inputs.
+        VirtualModifierState.global().clear();
         this.clientBootstrap = new ClientRuntimeBootstrap(this);
         this.integratedServerRuntimeHost = new IntegratedServerRuntimeHost(
                 () -> {
@@ -29,6 +32,8 @@ public class ClientEntrypoint extends ModDevMCP {
     }
 
     private void shutdownClient() {
+        // Keep shutdown idempotent and avoid stale held modifiers between client sessions.
+        VirtualModifierState.global().clear();
         integratedServerRuntimeHost.close();
         deactivateClientSide();
         stopHttpService();
