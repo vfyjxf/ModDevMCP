@@ -62,6 +62,19 @@ class ModifiedKeybindingDispatchTest {
         assertEquals(0, binding.runs);
     }
 
+    @Test
+    void dispatchUsesPersistentVirtualModifiersForMatchingBindings() {
+        var state = new VirtualModifierState();
+        state.keyDown(KEY_LEFT_CONTROL);
+        var binding = new RecordingBinding(true);
+        var dispatch = new ModifiedKeybindingDispatch(() -> List.of(binding), state::modifierBits);
+
+        var dispatched = dispatch.dispatch(KEY_Y, 0, () -> {
+        });
+
+        assertTrue(dispatched);
+    }
+
     private static final class RecordingBinding implements ModifiedKeybindingDispatch.Binding {
 
         private final boolean matches;

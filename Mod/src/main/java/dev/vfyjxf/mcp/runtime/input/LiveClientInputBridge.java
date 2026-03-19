@@ -18,6 +18,7 @@ import java.util.concurrent.TimeoutException;
 final class LiveClientInputBridge implements ClientInputBridge {
 
     private static final long EXECUTION_TIMEOUT_SECONDS = 5L;
+    private final VirtualModifierState virtualModifierState = new VirtualModifierState();
 
     @Override
     public ClientScreenMetrics metrics() {
@@ -114,16 +115,25 @@ final class LiveClientInputBridge implements ClientInputBridge {
         return KeyboardInputRouter.keyClick(
                 command,
                 screen == null ? null : new ScreenKeyboardInput(screen),
-                new MinecraftKeyboardInput(minecraft)
+                new MinecraftKeyboardInput(minecraft, virtualModifierState),
+                virtualModifierState
         );
     }
 
     private OperationResult<Void> keyDown(InputCommand command) {
-        return KeyboardInputRouter.keyDown(command, new MinecraftKeyboardInput(Minecraft.getInstance()));
+        return KeyboardInputRouter.keyDown(
+                command,
+                new MinecraftKeyboardInput(Minecraft.getInstance(), virtualModifierState),
+                virtualModifierState
+        );
     }
 
     private OperationResult<Void> keyUp(InputCommand command) {
-        return KeyboardInputRouter.keyUp(command, new MinecraftKeyboardInput(Minecraft.getInstance()));
+        return KeyboardInputRouter.keyUp(
+                command,
+                new MinecraftKeyboardInput(Minecraft.getInstance(), virtualModifierState),
+                virtualModifierState
+        );
     }
 
     private OperationResult<Void> mouseDown(InputCommand command) {
@@ -138,6 +148,8 @@ final class LiveClientInputBridge implements ClientInputBridge {
         var minecraft = Minecraft.getInstance();
         var windowHandle = minecraft.getWindow().getWindow();
         try {
+            // Keep raw mouse button injection coordinate-aware so callers can build drag-style
+            // sequences out of move/down/up primitives without relying on stale cursor state.
             var onMove = minecraft.mouseHandler.getClass().getDeclaredMethod(
                     "onMove",
                     long.class,
@@ -212,8 +224,8 @@ final class LiveClientInputBridge implements ClientInputBridge {
         private final Minecraft minecraft;
         private final ModifiedKeybindingDispatch modifiedKeybindingDispatch;
 
-        private MinecraftKeyboardInput(Minecraft minecraft) {
-            this(minecraft, ModifiedKeybindingDispatch.live());
+        private MinecraftKeyboardInput(Minecraft minecraft, VirtualModifierState virtualModifierState) {
+            this(minecraft, ModifiedKeybindingDispatch.live(virtualModifierState::modifierBits));
         }
 
         private MinecraftKeyboardInput(Minecraft minecraft, ModifiedKeybindingDispatch modifiedKeybindingDispatch) {

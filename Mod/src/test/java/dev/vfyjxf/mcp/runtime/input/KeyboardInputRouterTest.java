@@ -11,8 +11,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class KeyboardInputRouterTest {
 
     private static final int KEY_A = 65;
+    private static final int KEY_B = 66;
     private static final int KEY_LEFT_CONTROL = 341;
     private static final int KEY_LEFT_SHIFT = 340;
+    private static final int MOD_SHIFT = 1;
     private static final int MOD_CONTROL = 2;
 
     @Test
@@ -116,6 +118,25 @@ class KeyboardInputRouterTest {
 
         assertTrue(result.accepted());
         assertEquals(List.of("down:65:1"), fallback.eventsWithModifiers);
+    }
+
+    @Test
+    void oneShotClickModifiersDoNotPersistAfterDispatch() {
+        var state = new VirtualModifierState();
+        var fallback = new RecordingFallbackInput();
+
+        KeyboardInputRouter.keyClick(
+                new InputCommand("key_click", 0.0d, 0.0d, 0, KEY_A, 0, MOD_SHIFT, null, 0),
+                null,
+                fallback,
+                state
+        );
+        KeyboardInputRouter.keyDown(command(KEY_B, 0), fallback, state);
+
+        assertEquals(
+                List.of("down:340:1", "down:65:1", "up:65:1", "up:340:1", "down:66:0"),
+                fallback.eventsWithModifiers
+        );
     }
 
     private static InputCommand command(int keyCode, int modifiers) {

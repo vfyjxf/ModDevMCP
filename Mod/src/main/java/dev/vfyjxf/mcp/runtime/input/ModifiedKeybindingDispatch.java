@@ -15,22 +15,38 @@ import java.util.function.Supplier;
 final class ModifiedKeybindingDispatch {
 
     private final Supplier<List<Binding>> bindings;
+    private final Supplier<Integer> persistentModifierBits;
 
     ModifiedKeybindingDispatch(Supplier<List<Binding>> bindings) {
+        this(bindings, () -> 0);
+    }
+
+    ModifiedKeybindingDispatch(Supplier<List<Binding>> bindings, Supplier<Integer> persistentModifierBits) {
         this.bindings = Objects.requireNonNull(bindings, "bindings");
+        this.persistentModifierBits = Objects.requireNonNull(persistentModifierBits, "persistentModifierBits");
     }
 
     static ModifiedKeybindingDispatch live() {
-        return new ModifiedKeybindingDispatch(() -> allKeyMappings().stream().map(LiveBinding::new).map(Binding.class::cast).toList());
+        return live(() -> 0);
+    }
+
+    static ModifiedKeybindingDispatch live(Supplier<Integer> persistentModifierBits) {
+        return new ModifiedKeybindingDispatch(
+                () -> allKeyMappings().stream().map(LiveBinding::new).map(Binding.class::cast).toList(),
+                persistentModifierBits
+        );
     }
 
     boolean dispatch(int keyCode, int modifiers, Runnable dispatcher) {
         Objects.requireNonNull(dispatcher, "dispatcher");
-        if (modifiers == 0 || isModifierKey(keyCode)) {
+        // Route matching through merged modifiers so persistent held virtual modifiers
+        // can satisfy modified keybindings even when a command carries no one-shot bits.
+        var effectiveModifiers = modifiers | persistentModifierBits.get();
+        if (effectiveModifiers == 0 || isModifierKey(keyCode)) {
             return false;
         }
         var matchingBindings = bindings.get().stream()
-                .filter(binding -> binding.matches(keyCode, modifiers))
+                .filter(binding -> binding.matches(keyCode, effectiveModifiers))
                 .toList();
         if (matchingBindings.isEmpty()) {
             return false;
