@@ -33,6 +33,9 @@ class SkillFirstDocsTest {
         assertFalse(readme.contains("docs/guides/2026-03-11-game-mcp-guide.md"));
         assertFalse(readme.contains("docs/guides/2026-03-11-testmod-runclient-guide.md"));
         assertFalse(readme.contains("docs/guides/2026-03-11-agent-preflight-checklist.md"));
+        assertFalse(readme.toLowerCase().contains("jsonrpc"));
+        assertFalse(readme.contains("tools/call"));
+        assertFalse(readme.contains("tools/list"));
 
         assertTrue(readmeZh.contains("skill-first 服务模型"));
         assertTrue(readmeZh.contains("moddev-usage"));
@@ -52,6 +55,8 @@ class SkillFirstDocsTest {
         assertFalse(readmeZh.contains("docs/guides/2026-03-11-game-mcp-guide.md"));
         assertFalse(readmeZh.contains("docs/guides/2026-03-11-testmod-runclient-guide.md"));
         assertFalse(readmeZh.contains("docs/guides/2026-03-11-agent-preflight-checklist.md"));
+        assertFalse(readmeZh.toLowerCase().contains("jsonrpc"));
+        assertFalse(readmeZh.contains("tools/call"));
+        assertFalse(readmeZh.contains("tools/list"));
     }
 }
-

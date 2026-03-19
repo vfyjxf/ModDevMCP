@@ -57,6 +57,9 @@ class LegacyArchitectureCleanupTest {
             assertFalse(content.contains("moddev.ui_get_live_screen"), guide + " should not mention legacy tool names");
             assertFalse(content.contains("dev.vfyjxf.moddevmcp"), guide + " should not mention the removed Gradle plugin");
             assertFalse(content.contains("modDevMcp {"), guide + " should not mention the removed Gradle extension");
+            assertFalse(content.toLowerCase().contains("jsonrpc"), guide + " should not mention JSON-RPC flow");
+            assertFalse(content.contains("tools/call"), guide + " should not mention tools/call");
+            assertFalse(content.contains("tools/list"), guide + " should not mention tools/list");
         }
     }
 
@@ -76,6 +79,9 @@ class LegacyArchitectureCleanupTest {
             var content = Files.readString(guide);
             assertTrue(content.contains("includeDrivers"), guide + " should mention includeDrivers");
             assertTrue(content.contains("excludeDrivers"), guide + " should mention excludeDrivers");
+            assertFalse(content.toLowerCase().contains("jsonrpc"), guide + " should not mention JSON-RPC flow");
+            assertFalse(content.contains("tools/call"), guide + " should not mention tools/call");
+            assertFalse(content.contains("tools/list"), guide + " should not mention tools/list");
         }
 
         var liveScreenGuide = Files.readString(rootDir.resolve("docs/guides/2026-03-11-live-screen-tool-guide.md"));
@@ -95,4 +101,3 @@ class LegacyArchitectureCleanupTest {
         assertTrue(playwrightGuideZh.contains("moddev.ui_action"), "zh playwright guide should mention moddev.ui_action for multi-driver flows");
     }
 }
-
