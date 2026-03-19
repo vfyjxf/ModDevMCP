@@ -2,7 +2,6 @@ package dev.vfyjxf.mcp.mixin.client;
 
 import dev.vfyjxf.mcp.runtime.input.VirtualModifierQueries;
 import dev.vfyjxf.mcp.runtime.input.VirtualModifierState;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -22,12 +21,9 @@ final class ScreenModifierMixin {
 
     @Inject(method = "hasControlDown", at = @At("RETURN"), cancellable = true)
     private static void moddevmcp$mergeVirtualControlState(CallbackInfoReturnable<Boolean> cir) {
-        var state = VirtualModifierState.global();
-        cir.setReturnValue(VirtualModifierQueries.controlActive(
+        cir.setReturnValue(VirtualModifierQueries.merge(
                 cir.getReturnValueZ(),
-                state.controlActive(),
-                state.superActive(),
-                Minecraft.ON_OSX
+                VirtualModifierState.global().controlActive()
         ));
     }
 
