@@ -153,6 +153,7 @@ final class LiveClientInputBridge implements ClientInputBridge {
     private OperationResult<Void> mouseButton(InputCommand command, int action) {
         var minecraft = Minecraft.getInstance();
         var windowHandle = minecraft.getWindow().getWindow();
+        var effectiveModifiers = KeyboardInputRouter.mergedModifiers(command.modifiers(), virtualModifierState);
         try {
             // Keep raw mouse button injection coordinate-aware so callers can build drag-style
             // sequences out of move/down/up primitives without relying on stale cursor state.
@@ -173,7 +174,7 @@ final class LiveClientInputBridge implements ClientInputBridge {
                     int.class
             );
             onPress.setAccessible(true);
-            onPress.invoke(minecraft.mouseHandler, windowHandle, command.button(), action, command.modifiers());
+            onPress.invoke(minecraft.mouseHandler, windowHandle, command.button(), action, effectiveModifiers);
             return OperationResult.success(null);
         } catch (ReflectiveOperationException exception) {
             return OperationResult.rejected("mouse button injection failed: " + exception.getMessage());
@@ -198,9 +199,10 @@ final class LiveClientInputBridge implements ClientInputBridge {
         if (command.text() == null || command.text().isBlank()) {
             return OperationResult.rejected("type_text requires non-empty text");
         }
+        var effectiveModifiers = KeyboardInputRouter.mergedModifiers(command.modifiers(), virtualModifierState);
         var handled = false;
         for (char character : command.text().toCharArray()) {
-            handled = screen.charTyped(character, command.modifiers()) || handled;
+            handled = screen.charTyped(character, effectiveModifiers) || handled;
         }
         return handled
                 ? OperationResult.success(null)
