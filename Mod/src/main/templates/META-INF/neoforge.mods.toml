@@ -12,6 +12,9 @@ screenshots, interaction automation, and the host bridge used by external MCP
 clients during NeoForge development.
 '''
 
+[[mixins]]
+config="moddevmcp.mixins.json"
+
 [[dependencies.${mod_id}]]
 modId="neoforge"
 type="required"

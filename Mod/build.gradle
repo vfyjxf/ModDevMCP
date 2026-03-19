@@ -25,6 +25,7 @@ java {
 def mcpCoreVersion = "1.0.0"
 def gsonVersion = "2.10.1"
 def reflectVersion = "1.6.2"
+def mixinConfigFile = "moddevmcp.mixins.json"
 
 neoForge {
     version = project.neo_version
@@ -64,6 +65,9 @@ neoForge {
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
+tasks.named("processResources", ProcessResources).configure {
+    inputs.file("src/main/resources/${mixinConfigFile}")
+}
 
 configurations {
     runtimeClasspath.extendsFrom localRuntime
