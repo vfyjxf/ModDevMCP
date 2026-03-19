@@ -68,4 +68,16 @@ class VirtualModifierStateTest {
         assertFalse(state.superActive());
         assertEquals(0, state.modifierBits());
     }
+
+    @Test
+    void lifecycleResetUsesSharedProductionHook() {
+        VirtualModifierState.global().keyDown(GLFW_KEY_LEFT_SHIFT);
+        VirtualModifierState.global().keyDown(GLFW_KEY_RIGHT_CONTROL);
+
+        VirtualModifierState.resetGlobalForClientLifecycle();
+
+        assertFalse(VirtualModifierState.global().shiftActive());
+        assertFalse(VirtualModifierState.global().controlActive());
+        assertEquals(0, VirtualModifierState.global().modifierBits());
+    }
 }

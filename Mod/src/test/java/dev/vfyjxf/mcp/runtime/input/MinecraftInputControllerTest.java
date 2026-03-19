@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MinecraftInputControllerTest {
 
-    private static final int GLFW_KEY_LEFT_SHIFT = 340;
     private static final int GLFW_MOD_SHIFT = 0x0001;
 
     @Test
@@ -29,15 +28,6 @@ class MinecraftInputControllerTest {
 
         assertEquals(GLFW_MOD_SHIFT, bridge.recordedCommands().get(0).modifiers());
         assertEquals(0, bridge.recordedCommands().get(1).modifiers());
-    }
-
-    @Test
-    void clientStartupClearsStaleVirtualModifierState() {
-        VirtualModifierState.global().keyDown(GLFW_KEY_LEFT_SHIFT);
-
-        VirtualModifierState.global().clear();
-
-        assertEquals(0, VirtualModifierState.global().modifierBits());
     }
 
     @Test

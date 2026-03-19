@@ -13,7 +13,7 @@ public class ClientEntrypoint extends ModDevMCP {
 
     public ClientEntrypoint() {
         // Clear any stale virtual modifier holds before the new client runtime attaches inputs.
-        VirtualModifierState.global().clear();
+        VirtualModifierState.resetGlobalForClientLifecycle();
         this.clientBootstrap = new ClientRuntimeBootstrap(this);
         this.integratedServerRuntimeHost = new IntegratedServerRuntimeHost(
                 () -> {
@@ -33,7 +33,7 @@ public class ClientEntrypoint extends ModDevMCP {
 
     private void shutdownClient() {
         // Keep shutdown idempotent and avoid stale held modifiers between client sessions.
-        VirtualModifierState.global().clear();
+        VirtualModifierState.resetGlobalForClientLifecycle();
         integratedServerRuntimeHost.close();
         deactivateClientSide();
         stopHttpService();

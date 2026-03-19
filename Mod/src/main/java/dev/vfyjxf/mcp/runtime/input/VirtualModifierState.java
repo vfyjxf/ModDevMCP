@@ -24,6 +24,13 @@ public final class VirtualModifierState {
         return GLOBAL;
     }
 
+    /**
+     * Clears the shared runtime modifier state at client lifecycle boundaries.
+     */
+    public static void resetGlobalForClientLifecycle() {
+        GLOBAL.clear();
+    }
+
     void keyDown(int keyCode) {
         switch (keyCode) {
             case GLFW.GLFW_KEY_LEFT_SHIFT, GLFW.GLFW_KEY_RIGHT_SHIFT -> shiftActive = true;
@@ -46,7 +53,7 @@ public final class VirtualModifierState {
         }
     }
 
-    int modifierBits() {
+    public int modifierBits() {
         var modifiers = 0;
         if (shiftActive) {
             modifiers |= GLFW.GLFW_MOD_SHIFT;
@@ -63,19 +70,19 @@ public final class VirtualModifierState {
         return modifiers;
     }
 
-    boolean shiftActive() {
+    public boolean shiftActive() {
         return shiftActive;
     }
 
-    boolean controlActive() {
+    public boolean controlActive() {
         return controlActive;
     }
 
-    boolean altActive() {
+    public boolean altActive() {
         return altActive;
     }
 
-    boolean superActive() {
+    public boolean superActive() {
         return superActive;
     }
 
