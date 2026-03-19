@@ -2,7 +2,6 @@ package dev.vfyjxf.mcp.service.runtime;
 
 import dev.vfyjxf.mcp.service.operation.OperationDefinition;
 import dev.vfyjxf.mcp.service.operation.OperationRegistry;
-import dev.vfyjxf.mcp.service.request.OperationError;
 import dev.vfyjxf.mcp.service.request.OperationExecutionException;
 import dev.vfyjxf.mcp.service.request.OperationRequest;
 import dev.vfyjxf.mcp.server.api.ToolResult;
@@ -48,7 +47,7 @@ public final class RuntimeOperationBindings {
     }
 
     private final OperationRegistry operationRegistry;
-    private final Map<String, OperationHandler> handlers;
+    private final OperationExecutorRegistry executorRegistry;
 
     public RuntimeOperationBindings(ToolOperationInvoker toolInvoker, StatusSnapshotProvider statusSnapshotProvider) {
         Objects.requireNonNull(toolInvoker, "toolInvoker");
@@ -58,17 +57,18 @@ public final class RuntimeOperationBindings {
         bindings.addAll(StatusOperationHandlers.operations(toolInvoker, statusSnapshotProvider));
         bindings.addAll(UiOperationHandlers.operations(toolInvoker));
         bindings.addAll(CommandOperationHandlers.operations(toolInvoker));
+        bindings.addAll(InputOperationHandlers.operations(toolInvoker));
         bindings.addAll(WorldOperationHandlers.operations(toolInvoker));
         bindings.addAll(HotswapOperationHandlers.operations(toolInvoker));
 
         var definitions = new ArrayList<OperationDefinition>(bindings.size());
-        var byId = new LinkedHashMap<String, OperationHandler>(bindings.size());
+        var byId = new LinkedHashMap<String, OperationExecutorRegistry.OperationExecutor>(bindings.size());
         for (var binding : bindings) {
             definitions.add(binding.definition());
-            byId.put(binding.definition().operationId(), binding.handler());
+            byId.put(binding.definition().operationId(), binding.handler()::execute);
         }
         this.operationRegistry = new OperationRegistry(definitions);
-        this.handlers = Map.copyOf(byId);
+        this.executorRegistry = new OperationExecutorRegistry(byId);
     }
 
     public OperationRegistry operationRegistry() {
@@ -76,11 +76,7 @@ public final class RuntimeOperationBindings {
     }
 
     public Map<String, Object> execute(OperationRequest request, String resolvedTargetSide) throws Exception {
-        var handler = handlers.get(request.operationId());
-        if (handler == null) {
-            throw new OperationExecutionException(new OperationError("operation_not_found", "operation was not found"));
-        }
-        return handler.execute(request.input(), resolvedTargetSide);
+        return executorRegistry.execute(request.operationId(), request.input(), resolvedTargetSide);
     }
 
     static OperationBinding binding(OperationDefinition definition, OperationHandler handler) {
@@ -99,10 +95,7 @@ public final class RuntimeOperationBindings {
     ) throws Exception {
         var result = invoker.invoke(toolName, resolvedTargetSide, input);
         if (!result.success()) {
-            throw new OperationExecutionException(new OperationError(
-                    "operation_execution_failed",
-                    normalizeMessage(result.error(), toolName + " failed")
-            ));
+            throw executionFailure(normalizeMessage(result.error(), toolName + " failed"));
         }
         if (result.value() instanceof Map<?, ?> mapValue) {
             @SuppressWarnings("unchecked")
@@ -113,7 +106,7 @@ public final class RuntimeOperationBindings {
     }
 
     static OperationExecutionException executionFailure(String message) {
-        return new OperationExecutionException(new OperationError(
+        return new OperationExecutionException(new dev.vfyjxf.mcp.service.request.OperationError(
                 "operation_execution_failed",
                 normalizeMessage(message, "operation execution failed")
         ));
@@ -136,4 +129,3 @@ public final class RuntimeOperationBindings {
         return Map.copyOf(schema);
     }
 }
-
