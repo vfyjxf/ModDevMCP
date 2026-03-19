@@ -18,6 +18,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 })
 abstract class KeyModifierMixin {
 
+    // KeyModifier is an enum with per-constant anonymous subclasses, so the mixin targets
+    // those generated classes directly and merges virtual state after NeoForge computes activity.
     @Inject(method = "isActive", at = @At("RETURN"), cancellable = true)
     private void moddevmcp$mergeVirtualModifierState(
             IKeyConflictContext conflictContext,

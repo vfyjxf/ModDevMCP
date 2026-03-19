@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(Screen.class)
 final class ScreenModifierMixin {
 
+    // Merge virtual modifier holds at return so physical keyboard state remains authoritative input.
     @Inject(method = "hasShiftDown", at = @At("RETURN"), cancellable = true)
     private static void moddevmcp$mergeVirtualShiftState(CallbackInfoReturnable<Boolean> cir) {
         cir.setReturnValue(VirtualModifierQueries.merge(

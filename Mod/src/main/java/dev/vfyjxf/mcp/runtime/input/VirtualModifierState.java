@@ -53,6 +53,9 @@ public final class VirtualModifierState {
         }
     }
 
+    /**
+     * Returns the current held virtual modifier bits in GLFW modifier-mask form.
+     */
     public int modifierBits() {
         var modifiers = 0;
         if (shiftActive) {
@@ -70,22 +73,37 @@ public final class VirtualModifierState {
         return modifiers;
     }
 
+    /**
+     * Returns whether virtual SHIFT is currently held.
+     */
     public boolean shiftActive() {
         return shiftActive;
     }
 
+    /**
+     * Returns whether virtual CONTROL is currently held.
+     */
     public boolean controlActive() {
         return controlActive;
     }
 
+    /**
+     * Returns whether virtual ALT is currently held.
+     */
     public boolean altActive() {
         return altActive;
     }
 
+    /**
+     * Returns whether virtual SUPER is currently held.
+     */
     public boolean superActive() {
         return superActive;
     }
 
+    /**
+     * Clears all held virtual modifier state.
+     */
     public void clear() {
         shiftActive = false;
         controlActive = false;
