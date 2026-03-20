@@ -7,6 +7,7 @@ import dev.vfyjxf.mcp.api.ui.*;
 import dev.vfyjxf.mcp.runtime.RuntimeRegistries;
 import dev.vfyjxf.mcp.runtime.ui.FallbackRegionUiDriver;
 import dev.vfyjxf.mcp.runtime.ui.UiCaptureRenderer;
+import dev.vfyjxf.mcp.runtime.ui.VanillaContainerUiDriver;
 import dev.vfyjxf.mcp.runtime.ui.VanillaScreenUiDriver;
 import dev.vfyjxf.mcp.server.ModDevMcpServer;
 import dev.vfyjxf.mcp.server.api.ToolCallContext;
@@ -523,7 +524,7 @@ class UiToolInvocationTest {
     }
 
     @Test
-    void uiPressKeyFailsWhenNoActiveScreenIsAvailable() {
+    void uiPressKeySupportsInWorldInputWithoutActiveScreen() {
         var server = new ModDevMcpServer(new McpToolRegistry());
         var registries = new RuntimeRegistries();
         registries.inputControllers().add(new RecordingInputController(OperationResult.success(null)));
@@ -534,8 +535,12 @@ class UiToolInvocationTest {
                 "keyCode", 69
         ));
 
-        assertFalse(result.success());
-        assertEquals("screen_unavailable", result.error());
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("key_press", payload.get("action"));
+        assertEquals(false, payload.get("screenAvailable"));
+        assertEquals(true, payload.get("inWorld"));
     }
 
     @Test
@@ -663,6 +668,35 @@ class UiToolInvocationTest {
         assertFalse(payload.containsKey("capturedSnapshot"));
         assertFalse(payload.containsKey("capturedTargets"));
         assertFalse(payload.containsKey("excludedTargets"));
+    }
+
+    @Test
+    void uiScreenshotSupportsInWorldLiveFlowWithoutActiveScreen() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        var mod = new ModDevMCP(server, registries);
+        registries.uiDrivers().register(new FallbackRegionUiDriver(
+                registries.uiSessionStates(),
+                registries.uiInteractionResolvers()
+        ));
+        mod.api().registerUiOffscreenCaptureProvider(new TestOffscreenCaptureProvider("offscreen-test", 500));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics(null, 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_screenshot").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "source", "auto"
+        ));
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("fallback-region", payload.get("driverId"));
+        assertEquals("offscreen", ((Map<?, ?>) payload.get("imageMeta")).get("source"));
+        assertEquals("full", payload.get("mode"));
+        assertTrue(payload.containsKey("snapshotRef"));
+        assertTrue(payload.containsKey("imageRef"));
     }
 
     @Test
@@ -2003,6 +2037,7 @@ class UiToolInvocationTest {
     void uiGetLiveScreenReturnsInactivePayloadWhenNoScreenIsOpen() {
         var server = new ModDevMcpServer(new McpToolRegistry());
         var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new FallbackRegionUiDriver(registries.uiSessionStates(), registries.uiInteractionResolvers()));
         new UiToolProvider(registries, new TestClientScreenProbe(
                 new ClientScreenMetrics(null, 0, 0, 0, 0)
         )).register(server.registry());
@@ -2013,8 +2048,143 @@ class UiToolInvocationTest {
         @SuppressWarnings("unchecked")
         var payload = (Map<String, Object>) result.value();
         assertEquals(false, payload.get("active"));
+        assertEquals(false, payload.get("screenAvailable"));
+        assertEquals(true, payload.get("inWorld"));
         assertEquals("", payload.get("screenClass"));
-        assertEquals("", payload.get("driverId"));
+        assertEquals("fallback-region", payload.get("driverId"));
+        assertEquals(List.of("fallback-region"), driverIds((List<Map<String, Object>>) payload.get("drivers")));
+    }
+
+    @Test
+    void uiGetLiveScreenFallsBackInWorldWithVanillaDriversRegistered() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new VanillaScreenUiDriver(
+                registries.uiSessionStates(),
+                registries.uiInteractionResolvers()
+        ));
+        registries.uiDrivers().register(new VanillaContainerUiDriver(
+                registries.uiSessionStates(),
+                registries.uiInteractionResolvers()
+        ));
+        registries.uiDrivers().register(new FallbackRegionUiDriver(
+                registries.uiSessionStates(),
+                registries.uiInteractionResolvers()
+        ));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics(null, 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_get_live_screen").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of());
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals(false, payload.get("active"));
+        assertEquals("fallback-region", payload.get("driverId"));
+        @SuppressWarnings("unchecked")
+        var drivers = (List<Map<String, Object>>) payload.get("drivers");
+        assertEquals(List.of("fallback-region"), driverIds(drivers));
+        assertInstanceOf(List.class, drivers.getFirst().get("capabilities"));
+    }
+
+    @Test
+    void uiInspectReturnsFallbackPayloadWhenNoScreenIsOpen() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new FallbackRegionUiDriver(registries.uiSessionStates(), registries.uiInteractionResolvers()));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics(null, 0, 0, 0, 0)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_inspect").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of());
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("", payload.get("screen"));
+        assertEquals("fallback-region", payload.get("driverId"));
+        assertEquals(false, payload.get("screenAvailable"));
+        assertEquals(true, payload.get("inWorld"));
+        assertEquals(1, ((List<?>) payload.get("targets")).size());
+    }
+
+    @Test
+    void uiInspectFallsBackInWorldWithVanillaDriversRegistered() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new VanillaScreenUiDriver(
+                registries.uiSessionStates(),
+                registries.uiInteractionResolvers()
+        ));
+        registries.uiDrivers().register(new VanillaContainerUiDriver(
+                registries.uiSessionStates(),
+                registries.uiInteractionResolvers()
+        ));
+        registries.uiDrivers().register(new FallbackRegionUiDriver(
+                registries.uiSessionStates(),
+                registries.uiInteractionResolvers()
+        ));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics(null, 0, 0, 0, 0)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_inspect").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of());
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("", payload.get("screen"));
+        assertEquals("fallback-region", payload.get("driverId"));
+        assertEquals(false, payload.get("screenAvailable"));
+        assertEquals(true, payload.get("inWorld"));
+    }
+
+    @Test
+    void uiSnapshotReturnsFallbackPayloadWhenNoScreenIsOpen() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.uiDrivers().register(new FallbackRegionUiDriver(registries.uiSessionStates(), registries.uiInteractionResolvers()));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics(null, 320, 240, 854, 480)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_snapshot").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of());
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("", payload.get("screenClass"));
+        assertEquals("fallback-region", payload.get("driverId"));
+        assertEquals(false, payload.get("screenAvailable"));
+        assertEquals(true, payload.get("inWorld"));
+        assertEquals(List.of("fallback-region"), driverIds((List<Map<String, Object>>) payload.get("drivers")));
+    }
+
+    @Test
+    void uiPressKeyAllowsInWorldInputWhenNoScreenIsOpen() {
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        var registries = new RuntimeRegistries();
+        registries.inputControllers().add(new RecordingInputController(OperationResult.success(null)));
+        new UiToolProvider(registries, new TestClientScreenProbe(
+                new ClientScreenMetrics(null, 0, 0, 0, 0)
+        )).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.ui_press_key").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "keyCode", 69
+        ));
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("key_press", payload.get("action"));
+        assertEquals(false, payload.get("screenAvailable"));
+        assertEquals(true, payload.get("inWorld"));
     }
 
     @Test

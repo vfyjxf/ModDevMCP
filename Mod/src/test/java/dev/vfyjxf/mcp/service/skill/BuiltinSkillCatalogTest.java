@@ -13,6 +13,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -47,6 +48,17 @@ class BuiltinSkillCatalogTest {
     }
 
     @Test
+    void inputCategoryMarkdownLoadsFromBundledResources() {
+        var catalog = catalog(sampleOperations());
+
+        var categorySkill = catalog.skillRegistry().findById("input").orElseThrow();
+        assertEquals(SkillKind.GUIDANCE, categorySkill.kind());
+        assertTrue(categorySkill.markdown().contains("keyboard"));
+        assertTrue(categorySkill.markdown().contains("Do not send input through PowerShell"));
+        assertTrue(categorySkill.markdown().contains("`input.action`"));
+    }
+
+    @Test
     void guidanceOnlySkillsDoNotNeedOperationIds() {
         var catalog = catalog(sampleOperations());
 
@@ -70,9 +82,25 @@ class BuiltinSkillCatalogTest {
     }
 
     @Test
+    void screenshotOperationSkillEmbedsOperationIdAndImagePathExample() {
+        var catalog = catalog(sampleOperations());
+
+        var operationSkill = catalog.skillRegistry().findById("ui.screenshot").orElseThrow();
+        assertEquals(SkillKind.HYBRID, operationSkill.kind());
+        assertEquals("ui.screenshot", operationSkill.operationId());
+        assertTrue(operationSkill.markdown().contains("Operation id: `ui.screenshot`"));
+        assertTrue(operationSkill.markdown().contains("\"operationId\":\"ui.screenshot\""));
+    }
+
+    @Test
     void reusableUsageSkillDocumentsProjectLocalDiscoveryFlow() throws Exception {
-        var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
-        var usageSkill = Files.readString(rootDir.resolve("skills/moddevmcp-usage/SKILL.md"));
+        var cwd = Path.of("").toAbsolutePath().normalize();
+        var repoRoot = cwd;
+        while (repoRoot != null && !Files.exists(repoRoot.resolve("skills/moddevmcp-usage/SKILL.md"))) {
+            repoRoot = repoRoot.getParent();
+        }
+        assertNotNull(repoRoot);
+        var usageSkill = Files.readString(repoRoot.resolve("skills/moddevmcp-usage/SKILL.md"));
         assertTrue(usageSkill.contains("GET http://127.0.0.1:47812/api/v1/status"));
         assertTrue(usageSkill.contains("<gradleProject>/build/moddevmcp/game-instances.json"));
         assertTrue(usageSkill.contains("Probe each candidate `baseUrl` from the registry with `GET /api/v1/status`"));
@@ -107,6 +135,45 @@ class BuiltinSkillCatalogTest {
                         Set.of(),
                         Map.of(),
                         Map.of("operationId", "status.get")
+                ),
+                new OperationDefinition(
+                        "ui.screenshot",
+                        "ui",
+                        "Screenshot UI",
+                        "Captures a screenshot of the current UI or selected target.",
+                        true,
+                        Set.of("client"),
+                        Map.of(
+                                "type", "object",
+                                "properties", Map.of(
+                                        "source", Map.of("type", "string")
+                                )
+                        ),
+                        Map.of(
+                                "operationId", "ui.screenshot",
+                                "targetSide", "client",
+                                "input", Map.of("source", "auto")
+                        )
+                ),
+                new OperationDefinition(
+                        "input.action",
+                        "input",
+                        "Input Action",
+                        "Dispatches a low-level input action against the live client.",
+                        true,
+                        Set.of("client"),
+                        Map.of(
+                                "type", "object",
+                                "properties", Map.of(
+                                        "action", Map.of("type", "string")
+                                ),
+                                "required", java.util.List.of("action")
+                        ),
+                        Map.of(
+                                "operationId", "input.action",
+                                "targetSide", "client",
+                                "input", Map.of("action", "key_press", "keyCode", 69)
+                        )
                 ),
                 new OperationDefinition(
                         "command.execute",

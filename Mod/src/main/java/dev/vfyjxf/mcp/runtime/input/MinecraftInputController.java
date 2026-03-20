@@ -144,6 +144,8 @@ public final class MinecraftInputController implements InputController {
     }
 
     private ResolvedPoint resolvePoint(Map<String, Object> arguments, ClientScreenMetrics metrics) {
+        // Raw input tools are allowed to operate without an active screen, so coordinate
+        // conversion must work off window metrics alone instead of screen availability.
         var rawX = numberArgument(arguments, "x");
         var rawY = numberArgument(arguments, "y");
         var coordinateSpace = stringArgument(arguments, "coordinateSpace", "gui");
@@ -349,6 +351,8 @@ public final class MinecraftInputController implements InputController {
     }
 
     private boolean tracksPointer(String action) {
+        // Raw mouse button primitives carry coordinates now, so they need to refresh remembered
+        // pointer state just like click/move/hover do.
         return "click".equals(action)
                 || "move".equals(action)
                 || "hover".equals(action)

@@ -1,7 +1,6 @@
 plugins {
     id 'java-library'
     id 'net.neoforged.moddev' version '2.0.140'
-    id 'org.gradlex.extra-java-module-info' version '1.13.1'
     id "com.vanniktech.maven.publish"
     id 'signing'
     id 'idea'
@@ -62,6 +61,11 @@ neoForge {
             sourceSet(sourceSets.main)
         }
     }
+
+    unitTest {
+        enable()
+        testedMod = mods."${mod_id}"
+    }
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
@@ -73,38 +77,16 @@ configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
-extraJavaModuleInfo {
-    skipLocalJars = true
-    failOnMissingModuleInfo = false
-    activate(configurations.additionalRuntimeClasspath)
-    activate(configurations.jarJar)
-    module("io.modelcontextprotocol.sdk:mcp-core", "io.modelcontextprotocol.sdk.mcp.core") {
-        overrideModuleName()
-    }
-}
 
 dependencies {
-    compileOnly("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
-        exclude(group: "org.slf4j")
-    }
-    compileOnly("com.google.code.gson:gson:${gsonVersion}")
     compileOnly("net.lenni0451:Reflect:${reflectVersion}")
 
     additionalRuntimeClasspath("net.lenni0451:Reflect:${reflectVersion}")
     jarJar("net.lenni0451:Reflect:${reflectVersion}")
-    additionalRuntimeClasspath("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
-        exclude(group: "org.slf4j")
-    }
-    jarJar("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
-        exclude(group: "org.slf4j")
-    }
-    testImplementation("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
-        exclude(group: "org.slf4j")
-    }
-    testImplementation("com.google.code.gson:gson:${gsonVersion}")
     testImplementation("net.lenni0451:Reflect:${reflectVersion}")
     testRuntimeOnly("org.slf4j:slf4j-api:2.0.9")
 
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.12.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

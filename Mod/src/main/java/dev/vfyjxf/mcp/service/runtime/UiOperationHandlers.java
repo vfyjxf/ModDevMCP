@@ -61,6 +61,37 @@ public final class UiOperationHandlers {
                                 )
                         ),
                         RuntimeOperationBindings.toolHandler(toolInvoker, "moddev.ui_action")
+                ),
+                RuntimeOperationBindings.binding(
+                        new OperationDefinition(
+                                "ui.screenshot",
+                                "ui",
+                                "Screenshot UI",
+                                "Captures a screenshot of the current UI or a selected target.",
+                                true,
+                                Set.of("client"),
+                                RuntimeOperationBindings.objectSchema(
+                                        Map.of(
+                                                "sessionId", Map.of("type", "string"),
+                                                "refId", Map.of("type", "string"),
+                                                "ref", Map.of("type", "string"),
+                                                "locator", Map.of("type", "object"),
+                                                "x", Map.of("type", "integer"),
+                                                "y", Map.of("type", "integer"),
+                                                "mode", Map.of("type", "string"),
+                                                "source", Map.of("type", "string"),
+                                                "screenClass", Map.of("type", "string"),
+                                                "modId", Map.of("type", "string")
+                                        ),
+                                        List.of()
+                                ),
+                                Map.of(
+                                        "operationId", "ui.screenshot",
+                                        "targetSide", "client",
+                                        "input", Map.of("source", "auto")
+                                )
+                        ),
+                        RuntimeOperationBindings.toolHandler(toolInvoker, "moddev.ui_screenshot")
                 )
         );
     }

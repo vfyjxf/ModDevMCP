@@ -33,9 +33,13 @@ public final class VanillaContainerUiDriver extends VanillaScreenUiDriver {
 
     @Override
     public boolean matches(UiContext context) {
-        return context.screenClass().contains("Inventory")
-                || context.screenClass().contains("Container")
-                || context.screenClass().contains(".inventory.");
+        var screenClass = context.screenClass();
+        if (screenClass == null || screenClass.isBlank()) {
+            return false;
+        }
+        return screenClass.contains("Inventory")
+                || screenClass.contains("Container")
+                || screenClass.contains(".inventory.");
     }
 
     @Override

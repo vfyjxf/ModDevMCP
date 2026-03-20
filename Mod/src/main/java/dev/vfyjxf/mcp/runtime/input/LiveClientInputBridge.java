@@ -9,7 +9,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.neoforge.client.ClientHooks;
 import org.lwjgl.glfw.GLFW;
 
-import java.lang.reflect.Field;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -297,7 +296,7 @@ final class LiveClientInputBridge implements ClientInputBridge {
 
         @Override
         public boolean editable() {
-            return readBooleanField(editBox, "isEditable");
+            return ReflectiveFieldAccess.readBooleanField(editBox, "isEditable");
         }
     }
 
@@ -381,13 +380,4 @@ final class LiveClientInputBridge implements ClientInputBridge {
         }
     }
 
-    private static boolean readBooleanField(Object target, String fieldName) {
-        try {
-            Field field = target.getClass().getDeclaredField(fieldName);
-            field.setAccessible(true);
-            return field.getBoolean(target);
-        } catch (ReflectiveOperationException exception) {
-            throw new IllegalStateException("Failed to read " + fieldName + " on " + target.getClass().getName(), exception);
-        }
-    }
 }

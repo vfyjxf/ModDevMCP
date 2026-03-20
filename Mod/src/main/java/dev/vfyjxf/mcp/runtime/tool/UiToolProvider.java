@@ -81,7 +81,9 @@ public final class UiToolProvider implements McpToolProvider {
         registry.registerTool(definition("moddev.ui_trace_recent"), (context, arguments) -> traceRecentResult(arguments));
         registry.registerTool(definition("moddev.ui_inspect"), (context, arguments) -> {
             var uiContext = uiContext(arguments);
-            return withDriver(uiContext, driver -> ToolResult.success(inspectResultToMap(driver.inspect(uiContext, SnapshotOptions.DEFAULT))));
+            return withDriver(uiContext, driver -> ToolResult.success(
+                    withUiContextState(inspectResultToMap(driver.inspect(uiContext, SnapshotOptions.DEFAULT)), uiContext)
+            ));
         });
         registry.registerTool(definition("moddev.ui_act"), (context, arguments) -> {
             var action = stringArgument(arguments.get("action"));
@@ -130,17 +132,17 @@ public final class UiToolProvider implements McpToolProvider {
             return withComposition(uiContext, arguments, composition -> {
                 var snapshot = aggregateSnapshot(uiContext, composition);
                 var snapshotRef = registries.uiSnapshotJournal().record(uiContext, snapshot);
-                return ToolResult.success(withSnapshotRef(snapshotToMap(snapshot), snapshotRef));
+                return ToolResult.success(withUiContextState(withSnapshotRef(snapshotToMap(snapshot), snapshotRef), uiContext));
             });
         });
         registry.registerTool(definition("moddev.ui_query"), (context, arguments) -> {
             var uiContext = uiContext(arguments);
             var selector = selectorFrom(arguments.get("selector"));
-            return withComposition(uiContext, arguments, composition -> ToolResult.success(Map.of(
+            return withComposition(uiContext, arguments, composition -> ToolResult.success(withUiContextState(Map.of(
                     "driverId", composition.defaultDriverId(),
                     "drivers", driverDetails(composition.drivers()),
                     "targets", aggregateQueryTargets(uiContext, composition, selector).stream().map(this::targetToMap).toList()
-            )));
+            ), uiContext)));
         });
         registry.registerTool(definition("moddev.ui_capture"), (context, arguments) -> {
             var uiContext = uiContext(arguments);
@@ -1219,6 +1221,9 @@ public final class UiToolProvider implements McpToolProvider {
             extensions.putAll(primary.extensions());
         }
         extensions.put("drivers", driverDetails(composition.drivers()));
+        // Interaction ids are only safe to expose when the composed view still has one
+        // unambiguous driver-scoped answer for the field. Otherwise the aggregated snapshot
+        // would look more precise than the runtime actually is.
         var focusedTargetId = mergeInteractionId(snapshots, UiSnapshot::focusedTargetId);
         var selectedTargetId = mergeInteractionId(snapshots, UiSnapshot::selectedTargetId);
         var hoveredTargetId = mergeInteractionId(snapshots, UiSnapshot::hoveredTargetId);
@@ -1238,6 +1243,9 @@ public final class UiToolProvider implements McpToolProvider {
     }
 
     private String mergeInteractionId(List<UiSnapshot> snapshots, java.util.function.Function<UiSnapshot, String> accessor) {
+        // Snapshot interaction ids are local to a driver. Two drivers may both report "button-0",
+        // which is still ambiguous in a composed snapshot, so uniqueness has to be checked against
+        // driver-scoped candidates instead of raw ids.
         var scopedCandidates = snapshots.stream()
                 .map(snapshot -> {
                     var interactionId = accessor.apply(snapshot);
@@ -1273,7 +1281,7 @@ public final class UiToolProvider implements McpToolProvider {
                         "driverId", driver.descriptor().id(),
                         "modId", driver.descriptor().modId(),
                         "priority", driver.descriptor().priority(),
-                        "capabilities", driver.descriptor().capabilities()
+                        "capabilities", driver.descriptor().capabilities().stream().sorted().toList()
                 ))
                 .toList();
     }
@@ -1348,9 +1356,6 @@ public final class UiToolProvider implements McpToolProvider {
         if ((screenClass == null || screenClass.isBlank()) && metrics != null) {
             screenClass = metrics.screenClass();
             screenHandle = liveScreenHandle(metrics);
-        }
-        if (screenClass == null || screenClass.isBlank()) {
-            screenClass = "custom.UnknownScreen";
         }
         if (modId == null || modId.isBlank()) {
             modId = "minecraft";
@@ -1597,10 +1602,6 @@ public final class UiToolProvider implements McpToolProvider {
     }
 
     private ToolResult inputActionResult(String action, Map<String, Object> arguments) {
-        var unavailable = unavailableScreenResult(arguments);
-        if (unavailable != null) {
-            return unavailable;
-        }
         var delegatedArguments = new java.util.LinkedHashMap<String, Object>();
         delegatedArguments.putAll(arguments);
         delegatedArguments.put("action", action);
@@ -1608,7 +1609,7 @@ public final class UiToolProvider implements McpToolProvider {
         if (!result.success()) {
             return ToolResult.failure(result.error());
         }
-        return ToolResult.success(result.payload(action));
+        return ToolResult.success(withLiveScreenState(result.payload(action), safeLiveMetrics(), List.of(), ""));
     }
 
     private ToolResult sessionWaitResult(Map<String, Object> arguments) {
@@ -1725,12 +1726,11 @@ public final class UiToolProvider implements McpToolProvider {
     }
 
     private ToolResult liveScreenshotResult(Map<String, Object> arguments) {
-        var unavailable = unavailableScreenResult(arguments);
-        if (unavailable != null) {
-            return unavailable;
-        }
         var uiContext = uiContext(arguments);
         return withDriver(uiContext, driver -> {
+            // Live screenshots must also work in-world when there is no active Screen instance.
+            // In that case the fallback-region driver still provides a capture-capable surface,
+            // so we let driver selection and capture provider matching decide availability.
             var reference = targetReferenceFrom(arguments);
             List<TargetSelector> selectors = null;
             UiTarget resolvedTarget = null;
@@ -2428,9 +2428,9 @@ public final class UiToolProvider implements McpToolProvider {
 
     private Map<String, Object> snapshotToMap(UiSnapshot snapshot) {
         var result = new LinkedHashMap<String, Object>();
-        result.put("screenId", snapshot.screenId());
-        result.put("screenClass", snapshot.screenClass());
-        result.put("driverId", snapshot.driverId());
+        result.put("screenId", blankIfNull(snapshot.screenId()));
+        result.put("screenClass", blankIfNull(snapshot.screenClass()));
+        result.put("driverId", blankIfNull(snapshot.driverId()));
         result.put("targets", snapshot.targets().stream().map(this::targetToMap).toList());
         result.put("focusedTargetId", snapshot.focusedTargetId() == null ? "" : snapshot.focusedTargetId());
         var drivers = snapshot.extensions().get("drivers");
@@ -2440,9 +2440,9 @@ public final class UiToolProvider implements McpToolProvider {
 
     private Map<String, Object> inspectResultToMap(UiInspectResult inspectResult) {
         var result = new java.util.LinkedHashMap<String, Object>();
-        result.put("screen", inspectResult.screen());
-        result.put("screenId", inspectResult.screenId());
-        result.put("driverId", inspectResult.driverId());
+        result.put("screen", blankIfNull(inspectResult.screen()));
+        result.put("screenId", blankIfNull(inspectResult.screenId()));
+        result.put("driverId", blankIfNull(inspectResult.driverId()));
         result.put("summary", inspectResult.summary());
         result.put("targets", inspectResult.targets().stream().map(this::targetToMap).toList());
         result.put("interaction", inspectResult.interaction());
@@ -2521,31 +2521,67 @@ public final class UiToolProvider implements McpToolProvider {
         );
     }
 
+    /**
+     * Expose the real live-client state explicitly so in-world automation can stay inspectable
+     * without inventing a fake screen class.
+     */
+    private Map<String, Object> withLiveScreenState(
+            Map<String, Object> payload,
+            ClientScreenMetrics metrics,
+            List<Map<String, Object>> drivers,
+            String driverId
+    ) {
+        var result = new java.util.LinkedHashMap<String, Object>();
+        result.putAll(payload);
+        result.put("screenClass", hasScreen(metrics) ? metrics.screenClass() : "");
+        result.put("modId", "minecraft");
+        result.put("screenAvailable", hasScreen(metrics));
+        result.put("inWorld", !hasScreen(metrics));
+        result.put("driverId", blankIfNull(driverId));
+        result.put("drivers", drivers);
+        result.put("guiWidth", metrics.guiWidth());
+        result.put("guiHeight", metrics.guiHeight());
+        result.put("framebufferWidth", metrics.framebufferWidth());
+        result.put("framebufferHeight", metrics.framebufferHeight());
+        return Map.copyOf(result);
+    }
+
+    private Map<String, Object> withUiContextState(Map<String, Object> payload, UiContext context) {
+        var result = new java.util.LinkedHashMap<String, Object>();
+        result.putAll(payload);
+        result.put("screenClass", blankIfNull(context.screenClass()));
+        result.put("modId", blankIfNull(context.modId()));
+        result.put("screenAvailable", context.screenClass() != null && !context.screenClass().isBlank());
+        result.put("inWorld", context.screenClass() == null || context.screenClass().isBlank());
+        return Map.copyOf(result);
+    }
+
+    private ClientScreenMetrics safeLiveMetrics() {
+        var metricsResult = liveScreenMetrics();
+        return metricsResult.accepted() ? metricsResult.value() : new ClientScreenMetrics(null, 0, 0, 0, 0);
+    }
+
+    private boolean hasScreen(ClientScreenMetrics metrics) {
+        return metrics.screenClass() != null && !metrics.screenClass().isBlank();
+    }
+
+    private String blankIfNull(String value) {
+        return value == null ? "" : value;
+    }
+
     private Map<String, Object> liveScreenToMap(ClientScreenMetrics metrics, Map<String, Object> arguments) {
-        var active = metrics.screenClass() != null && !metrics.screenClass().isBlank();
-        var driverId = "";
-        var drivers = List.<Map<String, Object>>of();
-        if (active) {
-            var composition = filteredComposition(new MapBackedUiContext(
-                    metrics.screenClass(),
-                    "minecraft",
-                    0,
-                    0,
-                    liveScreenHandle(metrics)
-            ), arguments);
-            driverId = composition.defaultDriverId();
-            drivers = driverDetails(composition.drivers());
-        }
-        return Map.of(
-                "active", active,
-                "screenClass", active ? metrics.screenClass() : "",
-                "modId", active ? "minecraft" : "",
-                "driverId", driverId,
-                "drivers", drivers,
-                "guiWidth", metrics.guiWidth(),
-                "guiHeight", metrics.guiHeight(),
-                "framebufferWidth", metrics.framebufferWidth(),
-                "framebufferHeight", metrics.framebufferHeight()
+        var composition = filteredComposition(new MapBackedUiContext(
+                metrics.screenClass(),
+                "minecraft",
+                0,
+                0,
+                liveScreenHandle(metrics)
+        ), arguments);
+        return withLiveScreenState(
+                Map.of("active", hasScreen(metrics)),
+                metrics,
+                driverDetails(composition.drivers()),
+                composition.defaultDriverId()
         );
     }
 
@@ -2553,8 +2589,8 @@ public final class UiToolProvider implements McpToolProvider {
         return Map.of(
                 "targetId", target.targetId(),
                 "driverId", target.driverId(),
-                "screenClass", target.screenClass(),
-                "modId", target.modId(),
+                "screenClass", blankIfNull(target.screenClass()),
+                "modId", blankIfNull(target.modId()),
                 "role", target.role(),
                 "text", target.text() == null ? "" : target.text(),
                 "bounds", Map.of(

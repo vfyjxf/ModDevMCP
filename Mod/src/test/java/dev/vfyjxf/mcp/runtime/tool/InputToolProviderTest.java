@@ -1,6 +1,7 @@
 package dev.vfyjxf.mcp.runtime.tool;
 
 import dev.vfyjxf.mcp.api.model.OperationResult;
+import dev.vfyjxf.mcp.api.runtime.ClientScreenMetrics;
 import dev.vfyjxf.mcp.api.runtime.InputController;
 import dev.vfyjxf.mcp.runtime.RuntimeRegistries;
 import dev.vfyjxf.mcp.server.ModDevMcpServer;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -229,6 +231,54 @@ class InputToolProviderTest {
                 "y", 72,
                 "button", 0
         ), controller.lastArguments);
+    }
+
+    @Test
+    void inputActionIncludesInWorldStateWhenNoScreenIsOpen() {
+        var registries = new RuntimeRegistries();
+        registries.inputControllers().add(new RecordingInputController(OperationResult.success(null)));
+
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        new InputToolProvider(registries, () -> new ClientScreenMetrics(null, 0, 0, 0, 0)).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.input_action").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "action", "key_down",
+                "keyCode", 341
+        ));
+
+        assertTrue(result.success());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals("", payload.get("screenClass"));
+        assertEquals(false, payload.get("screenAvailable"));
+        assertEquals(true, payload.get("inWorld"));
+    }
+
+    @Test
+    void clipboardSetUsesDedicatedClipboardTool() {
+        var registries = new RuntimeRegistries();
+        var clipboard = new AtomicReference<>("");
+
+        var server = new ModDevMcpServer(new McpToolRegistry());
+        new InputToolProvider(
+                registries,
+                () -> new ClientScreenMetrics(null, 0, 0, 0, 0),
+                clipboard::set
+        ).register(server.registry());
+
+        var tool = server.registry().findTool("moddev.input_clipboard_set").orElseThrow();
+        var result = tool.handler().handle(ToolCallContext.empty(), Map.of(
+                "text", "paste-me"
+        ));
+
+        assertTrue(result.success());
+        assertEquals("paste-me", clipboard.get());
+        @SuppressWarnings("unchecked")
+        var payload = (Map<String, Object>) result.value();
+        assertEquals(true, payload.get("performed"));
+        assertEquals(8, payload.get("textLength"));
+        assertEquals(true, payload.get("inWorld"));
     }
 
     private static final class RecordingInputController implements InputController {

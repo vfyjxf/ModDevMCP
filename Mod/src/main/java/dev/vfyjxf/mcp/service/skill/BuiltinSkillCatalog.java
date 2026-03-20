@@ -20,6 +20,7 @@ public final class BuiltinSkillCatalog {
             new CategorySpec("status", "Status", "Inspect local service readiness and troubleshooting state."),
             new CategorySpec("ui", "UI", "Inspect screens, refs, and interactive state inside the running game."),
             new CategorySpec("command", "Command", "Discover, suggest, and execute Minecraft commands."),
+            new CategorySpec("input", "Input", "Send low-level keyboard, mouse, and clipboard requests to the live client."),
             new CategorySpec("world", "World", "List, create, and join local worlds from the client runtime."),
             new CategorySpec("hotswap", "Hotswap", "Compile or reload changed classes into the running game.")
     );

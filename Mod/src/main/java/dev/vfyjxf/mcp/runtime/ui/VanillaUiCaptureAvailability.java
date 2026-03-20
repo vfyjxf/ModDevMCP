@@ -23,6 +23,19 @@ final class VanillaUiCaptureAvailability {
         }
     }
 
+    static boolean hasLiveFramebuffer(UiContext context) {
+        try {
+            var minecraftClass = Class.forName("net.minecraft.client.Minecraft");
+            var instance = minecraftClass.getMethod("getInstance").invoke(null);
+            if (instance == null) {
+                return false;
+            }
+            return minecraftClass.getMethod("getWindow").invoke(instance) != null;
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            return false;
+        }
+    }
+
     static boolean supportsOffscreenSnapshot(UiSnapshot snapshot) {
         if (snapshot == null) {
             return false;

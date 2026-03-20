@@ -58,6 +58,7 @@ public final class RuntimeOperationBindings {
         bindings.addAll(StatusOperationHandlers.operations(toolInvoker, statusSnapshotProvider));
         bindings.addAll(UiOperationHandlers.operations(toolInvoker));
         bindings.addAll(CommandOperationHandlers.operations(toolInvoker));
+        bindings.addAll(InputOperationHandlers.operations(toolInvoker));
         bindings.addAll(WorldOperationHandlers.operations(toolInvoker));
         bindings.addAll(HotswapOperationHandlers.operations(toolInvoker));
 

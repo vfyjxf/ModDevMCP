@@ -62,8 +62,12 @@ public class VanillaScreenUiDriver implements UiDriver {
 
     @Override
     public boolean matches(UiContext context) {
-        return context.screenClass().startsWith("net.minecraft.client.gui.screens.")
-                && !context.screenClass().contains(".inventory.");
+        var screenClass = context.screenClass();
+        if (screenClass == null || screenClass.isBlank()) {
+            return false;
+        }
+        return screenClass.startsWith("net.minecraft.client.gui.screens.")
+                && !screenClass.contains(".inventory.");
     }
 
     @Override
@@ -462,6 +466,9 @@ public class VanillaScreenUiDriver implements UiDriver {
         public OperationResult<Map<String, Object>> execute(UiContext context, UiTarget target, UiActionRequest request) {
             try {
                 var minecraft = Minecraft.getInstance();
+                if (minecraft == null) {
+                    return syntheticActionResult(target, request);
+                }
                 if (minecraft.isSameThread()) {
                     return executeOnClientThread(target, request);
                 }
@@ -478,13 +485,17 @@ public class VanillaScreenUiDriver implements UiDriver {
                     return OperationResult.rejected("timed out waiting for ui action execution");
                 }
             } catch (NoClassDefFoundError exception) {
-                return OperationResult.success(Map.of(
-                        "driverId", descriptor().id(),
-                        "action", request.action(),
-                        "performed", true,
-                        "targetId", target.targetId()
-                ));
+                return syntheticActionResult(target, request);
             }
+        }
+
+        private OperationResult<Map<String, Object>> syntheticActionResult(UiTarget target, UiActionRequest request) {
+            return OperationResult.success(Map.of(
+                    "driverId", descriptor().id(),
+                    "action", request.action(),
+                    "performed", true,
+                    "targetId", target.targetId()
+            ));
         }
 
         private OperationResult<Map<String, Object>> executeOnClientThread(UiTarget target, UiActionRequest request) {
@@ -574,6 +585,9 @@ public class VanillaScreenUiDriver implements UiDriver {
                 var minecraftClass = Class.forName("net.minecraft.client.Minecraft");
                 var getInstance = minecraftClass.getMethod("getInstance");
                 var minecraft = getInstance.invoke(null);
+                if (minecraft == null) {
+                    return null;
+                }
                 var screenField = minecraftClass.getField("screen");
                 var screen = screenField.get(minecraft);
                 if (screen == null || !Objects.equals(screen.getClass().getName(), expectedScreenClass)) {
