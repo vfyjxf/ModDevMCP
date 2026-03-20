@@ -149,7 +149,7 @@ Expected: no matches in active production code.
 **Files:**
 - Modify: `README.md`
 - Modify: `README.zh.md`
-- Modify: `skills/moddevmcp-usage/SKILL.md`
+- Modify: `skills/moddev-usage/SKILL.md`
 - Modify: `Mod/src/main/resources/moddev-service/skills/moddev-usage.md`
 - Modify: `Mod/src/main/resources/moddev-service/categories/ui.md`
 - Modify: `gradle.properties`

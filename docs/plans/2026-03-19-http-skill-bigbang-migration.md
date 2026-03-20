@@ -254,7 +254,7 @@ git commit -m "refactor: rename package namespace to dev.vfyjxf.moddev"
 ### Task 7: Update skills and guides to fully new operation flow
 
 **Files:**
-- Modify: `skills/moddevmcp-usage/SKILL.md`
+- Modify: `skills/moddev-usage/SKILL.md`
 - Modify: `Mod/src/main/resources/moddev-service/skills/moddev-usage.md`
 - Modify: `Mod/src/main/resources/moddev-service/categories/*.md`
 - Modify: `docs/guides/*.md`
