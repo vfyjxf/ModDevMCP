@@ -7,8 +7,8 @@ modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 description='''
-Minecraft runtime for ModDevMCP. Adds in-game UI inspection, capture,
-screenshots, interaction automation, and the host bridge used by external MCP
+Minecraft runtime for ModDevMCP. Adds in-game HTTP service endpoints, skill export,
+UI inspection, capture, screenshots, and interaction automation
 clients during NeoForge development.
 '''
 

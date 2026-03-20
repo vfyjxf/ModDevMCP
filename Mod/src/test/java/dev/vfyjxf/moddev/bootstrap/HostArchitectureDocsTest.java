@@ -3,8 +3,6 @@ package dev.vfyjxf.moddev.bootstrap;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
-import java.nio.file.Path;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -12,7 +10,7 @@ class HostArchitectureDocsTest {
 
     @Test
     void readmeDocumentsModOwnedServiceArchitecture() throws Exception {
-        var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
+        var rootDir = RepoRootLocator.repoRoot();
         var readme = Files.readString(rootDir.resolve("README.md"));
 
         assertTrue(readme.contains("skill-first service model"));
@@ -33,7 +31,7 @@ class HostArchitectureDocsTest {
 
     @Test
     void rootBuildIncludesOnlyModProduct() throws Exception {
-        var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
+        var rootDir = RepoRootLocator.repoRoot();
         var settingsGradle = Files.readString(rootDir.resolve("settings.gradle"));
         var readme = Files.readString(rootDir.resolve("README.md"));
 

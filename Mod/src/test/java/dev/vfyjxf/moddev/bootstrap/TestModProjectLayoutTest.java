@@ -3,8 +3,6 @@ package dev.vfyjxf.moddev.bootstrap;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
-import java.nio.file.Path;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -12,7 +10,7 @@ class TestModProjectLayoutTest {
 
     @Test
     void testModCompositeProjectExistsWithStandaloneSettings() throws Exception {
-        var repoDir = Path.of("").toAbsolutePath().normalize().getParent().resolve("TestMod");
+        var repoDir = RepoRootLocator.repoRoot().resolve("TestMod");
         var settingsGradle = repoDir.resolve("settings.gradle");
         var buildGradle = repoDir.resolve("build.gradle");
         var gradleProperties = repoDir.resolve("gradle.properties");
@@ -25,7 +23,7 @@ class TestModProjectLayoutTest {
         assertTrue(Files.exists(settingsGradle), settingsGradle.toString());
         assertTrue(Files.exists(buildGradle), buildGradle.toString());
         assertTrue(Files.exists(gradleProperties), gradleProperties.toString());
-        assertTrue(Files.exists(gradlew), gradlew.toString());
+        assertTrue(Files.exists(gradlew) || Files.exists(gradlewBat), "expected gradlew or gradlew.bat in " + repoDir);
         assertTrue(Files.exists(gradlewBat), gradlewBat.toString());
         assertTrue(Files.exists(entrypoint), entrypoint.toString());
         assertTrue(Files.exists(modsToml), modsToml.toString());

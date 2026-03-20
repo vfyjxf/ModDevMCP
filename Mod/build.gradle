@@ -122,7 +122,7 @@ mavenPublishing {
     }
     pom {
         name = 'ModDevMCP'
-        description = 'Minecraft runtime and NeoForge mod for ModDevMCP, providing UI inspection, capture, screenshots, interaction automation, and MCP host connectivity.'
+        description = 'Minecraft runtime and NeoForge mod for ModDevMCP, providing HTTP service discovery, skill export, UI inspection, capture, screenshots, and interaction automation.'
         url = projectUrl
         licenses {
             license {

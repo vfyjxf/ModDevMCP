@@ -77,7 +77,7 @@ public class ModDevMCP {
             Supplier<? extends Collection<ClientOperationRegistrar>> clientRegistrarSupplier,
             Supplier<? extends Collection<ServerOperationRegistrar>> serverRegistrarSupplier
     ) {
-        LOGGER.info("Initializing ModDev MCP");
+        LOGGER.info("Initializing ModDev service runtime");
         this.registries = registries;
         this.api = new ModDevApi(registries);
         this.commonRegistrarSupplier = commonRegistrarSupplier;

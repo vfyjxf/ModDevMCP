@@ -3,8 +3,6 @@ package dev.vfyjxf.moddev.bootstrap;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
-import java.nio.file.Path;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -12,7 +10,7 @@ class SkillFirstDocsTest {
 
     @Test
     void readmesDescribeSkillFirstServiceContract() throws Exception {
-        var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
+        var rootDir = RepoRootLocator.repoRoot();
         var readme = Files.readString(rootDir.resolve("README.md"));
         var readmeZh = Files.readString(rootDir.resolve("README.zh.md"));
 

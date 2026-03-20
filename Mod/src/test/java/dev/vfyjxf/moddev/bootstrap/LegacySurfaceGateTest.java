@@ -44,7 +44,7 @@ class LegacySurfaceGateTest {
 
     @Test
     void productionSourceMustNotContainLegacyMcpOrToolBridgeTokens() throws Exception {
-        var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
+        var rootDir = RepoRootLocator.repoRoot();
         var productionRoots = List.of(
                 rootDir.resolve("Mod/src/main/java"),
                 rootDir.resolve("Mod/src/main/resources/moddev-service")
@@ -61,7 +61,7 @@ class LegacySurfaceGateTest {
 
     @Test
     void activeDocsAndSkillsMustNotReferenceLegacyStdioToolFlow() throws Exception {
-        var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
+        var rootDir = RepoRootLocator.repoRoot();
         var roots = List.of(
                 rootDir.resolve("README.md"),
                 rootDir.resolve("README.zh.md"),

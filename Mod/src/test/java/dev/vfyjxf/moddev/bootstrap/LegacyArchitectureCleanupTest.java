@@ -3,7 +3,6 @@ package dev.vfyjxf.moddev.bootstrap;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -13,7 +12,7 @@ class LegacyArchitectureCleanupTest {
 
     @Test
     void standaloneServerAndPluginModulesAreDeleted() {
-        var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
+        var rootDir = RepoRootLocator.repoRoot();
 
         assertFalse(Files.exists(rootDir.resolve("Server")), "Server module directory should be deleted");
         assertFalse(Files.exists(rootDir.resolve("Plugin")), "Plugin module directory should be deleted");
@@ -21,7 +20,7 @@ class LegacyArchitectureCleanupTest {
 
     @Test
     void coreGuidesUseServiceFirstFlow() throws Exception {
-        var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
+        var rootDir = RepoRootLocator.repoRoot();
         var guides = List.of(
                 rootDir.resolve("docs/guides/2026-03-11-game-service-guide.md"),
                 rootDir.resolve("docs/guides/2026-03-11-game-service-guide.zh.md"),
@@ -65,7 +64,7 @@ class LegacyArchitectureCleanupTest {
 
     @Test
     void uiGuidesDocumentCaptureAndRawInputBoundary() throws Exception {
-        var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
+        var rootDir = RepoRootLocator.repoRoot();
         var guides = List.of(
                 rootDir.resolve("docs/guides/2026-03-11-live-screen-operation-guide.md"),
                 rootDir.resolve("docs/guides/2026-03-12-playwright-style-ui-automation-guide.md"),
