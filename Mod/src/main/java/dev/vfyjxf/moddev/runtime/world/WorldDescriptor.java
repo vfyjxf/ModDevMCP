@@ -1,0 +1,12 @@
+package dev.vfyjxf.moddev.runtime.world;
+
+public record WorldDescriptor(
+        String id,
+        String name,
+        long lastPlayed,
+        String gameMode,
+        boolean hardcore,
+        boolean cheatsKnown
+) {
+}
+

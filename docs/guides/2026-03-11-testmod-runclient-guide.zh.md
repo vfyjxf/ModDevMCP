@@ -1,20 +1,13 @@
 # 2026-03-11 TestMod RunClient 指南
 
 Date: 2026-03-11 17:30 CST
-Updated: 2026-03-15 00:05 CST
+Updated: 2026-03-18 19:30 CST
 
 ## 用途
 
 - 用独立 NeoForge 客户端做真实验证
 - 保持 `TestMod` 作为参考消费者工程
-- 保持 MCP client 安装文件与游戏运行流程一致
-
-## 消费者形态
-
-- `TestMod` 按普通消费者工程接入
-- 默认客户端流程下不需要显式写 `modDevMcp {}`
-- `runClient` 依赖 `createMcpClientFiles`
-- 你的 MCP client 会根据安装好的配置启动生成的 host 入口
+- 验证本地 HTTP service 与导出 skills 在真实游戏里的行为
 
 ## 启动客户端
 
@@ -26,25 +19,53 @@ $env:GRADLE_USER_HOME='..\.gradle-user'
 .\gradlew.bat runClient --no-daemon
 ```
 
-需要时也可以手动生成 client 文件：
-
-```powershell
-.\gradlew.bat createMcpClientFiles --no-daemon
-```
-
-`runClient` 同时依赖 client 文件生成，因此 MCP 安装文件会保持同步。
-
 ## 用户会看到什么
 
 - Minecraft 客户端启动
-- mod 随游戏一起加载
-- 在 MCP client 启动生成的 host 入口后，游戏会自动回连到 host
-- 生成出来的 MCP client 文件与当前构建保持一致
+- `ModDevMCP` 在游戏内部加载
+- loopback 本地 service 可用
+- 导出 skill 树写入 `~/.moddev/skills`
+
+## 验证步骤
+
+当游戏到达标题界面或进入世界后：
+
+```powershell
+curl http://127.0.0.1:47812/api/v1/status
+```
+
+如果默认探测失败，走项目级回退：
+
+- 读取 `<gradleProject>/build/moddevmcp/game-instances.json`
+- 对文件里每个 `baseUrl` 执行 `GET /api/v1/status` 探测
+- 选中可用实例后继续请求
+
+当双端同时活跃时，client 和 server 使用独立端口。
+
+解析出可用 `baseUrl` 后，再读取入口 skill markdown：
+
+```powershell
+curl <baseUrl>/api/v1/skills/moddev-usage/markdown
+```
+
+可选请求探测：
+
+```powershell
+curl -X POST <baseUrl>/api/v1/requests `
+  -H "Content-Type: application/json" `
+  -d '{"requestId":"probe-1","operationId":"status.get","input":{}}'
+```
+
+```powershell
+curl -X POST <baseUrl>/api/v1/requests `
+  -H "Content-Type: application/json" `
+  -d '{"requestId":"probe-2","operationId":"status.live_screen","input":{}}'
+```
 
 ## Agent 就绪检查
 
-1. 调用 `moddev.status`
-2. 确认 `gameConnected=true`
-3. 调用 `moddev.ui_get_live_screen`
-
-只有这三步都成功后才继续。
+1. `GET <baseUrl>/api/v1/status`
+2. 确认 `serviceReady=true`
+3. 如果任务依赖真实游戏状态，再确认该 `<baseUrl>` 返回的 `gameReady=true`
+4. 读取 `GET <baseUrl>/api/v1/skills/moddev-usage/markdown`
+5. 再继续执行 `POST <baseUrl>/api/v1/requests`

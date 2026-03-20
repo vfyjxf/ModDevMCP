@@ -1,0 +1,4 @@
+interface:
+  display_name: "ModDev Usage"
+  short_description: "Use the local ModDev HTTP service safely"
+  default_prompt: "Use $moddev-usage to probe 127.0.0.1 first, then fall back to project-local game-instances discovery before requests."

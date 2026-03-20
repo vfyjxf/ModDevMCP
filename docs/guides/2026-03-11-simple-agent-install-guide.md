@@ -1,110 +1,74 @@
 # 2026-03-11 Simple Agent Install Guide
 
 Date: 2026-03-11 17:30 CST
-Updated: 2026-03-15 00:45 CST
+Updated: 2026-03-18 09:40 CST
 
 ## Purpose
 
-- generate ready-to-install MCP client config files
-- install ModDevMCP into mainstream agent tools without hand-writing commands
-- keep the install and startup flow simple
+- explain the simplest consumer setup for the built-in local service
+- keep agent startup aligned with exported skills and the request API
+- avoid hand-maintained external server launch commands
 
 ## Consumer Project Setup
 
-Apply the plugin and add the published mod dependency in your own NeoForge project:
+Add the published mod dependency in your NeoForge project:
 
 ```groovy
-plugins {
-    id 'net.neoforged.moddev' version '<moddevgradle-version>'
-    id 'dev.vfyjxf.moddevmcp' version '<moddevmcp-version>'
-}
-
 dependencies {
     implementation("dev.vfyjxf:moddevmcp:<version>") {
         transitive = false
     }
 }
-
 ```
 
-The plugin configures the normal client defaults for you. Add `modDevMcp {}` only when you need to override something:
-
-```groovy
-modDevMcp {
-    runs = ["client"]
-    requireEnhancedHotswap = false
-}
-```
-
-## Generate Client Files
-
-From your project:
-
-```powershell
-.\gradlew.bat createMcpClientFiles --no-daemon
-```
-
-For a normal consumer project, that is the only MCP-specific Gradle task you need to run manually. Your selected NeoForge run tasks regenerate these files automatically when needed.
-
-Generated files are written under:
-
-- `build/moddevmcp/mcp-clients/clients/codex.toml`
-- `build/moddevmcp/mcp-clients/clients/claude-code.mcp.json`
-- `build/moddevmcp/mcp-clients/clients/cursor-mcp.json`
-- `build/moddevmcp/mcp-clients/clients/vscode-mcp.json`
-- `build/moddevmcp/mcp-clients/clients/gemini-settings.json`
-- `build/moddevmcp/mcp-clients/clients/INSTALL.md`
-
-## Install by Client
-
-### Codex
-
-- merge `codex.toml` into `~/.codex/config.toml`
-- or use `codex mcp add` with the generated command and arguments
-- verify with `codex mcp list`
-
-### Claude Code
-
-- merge `claude-code.mcp.json` into `<project>/.mcp.json`
-- or install it per user with `claude mcp add --transport stdio ...`
-- verify with `claude mcp list`
-
-### Cursor
-
-- merge `cursor-mcp.json` into `<project>/.cursor/mcp.json`
-- if the tool list does not refresh immediately, reopen MCP settings or restart Cursor
-
-### VS Code
-
-- merge `vscode-mcp.json` into `<project>/.vscode/mcp.json`
-- reopen the workspace if MCP servers stay stale
-
-### Gemini CLI
-
-- merge `gemini-settings.json` into `<project>/.gemini/settings.json` or `~/.gemini/settings.json`
-- or use `gemini mcp add` with the generated command and arguments
-
-## Unsupported Generated Targets
-
-- client-specific files are only emitted when their current official config format has been re-verified
-- use `INSTALL.md` plus the generated command and arguments for any client without a generated file
+The mod exposes a loopback HTTP service from inside the running game.
 
 ## Start Order
 
-1. install the generated MCP config into your MCP client
-2. start your normal game run, such as `runClient`
-3. connect the agent
-4. call `moddev.status`
-5. continue only if `gameConnected=true`
+1. start your normal game run, such as `runClient`
+2. wait for the mod to finish loading
+3. call the default probe `GET http://127.0.0.1:47812/api/v1/status`
+4. if unavailable, use project-local fallback `<gradleProject>/build/moddevmcp/game-instances.json`
+5. probe listed candidates with `GET /api/v1/status` and pick a live `baseUrl`
+6. read `moddev-usage`
+7. continue with `POST /api/v1/requests`
 
-The MCP client starts the generated ModDevMCP host entry from its installed config. You do not need to launch a separate MCP server task by hand.
+When both sides are active, client and server use separate ports.
 
-For direct debugging or troubleshooting, you can still start the same host manually with `:Server:runStdioMcp`.
+## Exported Skills
+
+By default the mod exports a local skill tree to:
+
+- `~/.moddev/skills/manifest.json`
+- `~/.moddev/skills/skills/moddev-usage.md`
+- `~/.moddev/skills/skills/<skillId>.md`
+- `~/.moddev/skills/categories/<categoryId>.md`
+
+Agents should read the exported entry skill first when the files are available locally.
+
+## Minimal Verification
+
+Resolve `baseUrl` with the same sequence:
+
+1. `GET http://127.0.0.1:47812/api/v1/status`
+2. if unavailable, read `<gradleProject>/build/moddevmcp/game-instances.json`
+3. probe listed candidates with `GET /api/v1/status` and pick a live `baseUrl`
+
+Then run:
+
+```powershell
+curl <baseUrl>/api/v1/status
+curl <baseUrl>/api/v1/skills/moddev-usage/markdown
+```
+
+```powershell
+curl -X POST <baseUrl>/api/v1/requests `
+  -H "Content-Type: application/json" `
+  -d '{"requestId":"check-1","operationId":"status.get","input":{}}'
+```
 
 ## Related Guides
 
-- `docs/guides/2026-03-11-game-mcp-guide.md`
 - `docs/guides/2026-03-11-agent-preflight-checklist.md`
-- `docs/guides/2026-03-11-agent-prompt-templates.md`
-
+- `docs/guides/2026-03-11-testmod-runclient-guide.md`
 

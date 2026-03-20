@@ -1,7 +1,6 @@
 plugins {
     id 'java-library'
     id 'net.neoforged.moddev' version '2.0.140'
-    id 'org.gradlex.extra-java-module-info' version '1.13.1'
     id "com.vanniktech.maven.publish"
     id 'signing'
     id 'idea'
@@ -25,6 +24,7 @@ java {
 def mcpCoreVersion = "1.0.0"
 def gsonVersion = "2.10.1"
 def reflectVersion = "1.6.2"
+def mixinConfigFile = "moddevmcp.mixins.json"
 
 neoForge {
     version = project.neo_version
@@ -61,55 +61,32 @@ neoForge {
             sourceSet(sourceSets.main)
         }
     }
+
+    unitTest {
+        enable()
+        testedMod = mods."${mod_id}"
+    }
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
+tasks.named("processResources", ProcessResources).configure {
+    inputs.file("src/main/resources/${mixinConfigFile}")
+}
 
 configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
-extraJavaModuleInfo {
-    skipLocalJars = true
-    failOnMissingModuleInfo = false
-    activate(configurations.additionalRuntimeClasspath)
-    activate(configurations.jarJar)
-    module("io.modelcontextprotocol.sdk:mcp-core", "io.modelcontextprotocol.sdk.mcp.core") {
-        overrideModuleName()
-    }
-}
 
 dependencies {
-    compileOnlyApi(project(":Server")) {
-        exclude(group: "org.slf4j")
-    }
-    jarJar(project(":Server")) {
-        exclude(group: "org.slf4j")
-        transitive = false
-    }
-    additionalRuntimeClasspath(project(":Server")) {
-        exclude(group: "org.slf4j")
-        transitive = false
-    }
-    testRuntimeOnly(project(":Server")) {
-        exclude(group: "org.slf4j")
-        transitive = false
-    }
-    implementation("net.lenni0451:Reflect:${reflectVersion}")
+    compileOnly("net.lenni0451:Reflect:${reflectVersion}")
+
     additionalRuntimeClasspath("net.lenni0451:Reflect:${reflectVersion}")
     jarJar("net.lenni0451:Reflect:${reflectVersion}")
-    additionalRuntimeClasspath("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
-        exclude(group: "org.slf4j")
-    }
-    jarJar("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
-        exclude(group: "org.slf4j")
-    }
-    testRuntimeOnly("io.modelcontextprotocol.sdk:mcp-core:${mcpCoreVersion}") {
-        exclude(group: "org.slf4j")
-    }
-    testRuntimeOnly("com.google.code.gson:gson:${gsonVersion}")
+    testImplementation("net.lenni0451:Reflect:${reflectVersion}")
     testRuntimeOnly("org.slf4j:slf4j-api:2.0.9")
 
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.12.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
@@ -145,7 +122,7 @@ mavenPublishing {
     }
     pom {
         name = 'ModDevMCP'
-        description = 'Minecraft runtime and NeoForge mod for ModDevMCP, providing UI inspection, capture, screenshots, interaction automation, and MCP host connectivity.'
+        description = 'Minecraft runtime and NeoForge mod for ModDevMCP, providing HTTP service discovery, skill export, UI inspection, capture, screenshots, and interaction automation.'
         url = projectUrl
         licenses {
             license {
@@ -176,14 +153,6 @@ mavenPublishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-}
-
-tasks.named('jarJar').configure {
-    dependsOn(project(':Server').tasks.named('jar'))
-}
-
-tasks.withType(Test).configureEach {
-    dependsOn(project(':Server').tasks.named('jar'))
 }
 
 idea {

@@ -1,74 +1,41 @@
-# 2026-03-12 Playwright 风格 UI 自动化指南
+# 2026-03-12 UI 自动化指南
 
-Date: 2026-03-12 00:27 CST
-Updated: 2026-03-15 00:05 CST
+日期：2026-03-12 00:27 CST
+更新：2026-03-20 00:20 CST
 
-## 用途
+## 目的
 
-用高层 UI 工具形成一条接近 Playwright 的简短调试闭环：
+使用当前 HTTP operation 完成 UI 读取、动作执行与截图导出，完全不依赖旧工具流。
 
-1. inspect
-2. act
-3. wait
-4. screenshot
-5. 查看 trace
+## 推荐 Operation
 
-只有在同一 screen 上需要较长流程并且确实需要稳定引用时，才降级使用更底层的 session/ref 工具。
-
-## 首选工具
-
-- `moddev.ui_run_intent`
-- `moddev.ui_inspect`
-- `moddev.ui_act`
-- `moddev.ui_wait`
-- `moddev.ui_screenshot`
-- `moddev.ui_trace_recent`
-
-## 底层回退工具
-
-- `moddev.ui_session_open`
-- `moddev.ui_session_refresh`
-- `moddev.ui_click_ref`
-- `moddev.ui_hover_ref`
-- `moddev.ui_switch`
-- `moddev.ui_press_key`
-- `moddev.ui_type_text`
-- `moddev.ui_wait_for`
-- `moddev.ui_batch`
-- `moddev.ui_trace_get`
+- `status.live_screen`
+- `ui.inspect`
+- `ui.action`
+- `ui.snapshot`
+- `ui.capture`
+- `input.action`（原始键盘/鼠标事件）
 
 ## 推荐流程
 
-1. 先把生成的 MCP 配置安装到你的 MCP client
-2. 调用 `moddev.status`
-3. 只有在 `gameConnected=true` 时才继续
-4. 调用 `moddev.ui_get_live_screen`
-5. 如果需要进入顶层界面，例如 `inventory`、`chat`、`pause_menu`，调用 `moddev.ui_run_intent`
-6. 调用 `moddev.ui_inspect`
-7. 调用 `moddev.ui_act`
-8. 调用 `moddev.ui_wait`
-9. 在检查点调用 `moddev.ui_screenshot`
-10. 如果需要一段简短的动作历史，调用 `moddev.ui_trace_recent`
+1. 把生成的 service 配置安装到 agent 客户端
+2. `GET /api/v1/status`
+3. 仅当 `gameReady=true` 继续
+4. 用 `status.live_screen` 查询当前屏幕
+5. 用 `ui.inspect` 读取 UI
+6. 用 `ui.action` 执行动作
+7. 用 `ui.capture` 导出截图
+
+需要绕过 UI 语义时，直接用 `input.action`。
 
 ## 最小示例
 
-进入顶层界面：
+UI 读取：
 
 ```json
 {
-  "name": "moddev.ui_run_intent",
-  "arguments": {
-    "intent": "inventory"
-  }
-}
-```
-
-检查当前 UI：
-
-```json
-{
-  "name": "moddev.ui_inspect",
-  "arguments": {}
+  "operationId": "ui.inspect",
+  "input": {}
 }
 ```
 
@@ -76,10 +43,10 @@ Updated: 2026-03-15 00:05 CST
 
 ```json
 {
-  "name": "moddev.ui_act",
-  "arguments": {
+  "operationId": "ui.action",
+  "input": {
     "action": "click",
-    "locator": {
+    "target": {
       "role": "button",
       "text": "Create New World"
     }
@@ -87,63 +54,39 @@ Updated: 2026-03-15 00:05 CST
 }
 ```
 
-等待下一可见状态：
+截图导出（推荐默认值，`auto` 会优先走 framebuffer）：
 
 ```json
 {
-  "name": "moddev.ui_wait",
-  "arguments": {
-    "condition": "targetAppeared",
-    "locator": {
-      "role": "button",
-      "text": "Create World"
-    },
-    "timeoutMs": 1000,
-    "pollIntervalMs": 50
+  "operationId": "ui.capture",
+  "input": {
+    "source": "auto",
+    "mode": "full"
   }
 }
 ```
 
-截取证明图：
+原始按键：
 
 ```json
 {
-  "name": "moddev.ui_screenshot",
-  "arguments": {
-    "locator": {
-      "role": "button",
-      "text": "Create World"
-    },
-    "source": "auto"
+  "operationId": "input.action",
+  "input": {
+    "action": "key_press",
+    "keyCode": 69,
+    "modifiers": 0
   }
 }
 ```
 
-## 稳定失败码
+## Capture 参数
 
-- `runtime_unavailable`
-- `screen_unavailable`
-- `session_not_found`
-- `session_stale`
-- `target_stale`
-- `target_not_found`
-- `batch_step_failed`
-- `capture_unavailable`
+`ui.capture` 支持：
 
-## 实际规则
+- `source`: `auto` / `offscreen` / `framebuffer` / `render`
+- `mode`: `full` / `crop`
+- `target`: 仅导出目标列表
+- `exclude`: 排除导出目标列表
 
-对常见 UI 调试流程来说，除非确实需要，否则不要一开始就抓原始完整 snapshot。
+若要做“仅导出”，使用 `mode=crop` 并传入 `target`。
 
-优先使用：
-
-1. 先安装生成的 MCP 配置
-2. `moddev.status`
-3. `moddev.ui_get_live_screen`
-4. `moddev.ui_run_intent`
-5. `moddev.ui_inspect`
-6. `moddev.ui_act`
-7. `moddev.ui_wait`
-8. `moddev.ui_screenshot`
-9. `moddev.ui_trace_recent`
-
-普通消费者接入时，不需要为了使用这条流程而额外写 `modDevMcp {}`。

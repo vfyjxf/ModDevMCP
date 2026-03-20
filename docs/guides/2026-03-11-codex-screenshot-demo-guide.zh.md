@@ -1,27 +1,31 @@
-# 2026-03-11 Codex 截图演示指南
+# 2026-03-11 Codex 截图示例
 
-Date: 2026-03-11 17:30 CST
-Updated: 2026-03-15 00:05 CST
+日期：2026-03-11 21:30 CST
+更新：2026-03-20 00:20 CST
 
 ## 目标
 
-- 连接一个 Codex 风格的 MCP client
-- 先用 `moddev.status` 确认就绪
-- 在游戏就绪后截取真实截图
+在游戏就绪后通过 HTTP operation 捕获真实截图。
 
-## 启动顺序
+## 步骤
 
-1. 先为 Codex 生成并安装 ModDevMCP 配置
-2. 通过 `runClient` 启动 `TestMod`
-3. 等待游戏加载完成
-4. 通过生成的 MCP 入口连接 Codex
+1. `GET /api/v1/status`
+2. 确认 `serviceReady=true` 且 `gameReady=true`
+3. `POST /api/v1/requests` 调用 `ui.capture`
 
-## 推荐首次调用
+## 示例请求
 
-1. `moddev.status`
-2. `moddev.ui_get_live_screen`
-3. `moddev.ui_capture`
+```json
+{
+  "operationId": "ui.capture",
+  "input": {
+    "source": "framebuffer",
+    "mode": "full"
+  }
+}
+```
 
-如果状态返回 `gameConnected=false`，就停止并等待游戏加载完成。
+返回里会包含截图的 `path` 与 `captureRef`。
 
-默认客户端流程下，`TestMod` 不需要额外写 `modDevMcp {}`。
+如果你要最稳的整屏真实截图，优先用 `source=framebuffer`。现在 `source=auto` 也可以作为默认值，因为它会先尝试 framebuffer。
+
