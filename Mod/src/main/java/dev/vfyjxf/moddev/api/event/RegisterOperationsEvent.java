@@ -1,6 +1,6 @@
 package dev.vfyjxf.moddev.api.event;
 
-import dev.vfyjxf.moddev.api.ModMcpApi;
+import dev.vfyjxf.moddev.api.ModDevApi;
 import dev.vfyjxf.moddev.api.operation.OperationExecutor;
 import dev.vfyjxf.moddev.service.operation.OperationDefinition;
 
@@ -11,10 +11,10 @@ import java.util.Objects;
  */
 public abstract class RegisterOperationsEvent {
 
-    private final ModMcpApi api;
+    private final ModDevApi api;
     private final EventPublisher eventPublisher;
 
-    protected RegisterOperationsEvent(ModMcpApi api, EventPublisher eventPublisher) {
+    protected RegisterOperationsEvent(ModDevApi api, EventPublisher eventPublisher) {
         this.api = Objects.requireNonNull(api, "api");
         this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher");
     }
@@ -29,7 +29,7 @@ public abstract class RegisterOperationsEvent {
     /**
      * Returns the public runtime registration API associated with this callback.
      */
-    public final ModMcpApi api() {
+    public final ModDevApi api() {
         return api;
     }
 

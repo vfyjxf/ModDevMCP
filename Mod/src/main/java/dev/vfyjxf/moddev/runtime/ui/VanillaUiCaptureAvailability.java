@@ -6,6 +6,8 @@ import dev.vfyjxf.moddev.api.ui.UiTarget;
 
 final class VanillaUiCaptureAvailability {
 
+    private static final String PAUSE_SCREEN_CLASS = "net.minecraft.client.gui.screens.PauseScreen";
+
     private VanillaUiCaptureAvailability() {
     }
 
@@ -27,10 +29,37 @@ final class VanillaUiCaptureAvailability {
         if (snapshot == null) {
             return false;
         }
-        if (snapshot.screenClass() != null && snapshot.screenClass().startsWith("net.minecraft.client.gui.screens.worldselection.")) {
+        var screenClass = snapshot.screenClass();
+        if (screenClass == null || screenClass.isBlank()) {
+            return false;
+        }
+        if (!screenClass.startsWith("net.minecraft.client.gui.screens.")) {
+            return false;
+        }
+        if (PAUSE_SCREEN_CLASS.equals(screenClass)) {
+            return false;
+        }
+        if (screenClass.startsWith("net.minecraft.client.gui.screens.worldselection.")) {
             return false;
         }
         return snapshot.targets().stream().noneMatch(VanillaUiCaptureAvailability::usesSelectionListRendering);
+    }
+
+    static boolean supportsFramebufferCapture(UiContext context) {
+        try {
+            var minecraftClass = Class.forName("net.minecraft.client.Minecraft");
+            var instance = minecraftClass.getMethod("getInstance").invoke(null);
+            if (instance == null) {
+                return false;
+            }
+            var screen = minecraftClass.getField("screen").get(instance);
+            if (screen == null) {
+                return "custom.UnknownScreen".equals(context.screenClass());
+            }
+            return screen.getClass().getName().equals(context.screenClass());
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            return false;
+        }
     }
 
     private static boolean usesSelectionListRendering(UiTarget target) {
@@ -41,4 +70,3 @@ final class VanillaUiCaptureAvailability {
         return className.contains("SelectionList");
     }
 }
-

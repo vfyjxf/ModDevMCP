@@ -2,7 +2,7 @@ package dev.vfyjxf.moddev.service.http;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import dev.vfyjxf.moddev.server.transport.JsonCodec;
+import dev.vfyjxf.moddev.service.http.JsonCodec;
 import dev.vfyjxf.moddev.service.operation.OperationRegistry;
 import dev.vfyjxf.moddev.service.request.OperationError;
 import dev.vfyjxf.moddev.service.request.OperationExecutionException;

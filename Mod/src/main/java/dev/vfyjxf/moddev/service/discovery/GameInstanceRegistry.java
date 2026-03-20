@@ -1,6 +1,6 @@
 package dev.vfyjxf.moddev.service.discovery;
 
-import dev.vfyjxf.moddev.server.transport.JsonCodec;
+import dev.vfyjxf.moddev.service.http.JsonCodec;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;

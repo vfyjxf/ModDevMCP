@@ -1,78 +1,41 @@
-# 2026-03-12 Playwright-Style UI Automation Guide
+# 2026-03-12 UI Automation Guide
 
 Date: 2026-03-12 00:27 CST
-Updated: 2026-03-15 00:05 CST
+Updated: 2026-03-20 00:20 CST
 
 ## Purpose
 
-Use the high-level UI tools in a short debug loop that feels similar to Playwright:
+Use the current HTTP operations to inspect UI, perform actions, and capture proof images without legacy tool flows.
 
-1. inspect
-2. act
-3. wait
-4. screenshot
-5. review trace
+## Preferred Operations
 
-Use lower-level session and ref tools only when a longer same-screen flow really needs stable references.
-
-## Preferred Tools
-
-- `moddev.ui_run_intent`
-- `moddev.ui_inspect`
-- `moddev.ui_act`
-- `moddev.ui_wait`
-- `moddev.ui_screenshot`
-- `moddev.ui_trace_recent`
-
-## Lower-Level Fallback Tools
-
-- `moddev.ui_session_open`
-- `moddev.ui_session_refresh`
-- `moddev.ui_click_ref`
-- `moddev.ui_hover_ref`
-- `moddev.ui_switch`
-- `moddev.ui_press_key`
-- `moddev.ui_type_text`
-- `moddev.ui_wait_for`
-- `moddev.ui_batch`
-- `moddev.ui_trace_get`
-- `moddev.input_action` for raw key and mouse event injection outside UI-semantic flows
+- `status.live_screen`
+- `ui.inspect`
+- `ui.action`
+- `ui.snapshot`
+- `ui.capture`
+- `input.action` for raw key or mouse events
 
 ## Recommended Flow
 
 1. install the generated service config into your agent client
-2. call `GET /api/v1/status`
+2. `GET /api/v1/status`
 3. continue only if `gameReady=true`
-4. call `status.live_screen (via POST /api/v1/requests)`
-5. if multiple drivers are active, choose the default `driverId` or narrow read-only calls with `includeDrivers` / `excludeDrivers`
-6. call `moddev.ui_run_intent` if you need to enter a top-level screen such as `inventory`, `chat`, or `pause_menu`
-7. for mixed-driver screens, call `moddev.ui_query` with `driverId` / `includeDrivers` / `excludeDrivers` to target the intended driver
-8. call `moddev.ui_action` for driver-targeted actions; use `moddev.ui_inspect` / `moddev.ui_act` only when default-driver behavior is acceptable
-9. call `moddev.ui_wait`
-10. call `moddev.ui_screenshot` at checkpoints
-11. call `moddev.ui_trace_recent` if you need a short action history
+4. `POST /api/v1/requests` with `status.live_screen`
+5. `POST /api/v1/requests` with `ui.inspect`
+6. `POST /api/v1/requests` with `ui.action`
+7. `POST /api/v1/requests` with `ui.capture` for proof
 
-Use `moddev.input_action` instead of `moddev.ui_press_key` or `moddev.ui_type_text` when you need raw key or mouse event injection that should bypass UI-semantic screen checks.
+When you need raw key or mouse input, use `input.action` instead of trying to infer a UI target.
 
-## Minimal Example
-
-Enter a top-level screen:
-
-```json
-{
-  "name": "moddev.ui_run_intent",
-  "arguments": {
-    "intent": "inventory"
-  }
-}
-```
+## Minimal Examples
 
 Inspect the current UI:
 
 ```json
 {
-  "name": "moddev.ui_inspect",
-  "arguments": {}
+  "operationId": "ui.inspect",
+  "input": {}
 }
 ```
 
@@ -80,10 +43,10 @@ Click a target:
 
 ```json
 {
-  "name": "moddev.ui_act",
-  "arguments": {
+  "operationId": "ui.action",
+  "input": {
     "action": "click",
-    "locator": {
+    "target": {
       "role": "button",
       "text": "Create New World"
     }
@@ -91,64 +54,39 @@ Click a target:
 }
 ```
 
-Wait for the next visible state:
+Capture proof (recommended default, framebuffer-first auto source):
 
 ```json
 {
-  "name": "moddev.ui_wait",
-  "arguments": {
-    "condition": "targetAppeared",
-    "locator": {
-      "role": "button",
-      "text": "Create World"
-    },
-    "timeoutMs": 1000,
-    "pollIntervalMs": 50
+  "operationId": "ui.capture",
+  "input": {
+    "source": "auto",
+    "mode": "full"
   }
 }
 ```
 
-Capture proof:
+Raw key input:
 
 ```json
 {
-  "name": "moddev.ui_screenshot",
-  "arguments": {
-    "locator": {
-      "role": "button",
-      "text": "Create World"
-    },
-    "source": "auto"
+  "operationId": "input.action",
+  "input": {
+    "action": "key_press",
+    "keyCode": 69,
+    "modifiers": 0
   }
 }
 ```
 
-## Stable Failure Codes
+## Capture Options
 
-- `runtime_unavailable`
-- `screen_unavailable`
-- `session_not_found`
-- `session_stale`
-- `target_stale`
-- `target_not_found`
-- `batch_step_failed`
-- `capture_unavailable`
+`ui.capture` supports:
 
-## Practical Rule
+- `source`: `auto`, `offscreen`, `framebuffer`, `render`
+- `mode`: `full` or `crop`
+- `target`: list of target selectors to include
+- `exclude`: list of target selectors to exclude
 
-For common UI debugging flows, do not start with a raw full snapshot unless you really need it.
+Use `mode=crop` together with `target` for "only export" style captures.
 
-Prefer:
-
-1. install the generated service config
-2. `GET /api/v1/status`
-3. `status.live_screen (via POST /api/v1/requests)`
-4. `includeDrivers` / `excludeDrivers` when multiple UI drivers are active
-5. `moddev.ui_run_intent`
-6. for mixed-driver screens, use `moddev.ui_query` with `driverId` / `includeDrivers` / `excludeDrivers`
-7. use `moddev.ui_action` for driver-targeted actions; `moddev.ui_inspect` / `moddev.ui_act` stay default-driver-oriented
-8. `moddev.ui_wait`
-9. `moddev.ui_screenshot`
-10. `moddev.ui_trace_recent`
-
-For a normal consumer setup, you do not need an extra Gradle override block to use this flow.

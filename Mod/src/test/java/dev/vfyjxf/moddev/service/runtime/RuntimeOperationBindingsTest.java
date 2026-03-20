@@ -1,9 +1,16 @@
 package dev.vfyjxf.moddev.service.runtime;
 
+import dev.vfyjxf.moddev.runtime.RuntimeRegistries;
+import dev.vfyjxf.moddev.runtime.command.CommandExecutionRequest;
+import dev.vfyjxf.moddev.runtime.command.CommandExecutionResult;
+import dev.vfyjxf.moddev.runtime.command.CommandListResult;
+import dev.vfyjxf.moddev.runtime.command.CommandQuery;
+import dev.vfyjxf.moddev.runtime.command.CommandService;
+import dev.vfyjxf.moddev.runtime.command.CommandSuggestionQuery;
+import dev.vfyjxf.moddev.runtime.command.CommandSuggestionResult;
 import dev.vfyjxf.moddev.service.request.OperationError;
 import dev.vfyjxf.moddev.service.request.OperationExecutionException;
 import dev.vfyjxf.moddev.service.request.OperationRequest;
-import dev.vfyjxf.moddev.server.api.ToolResult;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -18,7 +25,7 @@ class RuntimeOperationBindingsTest {
 
     @Test
     void operationRegistryCoversExistingCapabilityAreas() {
-        var bindings = new RuntimeOperationBindings(new RecordingToolInvoker(), statusProvider());
+        var bindings = new RuntimeOperationBindings(new RuntimeRegistries(), statusProvider());
 
         var operationIds = bindings.operationRegistry().all().stream()
                 .map(definition -> definition.operationId())
@@ -33,7 +40,7 @@ class RuntimeOperationBindingsTest {
 
     @Test
     void statusOperationAllowsNullLastError() throws Exception {
-        var bindings = new RuntimeOperationBindings(new RecordingToolInvoker(), statusProvider());
+        var bindings = new RuntimeOperationBindings(new RuntimeRegistries(), statusProvider());
 
         var output = bindings.execute(
                 new OperationRequest("req-status", "status.get", null, Map.of()),
@@ -45,41 +52,42 @@ class RuntimeOperationBindingsTest {
     }
 
     @Test
-    void sideAwareOperationsInvokeMatchingRuntimeTools() throws Exception {
-        var invoker = new RecordingToolInvoker();
-        invoker.result = ToolResult.success(Map.of("executed", true, "messages", List.of("ok")));
-        var bindings = new RuntimeOperationBindings(invoker, statusProvider());
+    void sideAwareOperationsUseRegisteredRuntimeService() throws Exception {
+        var registries = new RuntimeRegistries();
+        var commandService = new RecordingCommandService();
+        commandService.executionResult = CommandExecutionResult.success("say hi", 1, List.of("ok"));
+        registries.registerCommandService("server", commandService);
+
+        var bindings = new RuntimeOperationBindings(registries, statusProvider());
 
         var output = bindings.execute(
                 new OperationRequest("req-1", "command.execute", "server", Map.of("command", "/say hi")),
                 "server"
         );
 
-        assertEquals("moddev.command_execute", invoker.calls.getFirst().toolName());
-        assertEquals("server", invoker.calls.getFirst().targetSide());
-        assertEquals(Map.of("command", "/say hi"), invoker.calls.getFirst().input());
+        assertEquals("say hi", commandService.executions.getFirst().command());
+        assertEquals("server", output.get("runtimeSide"));
         assertEquals(true, output.get("executed"));
     }
 
     @Test
-    void hotswapFailuresReturnStructuredExecutionErrors() throws Exception {
-        var invoker = new RecordingToolInvoker();
-        invoker.result = ToolResult.success(Map.of(
-                "success", false,
-                "error", "Compilation failed with exit code 1"
-        ));
-        var bindings = new RuntimeOperationBindings(invoker, statusProvider());
+    void gameCloseRejectionReturnsStructuredExecutionErrors() {
+        var registries = new RuntimeRegistries();
+        registries.registerGameCloser("client", () -> false);
+        var bindings = new RuntimeOperationBindings(registries, statusProvider());
 
         try {
             bindings.execute(
-                    new OperationRequest("req-2", "hotswap.reload", "client", Map.of("compile", true)),
+                    new OperationRequest("req-close", "status.game_close", "client", Map.of()),
                     "client"
             );
         } catch (OperationExecutionException exception) {
             OperationError error = exception.error();
             assertEquals("operation_execution_failed", error.errorCode());
-            assertEquals("Compilation failed with exit code 1", error.errorMessage());
+            assertEquals("game_close_rejected", error.errorMessage());
             return;
+        } catch (Exception exception) {
+            throw new AssertionError("Expected OperationExecutionException", exception);
         }
         throw new AssertionError("Expected structured execution error");
     }
@@ -95,23 +103,24 @@ class RuntimeOperationBindingsTest {
         );
     }
 
-    private static final class RecordingToolInvoker implements RuntimeOperationBindings.ToolOperationInvoker {
-        private final List<Invocation> calls = new ArrayList<>();
-        private ToolResult result = ToolResult.success(Map.of());
+    private static final class RecordingCommandService implements CommandService {
+        private final List<CommandExecutionRequest> executions = new ArrayList<>();
+        private CommandExecutionResult executionResult = CommandExecutionResult.success("", 0, List.of());
 
         @Override
-        public ToolResult invoke(String toolName, String targetSide, Map<String, Object> input) {
-            calls.add(new Invocation(toolName, targetSide, input));
-            return result;
+        public CommandListResult list(CommandQuery query) {
+            return new CommandListResult(List.of(), 0, false);
+        }
+
+        @Override
+        public CommandSuggestionResult suggest(CommandSuggestionQuery query) {
+            return new CommandSuggestionResult(query.input(), query.cursor(), List.of());
+        }
+
+        @Override
+        public CommandExecutionResult execute(CommandExecutionRequest request) {
+            executions.add(request);
+            return executionResult;
         }
     }
-
-    private record Invocation(
-            String toolName,
-            String targetSide,
-            Map<String, Object> input
-    ) {
-    }
 }
-
-

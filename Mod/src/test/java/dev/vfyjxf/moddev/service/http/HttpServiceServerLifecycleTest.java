@@ -1,7 +1,7 @@
 package dev.vfyjxf.moddev.service.http;
 
 import dev.vfyjxf.moddev.ModDevMCP;
-import dev.vfyjxf.moddev.server.ModDevMcpServer;
+import dev.vfyjxf.moddev.runtime.RuntimeRegistries;
 import dev.vfyjxf.moddev.service.config.ServiceConfig;
 import dev.vfyjxf.moddev.service.discovery.GameInstanceRegistry;
 import dev.vfyjxf.moddev.service.operation.OperationRegistry;
@@ -84,8 +84,8 @@ class HttpServiceServerLifecycleTest {
             var registryPath = config.gameInstancesPath();
             var registry = new GameInstanceRegistry(registryPath);
 
-            var client = new ModDevMCP(new ModDevMcpServer());
-            var server = new ModDevMCP(new ModDevMcpServer());
+            var client = new ModDevMCP(new RuntimeRegistries());
+            var server = new ModDevMCP(new RuntimeRegistries());
             mods.add(client);
             mods.add(server);
 
@@ -125,8 +125,8 @@ class HttpServiceServerLifecycleTest {
             var config = ServiceConfig.loadResolved();
             var registry = new GameInstanceRegistry(config.gameInstancesPath());
 
-            var olderClient = new ModDevMCP(new ModDevMcpServer());
-            var newerClient = new ModDevMCP(new ModDevMcpServer());
+            var olderClient = new ModDevMCP(new RuntimeRegistries());
+            var newerClient = new ModDevMCP(new RuntimeRegistries());
             mods.add(olderClient);
             mods.add(newerClient);
 
@@ -153,7 +153,7 @@ class HttpServiceServerLifecycleTest {
 
     @Test
     void noArgStartHttpServiceRequiresSingleActiveSide() {
-        var mod = new ModDevMCP(new ModDevMcpServer());
+        var mod = new ModDevMCP(new RuntimeRegistries());
         mods.add(mod);
         assertThrows(IllegalStateException.class, mod::startHttpService);
 
@@ -176,7 +176,7 @@ class HttpServiceServerLifecycleTest {
         ), () -> {
             var config = ServiceConfig.loadResolved();
             var registry = new GameInstanceRegistry(config.gameInstancesPath());
-            var mod = new ModDevMCP(new ModDevMcpServer());
+            var mod = new ModDevMCP(new RuntimeRegistries());
             mods.add(mod);
             mod.activateClientSide();
 
@@ -279,4 +279,7 @@ class HttpServiceServerLifecycleTest {
         }
     }
 }
+
+
+
 

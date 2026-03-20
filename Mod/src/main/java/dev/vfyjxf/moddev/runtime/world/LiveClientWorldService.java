@@ -17,10 +17,11 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongSupplier;
 
 public final class LiveClientWorldService implements WorldService {
 
-    private static final long EXECUTION_TIMEOUT_SECONDS = 5L;
+    private static final long EXECUTION_TIMEOUT_SECONDS = 30L;
     private static final long WORLD_LOAD_TIMEOUT_SECONDS = 30L;
     private static final long POLL_INTERVAL_MILLIS = 100L;
 
@@ -39,7 +40,8 @@ public final class LiveClientWorldService implements WorldService {
             throw new WorldServiceException("world_create_failed", "World name is required");
         }
 
-        onClientThread(() -> {
+        var failure = new AtomicReference<String>();
+        dispatchAsync(this::executeOnClientThread, failure, () -> {
             var minecraft = requireMinecraft();
             CreateWorldScreen.openFresh(minecraft, minecraft.screen);
             if (!(minecraft.screen instanceof CreateWorldScreen screen)) {
@@ -47,10 +49,9 @@ public final class LiveClientWorldService implements WorldService {
             }
             configure(screen, request);
             invokeCreate(screen);
-            return null;
         });
 
-        waitForWorld(request.name(), "world_create_failed");
+        waitForWorld(request.name(), "world_create_failed", failure);
         var created = onClientThread(this::currentWorldInfo);
         if (created == null) {
             throw new WorldServiceException("world_create_failed", "Created world metadata is unavailable");
@@ -216,23 +217,97 @@ public final class LiveClientWorldService implements WorldService {
     }
 
     private void waitForWorld(String expectedName, String errorCode, AtomicReference<String> failure) {
-        var deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(WORLD_LOAD_TIMEOUT_SECONDS);
-        while (System.nanoTime() < deadline) {
+        awaitWorldLoad(
+                () -> onClientThread(() -> expectedName.equals(currentWorldName())),
+                errorCode,
+                failure,
+                System::nanoTime,
+                Thread::sleep,
+                TimeUnit.SECONDS.toNanos(WORLD_LOAD_TIMEOUT_SECONDS)
+        );
+    }
+
+    static void awaitWorldLoad(
+            WorldLoadProbe probe,
+            String errorCode,
+            AtomicReference<String> failure,
+            LongSupplier nanoTime,
+            Sleeper sleeper,
+            long timeoutNanos
+    ) {
+        var deadline = nanoTime.getAsLong() + timeoutNanos;
+        while (nanoTime.getAsLong() < deadline) {
             if (failure.get() != null) {
                 throw new WorldServiceException(errorCode, failure.get());
             }
-            var loaded = onClientThread(() -> expectedName.equals(currentWorldName()));
-            if (loaded) {
-                return;
+            try {
+                if (probe.isLoaded()) {
+                    return;
+                }
+            } catch (WorldServiceException exception) {
+                if (!"world_action_unavailable".equals(exception.errorCode())) {
+                    throw exception;
+                }
             }
             try {
-                Thread.sleep(POLL_INTERVAL_MILLIS);
+                sleeper.sleep(POLL_INTERVAL_MILLIS);
             } catch (InterruptedException exception) {
                 Thread.currentThread().interrupt();
                 throw new WorldServiceException(errorCode, "Interrupted while waiting for world load");
             }
         }
         throw new WorldServiceException(errorCode, "Timed out waiting for world load");
+    }
+
+    @FunctionalInterface
+    interface WorldLoadProbe {
+        boolean isLoaded();
+    }
+
+    @FunctionalInterface
+    interface Sleeper {
+        void sleep(long millis) throws InterruptedException;
+    }
+
+    @FunctionalInterface
+    interface AsyncScheduler {
+        void execute(Runnable action);
+    }
+
+    @FunctionalInterface
+    interface ThrowingRunnable {
+        void run() throws Exception;
+    }
+
+    static void dispatchAsync(AsyncScheduler scheduler, AtomicReference<String> failure, ThrowingRunnable action) {
+        scheduler.execute(() -> {
+            try {
+                action.run();
+            } catch (Throwable throwable) {
+                var message = failureMessage(throwable);
+                failure.compareAndSet(null, message);
+                System.out.println("[ModDev] async world action failed: " + message);
+                throwable.printStackTrace(System.out);
+            }
+        });
+    }
+
+    private static String failureMessage(Throwable throwable) {
+        if (throwable instanceof WorldServiceException exception) {
+            var message = exception.getMessage();
+            return message == null || message.isBlank() ? exception.errorCode() : message;
+        }
+        var message = throwable.getMessage();
+        return message == null || message.isBlank() ? throwable.getClass().getSimpleName() : message;
+    }
+
+    private void executeOnClientThread(Runnable action) {
+        var minecraft = requireMinecraft();
+        if (minecraft.isSameThread()) {
+            action.run();
+            return;
+        }
+        minecraft.execute(action);
     }
 
     private Minecraft requireMinecraft() {
@@ -275,4 +350,5 @@ public final class LiveClientWorldService implements WorldService {
         }
     }
 }
+
 

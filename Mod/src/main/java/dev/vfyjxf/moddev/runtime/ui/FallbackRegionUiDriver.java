@@ -126,17 +126,18 @@ public final class FallbackRegionUiDriver implements UiDriver {
                     "driverId", DESCRIPTOR.id(),
                     "action", request.action(),
                     "performed", true,
-                    "target", request.target()
+                    "target", selectorToMap(request.target())
             ));
         }
-        if ("switch".equals(request.action())) {
+        if ("click".equals(request.action()) || "switch".equals(request.action())) {
             var target = query(context, request.target()).stream().findFirst().orElse(snapshot(context, SnapshotOptions.DEFAULT).targets().getFirst());
-            sessionStates.update(context, DESCRIPTOR.id(), UiSessionState.openedState().withFocus(target.targetId(), "programmatic"));
+            sessionStates.update(context, DESCRIPTOR.id(), UiSessionState.openedState().withActive(target.targetId(), "programmatic"));
             return OperationResult.success(Map.of(
                     "driverId", DESCRIPTOR.id(),
                     "action", request.action(),
                     "performed", true,
-                    "target", request.target()
+                    "target", selectorToMap(request.target()),
+                    "resolvedTargetId", target.targetId()
             ));
         }
         if ("run_intent".equals(request.action())) {
@@ -202,6 +203,43 @@ public final class FallbackRegionUiDriver implements UiDriver {
                 .toList();
     }
 
+    private Map<String, Object> selectorToMap(TargetSelector selector) {
+        if (selector == null) {
+            return Map.of();
+        }
+        var result = new java.util.LinkedHashMap<String, Object>();
+        if (selector.scope() != null) {
+            result.put("scope", selector.scope());
+        }
+        if (selector.screen() != null) {
+            result.put("screen", selector.screen());
+        }
+        if (selector.modId() != null) {
+            result.put("modId", selector.modId());
+        }
+        if (selector.text() != null) {
+            result.put("text", selector.text());
+        }
+        if (selector.role() != null) {
+            result.put("role", selector.role());
+        }
+        if (selector.id() != null) {
+            result.put("id", selector.id());
+        }
+        if (selector.index() != null) {
+            result.put("index", selector.index());
+        }
+        if (selector.bounds() != null) {
+            result.put("bounds", Map.of(
+                    "x", selector.bounds().x(),
+                    "y", selector.bounds().y(),
+                    "width", selector.bounds().width(),
+                    "height", selector.bounds().height()
+            ));
+        }
+        return Map.copyOf(result);
+    }
+
     private Map<String, Object> targetToMap(UiTarget target) {
         return Map.of(
                 "targetId", target.targetId(),
@@ -229,4 +267,3 @@ public final class FallbackRegionUiDriver implements UiDriver {
         return sessionValue != null ? sessionValue : defaultValue;
     }
 }
-

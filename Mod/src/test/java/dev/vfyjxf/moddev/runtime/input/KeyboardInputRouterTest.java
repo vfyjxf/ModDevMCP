@@ -121,6 +121,22 @@ class KeyboardInputRouterTest {
     }
 
     @Test
+    void oneShotClickModifiersAreVisibleAsVirtualStateDuringMainKeyDispatch() {
+        var state = new VirtualModifierState();
+        var fallback = new ModifierStateObservingFallbackInput(state, KEY_A);
+
+        KeyboardInputRouter.keyClick(
+                new InputCommand("key_click", 0.0d, 0.0d, 0, KEY_A, 0, MOD_SHIFT, null, 0),
+                null,
+                fallback,
+                state
+        );
+
+        assertEquals(MOD_SHIFT, fallback.mainKeyDownObservedState);
+        assertEquals(0, state.modifierBits());
+    }
+
+    @Test
     void oneShotClickModifiersDoNotPersistAfterDispatch() {
         var state = new VirtualModifierState();
         var fallback = new RecordingFallbackInput();
@@ -177,7 +193,7 @@ class KeyboardInputRouterTest {
         }
     }
 
-    private static final class RecordingFallbackInput implements KeyboardInputRouter.FallbackInput {
+    private static class RecordingFallbackInput implements KeyboardInputRouter.FallbackInput {
 
         private final List<String> events = new ArrayList<>();
         private final List<String> eventsWithModifiers = new ArrayList<>();
@@ -194,5 +210,24 @@ class KeyboardInputRouterTest {
             eventsWithModifiers.add("up:" + keyCode + ":" + modifiers);
         }
     }
-}
 
+    private static final class ModifierStateObservingFallbackInput extends RecordingFallbackInput {
+
+        private final VirtualModifierState state;
+        private final int observedKeyCode;
+        private int mainKeyDownObservedState;
+
+        private ModifierStateObservingFallbackInput(VirtualModifierState state, int observedKeyCode) {
+            this.state = state;
+            this.observedKeyCode = observedKeyCode;
+        }
+
+        @Override
+        public void dispatchKeyDown(int keyCode, int scanCode, int modifiers) {
+            super.dispatchKeyDown(keyCode, scanCode, modifiers);
+            if (keyCode == observedKeyCode) {
+                mainKeyDownObservedState = state.modifierBits();
+            }
+        }
+    }
+}

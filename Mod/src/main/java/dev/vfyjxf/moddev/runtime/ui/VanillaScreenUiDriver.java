@@ -62,8 +62,13 @@ public class VanillaScreenUiDriver implements UiDriver {
 
     @Override
     public boolean matches(UiContext context) {
-        return context.screenClass().startsWith("net.minecraft.client.gui.screens.")
-                && !context.screenClass().contains(".inventory.");
+        var screenClass = context.screenClass();
+        if (screenClass == null || screenClass.isBlank() || "custom.UnknownScreen".equals(screenClass)) {
+            return false;
+        }
+        return !screenClass.contains("Inventory")
+                && !screenClass.contains("Container")
+                && !screenClass.contains(".inventory.");
     }
 
     @Override
@@ -586,4 +591,6 @@ public class VanillaScreenUiDriver implements UiDriver {
         }
     }
 }
+
+
 

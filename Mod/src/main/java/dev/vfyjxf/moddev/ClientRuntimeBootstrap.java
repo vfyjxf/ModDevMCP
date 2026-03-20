@@ -4,12 +4,6 @@ import dev.vfyjxf.moddev.runtime.command.LiveClientCommandService;
 import dev.vfyjxf.moddev.runtime.game.LiveClientGameCloser;
 import dev.vfyjxf.moddev.runtime.game.LiveClientPauseOnLostFocusService;
 import dev.vfyjxf.moddev.runtime.input.MinecraftInputController;
-import dev.vfyjxf.moddev.runtime.tool.CommandToolProvider;
-import dev.vfyjxf.moddev.runtime.tool.GameToolProvider;
-import dev.vfyjxf.moddev.runtime.tool.InputToolProvider;
-import dev.vfyjxf.moddev.runtime.tool.PauseOnLostFocusToolProvider;
-import dev.vfyjxf.moddev.runtime.tool.UiToolProvider;
-import dev.vfyjxf.moddev.runtime.tool.WorldToolProvider;
 import dev.vfyjxf.moddev.runtime.ui.BuiltinUiCaptureProviders;
 import dev.vfyjxf.moddev.runtime.ui.BuiltinUiInteractionResolvers;
 import dev.vfyjxf.moddev.runtime.ui.FallbackRegionUiDriver;
@@ -17,7 +11,6 @@ import dev.vfyjxf.moddev.runtime.ui.LiveClientScreenProbe;
 import dev.vfyjxf.moddev.runtime.ui.VanillaContainerUiDriver;
 import dev.vfyjxf.moddev.runtime.ui.VanillaScreenUiDriver;
 import dev.vfyjxf.moddev.runtime.world.LiveClientWorldService;
-import dev.vfyjxf.moddev.server.ModDevMcpServer;
 
 public final class ClientRuntimeBootstrap {
 
@@ -27,11 +20,11 @@ public final class ClientRuntimeBootstrap {
         this.mod = mod;
     }
 
-    public ModDevMcpServer prepareClientServer() {
+    public ModDevMCP prepareClientServer() {
         mod.prepareCommonServer();
         prepareClientRuntime();
         registerClientProviders();
-        return mod.server();
+        return mod;
     }
 
     public void prepareClientRuntime() {
@@ -54,13 +47,11 @@ public final class ClientRuntimeBootstrap {
             return;
         }
         var registries = mod.registries();
-        mod.registerToolProvider(new UiToolProvider(registries, new LiveClientScreenProbe()));
-        mod.registerToolProvider(new InputToolProvider(registries));
-        mod.registerToolProvider(GameToolProvider.clientOnly(new LiveClientGameCloser()));
-        mod.registerToolProvider(new PauseOnLostFocusToolProvider(new LiveClientPauseOnLostFocusService()));
-        mod.registerToolProvider(CommandToolProvider.clientOnly(new LiveClientCommandService()));
-        mod.registerToolProvider(new WorldToolProvider(new LiveClientWorldService()));
+        registries.registerScreenProbe("client", new LiveClientScreenProbe());
+        registries.registerGameCloser("client", new LiveClientGameCloser());
+        registries.registerPauseOnLostFocusService("client", new LiveClientPauseOnLostFocusService());
+        registries.registerCommandService("client", new LiveClientCommandService());
+        registries.registerWorldService("client", new LiveClientWorldService());
         mod.registerClientRegistrarProviders();
     }
 }
-

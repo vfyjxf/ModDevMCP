@@ -1,6 +1,6 @@
 package dev.vfyjxf.moddev.runtime.ui;
 
-import dev.vfyjxf.moddev.api.ModMcpApi;
+import dev.vfyjxf.moddev.api.ModDevApi;
 import dev.vfyjxf.moddev.api.runtime.UiInteractionStateResolver;
 import dev.vfyjxf.moddev.api.ui.UiInteractionDefaults;
 import dev.vfyjxf.moddev.api.ui.UiTarget;
@@ -19,7 +19,7 @@ public final class BuiltinUiInteractionResolvers {
         return registry;
     }
 
-    public static void register(ModMcpApi api) {
+    public static void register(ModDevApi api) {
         registerInto(api::registerUiInteractionStateResolver);
     }
 

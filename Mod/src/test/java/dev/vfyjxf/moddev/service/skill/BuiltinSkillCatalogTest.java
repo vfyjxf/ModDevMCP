@@ -72,7 +72,7 @@ class BuiltinSkillCatalogTest {
     @Test
     void reusableUsageSkillDocumentsProjectLocalDiscoveryFlow() throws Exception {
         var rootDir = Path.of("").toAbsolutePath().normalize().getParent();
-        var usageSkill = Files.readString(rootDir.resolve("skills/moddevmcp-usage/SKILL.md"));
+        var usageSkill = Files.readString(rootDir.resolve("skills/moddev-usage/SKILL.md"));
         assertTrue(usageSkill.contains("GET http://127.0.0.1:47812/api/v1/status"));
         assertTrue(usageSkill.contains("<gradleProject>/build/moddevmcp/game-instances.json"));
         assertTrue(usageSkill.contains("Probe each candidate `baseUrl` from the registry with `GET /api/v1/status`"));

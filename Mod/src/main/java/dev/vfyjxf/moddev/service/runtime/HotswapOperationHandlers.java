@@ -1,9 +1,13 @@
 package dev.vfyjxf.moddev.service.runtime;
 
+import dev.vfyjxf.moddev.runtime.RuntimeRegistries;
+import dev.vfyjxf.moddev.runtime.hotswap.HotswapService;
 import dev.vfyjxf.moddev.service.operation.OperationDefinition;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public final class HotswapOperationHandlers {
@@ -11,7 +15,8 @@ public final class HotswapOperationHandlers {
     private HotswapOperationHandlers() {
     }
 
-    static List<RuntimeOperationBindings.OperationBinding> operations(RuntimeOperationBindings.ToolOperationInvoker toolInvoker) {
+    static List<RuntimeOperationBindings.OperationBinding> operations(RuntimeRegistries registries) {
+        Objects.requireNonNull(registries, "registries");
         return List.of(
                 RuntimeOperationBindings.binding(
                         new OperationDefinition(
@@ -24,7 +29,16 @@ public final class HotswapOperationHandlers {
                                 RuntimeOperationBindings.objectSchema(Map.of(), List.of()),
                                 Map.of("operationId", "hotswap.compile", "input", Map.of())
                         ),
-                        RuntimeOperationBindings.toolHandler(toolInvoker, "moddev.compile")
+                        (input, resolvedTargetSide) -> {
+                            var hotswapService = hotswapService(registries);
+                            var result = hotswapService.compile();
+                            return Map.of(
+                                    "exitCode", result.exitCode(),
+                                    "stdout", result.stdout(),
+                                    "stderr", result.stderr(),
+                                    "success", result.exitCode() == 0
+                            );
+                        }
                 ),
                 RuntimeOperationBindings.binding(
                         new OperationDefinition(
@@ -45,21 +59,36 @@ public final class HotswapOperationHandlers {
                                 )
                         ),
                         (input, resolvedTargetSide) -> {
-                            var output = RuntimeOperationBindings.invokeTool(toolInvoker, "moddev.hotswap", resolvedTargetSide, input);
-                            if (Boolean.FALSE.equals(output.get("success"))) {
-                                var error = output.get("error");
-                                if (error instanceof String errorMessage && !errorMessage.isBlank()) {
-                                    throw RuntimeOperationBindings.executionFailure(errorMessage);
+                            var hotswapService = hotswapService(registries);
+                            var compile = !"false".equals(String.valueOf(input.getOrDefault("compile", "true")));
+                            var payload = new LinkedHashMap<String, Object>();
+                            if (compile) {
+                                var compileResult = hotswapService.compile();
+                                payload.put("compileExitCode", compileResult.exitCode());
+                                payload.put("compileStdout", compileResult.stdout());
+                                payload.put("compileStderr", compileResult.stderr());
+                                if (compileResult.exitCode() != 0) {
+                                    throw RuntimeOperationBindings.executionFailure("Compilation failed with exit code " + compileResult.exitCode());
                                 }
-                                if (output.get("errors") instanceof List<?> errors && !errors.isEmpty()) {
-                                    throw RuntimeOperationBindings.executionFailure(String.valueOf(errors.getFirst()));
-                                }
-                                throw RuntimeOperationBindings.executionFailure("hotswap failed");
                             }
-                            return output;
+                            var reloadResult = hotswapService.reload();
+                            payload.put("reloadedClasses", reloadResult.reloadedClasses());
+                            payload.put("notYetLoaded", reloadResult.notYetLoaded());
+                            payload.put("errors", reloadResult.errors());
+                            payload.put("capabilities", reloadResult.capabilities());
+                            payload.put("diagnostics", reloadResult.diagnostics());
+                            if (!reloadResult.errors().isEmpty()) {
+                                throw RuntimeOperationBindings.executionFailure(String.valueOf(reloadResult.errors().values().iterator().next()));
+                            }
+                            payload.put("success", true);
+                            return Map.copyOf(payload);
                         }
                 )
         );
     }
-}
 
+    private static HotswapService hotswapService(RuntimeRegistries registries) {
+        return registries.hotswapService()
+                .orElseThrow(() -> RuntimeOperationBindings.executionFailure("hotswap runtime unavailable"));
+    }
+}

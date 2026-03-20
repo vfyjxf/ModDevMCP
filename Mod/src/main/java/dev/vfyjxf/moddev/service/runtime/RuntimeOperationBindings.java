@@ -1,11 +1,11 @@
 package dev.vfyjxf.moddev.service.runtime;
 
 import dev.vfyjxf.moddev.api.operation.OperationRegistration;
+import dev.vfyjxf.moddev.runtime.RuntimeRegistries;
 import dev.vfyjxf.moddev.service.operation.OperationDefinition;
 import dev.vfyjxf.moddev.service.operation.OperationRegistry;
 import dev.vfyjxf.moddev.service.request.OperationExecutionException;
 import dev.vfyjxf.moddev.service.request.OperationRequest;
-import dev.vfyjxf.moddev.server.api.ToolResult;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -20,11 +20,6 @@ public final class RuntimeOperationBindings {
     @FunctionalInterface
     public interface OperationHandler {
         Map<String, Object> execute(Map<String, Object> input, String resolvedTargetSide) throws Exception;
-    }
-
-    @FunctionalInterface
-    public interface ToolOperationInvoker {
-        ToolResult invoke(String toolName, String targetSide, Map<String, Object> input) throws Exception;
     }
 
     @FunctionalInterface
@@ -51,26 +46,26 @@ public final class RuntimeOperationBindings {
     private final OperationRegistry operationRegistry;
     private final OperationExecutorRegistry executorRegistry;
 
-    public RuntimeOperationBindings(ToolOperationInvoker toolInvoker, StatusSnapshotProvider statusSnapshotProvider) {
-        this(toolInvoker, statusSnapshotProvider, List.of());
+    public RuntimeOperationBindings(RuntimeRegistries registries, StatusSnapshotProvider statusSnapshotProvider) {
+        this(registries, statusSnapshotProvider, registries.operationRegistrations());
     }
 
     public RuntimeOperationBindings(
-            ToolOperationInvoker toolInvoker,
+            RuntimeRegistries registries,
             StatusSnapshotProvider statusSnapshotProvider,
             Collection<OperationRegistration> operationRegistrations
     ) {
-        Objects.requireNonNull(toolInvoker, "toolInvoker");
+        Objects.requireNonNull(registries, "registries");
         Objects.requireNonNull(statusSnapshotProvider, "statusSnapshotProvider");
         Objects.requireNonNull(operationRegistrations, "operationRegistrations");
 
         var bindings = new ArrayList<OperationBinding>();
-        bindings.addAll(StatusOperationHandlers.operations(toolInvoker, statusSnapshotProvider));
-        bindings.addAll(UiOperationHandlers.operations(toolInvoker));
-        bindings.addAll(CommandOperationHandlers.operations(toolInvoker));
-        bindings.addAll(InputOperationHandlers.operations(toolInvoker));
-        bindings.addAll(WorldOperationHandlers.operations(toolInvoker));
-        bindings.addAll(HotswapOperationHandlers.operations(toolInvoker));
+        bindings.addAll(StatusOperationHandlers.operations(registries, statusSnapshotProvider));
+        bindings.addAll(UiOperationHandlers.operations(registries));
+        bindings.addAll(CommandOperationHandlers.operations(registries));
+        bindings.addAll(InputOperationHandlers.operations(registries));
+        bindings.addAll(WorldOperationHandlers.operations(registries));
+        bindings.addAll(HotswapOperationHandlers.operations(registries));
 
         var definitions = new ArrayList<OperationDefinition>(bindings.size() + operationRegistrations.size());
         var byId = new LinkedHashMap<String, OperationExecutorRegistry.OperationExecutor>(bindings.size() + operationRegistrations.size());
@@ -98,28 +93,6 @@ public final class RuntimeOperationBindings {
         return new OperationBinding(definition, handler);
     }
 
-    static OperationHandler toolHandler(ToolOperationInvoker invoker, String toolName) {
-        return (input, resolvedTargetSide) -> invokeTool(invoker, toolName, resolvedTargetSide, input);
-    }
-
-    static Map<String, Object> invokeTool(
-            ToolOperationInvoker invoker,
-            String toolName,
-            String resolvedTargetSide,
-            Map<String, Object> input
-    ) throws Exception {
-        var result = invoker.invoke(toolName, resolvedTargetSide, input);
-        if (!result.success()) {
-            throw executionFailure(normalizeMessage(result.error(), toolName + " failed"));
-        }
-        if (result.value() instanceof Map<?, ?> mapValue) {
-            @SuppressWarnings("unchecked")
-            var payload = (Map<String, Object>) mapValue;
-            return payload;
-        }
-        return Map.of("value", result.value());
-    }
-
     static OperationExecutionException executionFailure(String message) {
         return new OperationExecutionException(new dev.vfyjxf.moddev.service.request.OperationError(
                 "operation_execution_failed",
@@ -127,7 +100,7 @@ public final class RuntimeOperationBindings {
         ));
     }
 
-    private static String normalizeMessage(String message, String fallback) {
+    static String normalizeMessage(String message, String fallback) {
         if (message == null || message.isBlank()) {
             return fallback;
         }

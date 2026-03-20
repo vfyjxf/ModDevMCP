@@ -1,6 +1,6 @@
 package dev.vfyjxf.moddev.service.discovery;
 
-import dev.vfyjxf.moddev.server.transport.JsonCodec;
+import dev.vfyjxf.moddev.service.http.JsonCodec;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

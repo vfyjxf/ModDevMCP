@@ -205,6 +205,34 @@ class VanillaScreenUiDriverTest {
         assertEquals("button-multiplayer", result.interaction().get("hoveredTargetId"));
     }
 
+
+    @Test
+    void matchesCustomModdedScreensButNotUnknownFallbackOrInventory() {
+        var driver = new VanillaScreenUiDriver(
+                new UiSessionStateRegistry(),
+                BuiltinUiInteractionResolvers.newRegistry(),
+                context -> List.of()
+        );
+
+        assertTrue(driver.matches(new TestUiContext(
+                "dev.vfyjxf.testmod.client.TestModDebugScreen",
+                "minecraft",
+                0,
+                0
+        )));
+        assertFalse(driver.matches(new TestUiContext(
+                "custom.UnknownScreen",
+                "minecraft",
+                0,
+                0
+        )));
+        assertFalse(driver.matches(new TestUiContext(
+                "net.minecraft.client.gui.screens.inventory.InventoryScreen",
+                "minecraft",
+                0,
+                0
+        )));
+    }
     private UiTarget buttonTarget(UiContext context, String targetId, String text, int x, int y, int width, int height) {
         return new UiTarget(
                 targetId,
@@ -251,4 +279,5 @@ class VanillaScreenUiDriverTest {
         }
     }
 }
+
 

@@ -23,7 +23,7 @@ public final class VanillaFramebufferCaptureProvider implements UiFramebufferCap
 
     @Override
     public boolean matches(UiContext context, UiSnapshot snapshot) {
-        return VanillaUiCaptureAvailability.hasMatchingLiveScreen(context);
+        return VanillaUiCaptureAvailability.supportsFramebufferCapture(context);
     }
 
     @Override
@@ -37,4 +37,5 @@ public final class VanillaFramebufferCaptureProvider implements UiFramebufferCap
         return VanillaUiCaptureSupport.captureFramebuffer(providerId(), context);
     }
 }
+
 

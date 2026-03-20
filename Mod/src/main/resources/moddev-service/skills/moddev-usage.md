@@ -2,7 +2,7 @@
 
 Start with the local HTTP service, not an external bridge.
 
-All game interaction must go through ModDevMCP operations. Do not use shell scripts, PowerShell input helpers, or OS-level mouse and keyboard injection as a fallback.
+All game interaction must go through ModDev operations. Do not use shell scripts, PowerShell input helpers, or OS-level mouse and keyboard injection as a fallback.
 
 1. Try the default probe:
 

@@ -1,6 +1,6 @@
 package dev.vfyjxf.moddev.api.event;
 
-import dev.vfyjxf.moddev.api.ModMcpApi;
+import dev.vfyjxf.moddev.api.ModDevApi;
 import dev.vfyjxf.moddev.api.runtime.InputController;
 import dev.vfyjxf.moddev.api.runtime.UiDriver;
 import dev.vfyjxf.moddev.api.runtime.UiFramebufferCaptureProvider;
@@ -12,7 +12,7 @@ import dev.vfyjxf.moddev.api.runtime.UiOffscreenCaptureProvider;
  */
 public final class RegisterClientOperationsEvent extends RegisterOperationsEvent {
 
-    public RegisterClientOperationsEvent(ModMcpApi api, EventPublisher eventPublisher) {
+    public RegisterClientOperationsEvent(ModDevApi api, EventPublisher eventPublisher) {
         super(api, eventPublisher);
     }
 

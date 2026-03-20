@@ -3,6 +3,9 @@ package dev.vfyjxf.moddev.runtime.input;
 import dev.vfyjxf.moddev.api.model.OperationResult;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
+import java.util.List;
+
 final class KeyboardInputRouter {
 
     private static final ModifierKey[] MODIFIER_KEYS = new ModifierKey[]{
@@ -120,23 +123,31 @@ final class KeyboardInputRouter {
             VirtualModifierState virtualModifierState
     ) {
         var activeModifiers = virtualModifierState == null ? 0 : virtualModifierState.modifierBits();
-        for (ModifierKey modifierKey : MODIFIER_KEYS) {
-            if ((command.modifiers() & modifierKey.mask()) == 0) {
-                continue;
+        var pressedModifiers = new ArrayList<ModifierKey>();
+        try {
+            for (ModifierKey modifierKey : MODIFIER_KEYS) {
+                if ((command.modifiers() & modifierKey.mask()) == 0) {
+                    continue;
+                }
+                activeModifiers |= modifierKey.mask();
+                if (virtualModifierState != null) {
+                    virtualModifierState.keyDown(modifierKey.keyCode());
+                }
+                pressedModifiers.add(modifierKey);
+                fallbackInput.dispatchKeyDown(modifierKey.keyCode(), 0, activeModifiers);
             }
-            activeModifiers |= modifierKey.mask();
-            fallbackInput.dispatchKeyDown(modifierKey.keyCode(), 0, activeModifiers);
-        }
-        var modifiers = mergedModifiers(command.modifiers(), virtualModifierState);
-        fallbackInput.dispatchKeyDown(command.keyCode(), command.scanCode(), modifiers);
-        fallbackInput.dispatchKeyUp(command.keyCode(), command.scanCode(), modifiers);
-        for (int index = MODIFIER_KEYS.length - 1; index >= 0; index--) {
-            var modifierKey = MODIFIER_KEYS[index];
-            if ((command.modifiers() & modifierKey.mask()) == 0) {
-                continue;
+            var modifiers = mergedModifiers(command.modifiers(), virtualModifierState);
+            fallbackInput.dispatchKeyDown(command.keyCode(), command.scanCode(), modifiers);
+            fallbackInput.dispatchKeyUp(command.keyCode(), command.scanCode(), modifiers);
+        } finally {
+            for (int index = pressedModifiers.size() - 1; index >= 0; index--) {
+                var modifierKey = pressedModifiers.get(index);
+                fallbackInput.dispatchKeyUp(modifierKey.keyCode(), 0, activeModifiers);
+                if (virtualModifierState != null) {
+                    virtualModifierState.keyUp(modifierKey.keyCode());
+                }
+                activeModifiers &= ~modifierKey.mask();
             }
-            fallbackInput.dispatchKeyUp(modifierKey.keyCode(), 0, activeModifiers);
-            activeModifiers &= ~modifierKey.mask();
         }
     }
 
@@ -169,4 +180,3 @@ final class KeyboardInputRouter {
     private record ModifierKey(int mask, int keyCode) {
     }
 }
-

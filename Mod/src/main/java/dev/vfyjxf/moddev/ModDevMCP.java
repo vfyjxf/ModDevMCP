@@ -1,24 +1,20 @@
 package dev.vfyjxf.moddev;
 
-import dev.vfyjxf.moddev.api.ModMcpApi;
+import dev.vfyjxf.moddev.api.ModDevApi;
 import dev.vfyjxf.moddev.api.event.RegisterClientOperationsEvent;
 import dev.vfyjxf.moddev.api.event.RegisterCommonOperationsEvent;
 import dev.vfyjxf.moddev.api.event.RegisterServerOperationsEvent;
-import dev.vfyjxf.moddev.api.registrar.ClientMcpRegistrar;
+import dev.vfyjxf.moddev.api.registrar.ClientRegistrar;
 import dev.vfyjxf.moddev.api.registrar.ClientOperationRegistrar;
-import dev.vfyjxf.moddev.api.registrar.CommonMcpRegistrar;
+import dev.vfyjxf.moddev.api.registrar.CommonRegistrar;
 import dev.vfyjxf.moddev.api.registrar.CommonOperationRegistrar;
-import dev.vfyjxf.moddev.api.registrar.ServerMcpRegistrar;
+import dev.vfyjxf.moddev.api.registrar.ServerRegistrar;
 import dev.vfyjxf.moddev.api.registrar.ServerOperationRegistrar;
-import dev.vfyjxf.moddev.registrar.AnnotationMcpRegistrarLookup;
+import dev.vfyjxf.moddev.registrar.AnnotationRegistrarLookup;
 import dev.vfyjxf.moddev.runtime.RuntimeRegistries;
 import dev.vfyjxf.moddev.runtime.event.RuntimeEventPublisher;
 import dev.vfyjxf.moddev.runtime.hotswap.HotswapRuntimeConfig;
 import dev.vfyjxf.moddev.runtime.hotswap.HotswapService;
-import dev.vfyjxf.moddev.runtime.tool.HotswapToolProvider;
-import dev.vfyjxf.moddev.server.ModDevMcpServer;
-import dev.vfyjxf.moddev.server.api.McpToolProvider;
-import dev.vfyjxf.moddev.server.api.ToolCallContext;
 import dev.vfyjxf.moddev.service.config.ServiceConfig;
 import dev.vfyjxf.moddev.service.discovery.GameInstanceRecord;
 import dev.vfyjxf.moddev.service.discovery.GameInstanceRegistry;
@@ -34,26 +30,19 @@ import dev.vfyjxf.moddev.service.skill.BuiltinSkillCatalog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Set;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.function.Supplier;
 
 public class ModDevMCP {
     public static final Logger LOGGER = LoggerFactory.getLogger(ModDevMCP.class);
     public static final String modId = "mod_dev_mcp";
 
-    private final ModDevMcpServer server;
     private final RuntimeRegistries registries;
-    private final ModMcpApi api;
-    private final McpToolProvider hotswapToolProvider;
+    private final ModDevApi api;
     private final Supplier<? extends Collection<CommonOperationRegistrar>> commonRegistrarSupplier;
     private final Supplier<? extends Collection<ClientOperationRegistrar>> clientRegistrarSupplier;
     private final Supplier<? extends Collection<ServerOperationRegistrar>> serverRegistrarSupplier;
-    private final Set<McpToolProvider> registeredToolProviders = Collections.newSetFromMap(new IdentityHashMap<>());
     private HttpServiceServer httpServiceServer;
     private ServiceConfig httpServiceConfig;
     private GameInstanceRegistry gameInstanceRegistry;
@@ -70,16 +59,11 @@ public class ModDevMCP {
     private boolean serverSideActive;
 
     public ModDevMCP() {
-        this(new ModDevMcpServer(), new RuntimeRegistries());
+        this(new RuntimeRegistries());
     }
 
-    public ModDevMCP(ModDevMcpServer server) {
-        this(server, new RuntimeRegistries());
-    }
-
-    public ModDevMCP(ModDevMcpServer server, RuntimeRegistries registries) {
+    public ModDevMCP(RuntimeRegistries registries) {
         this(
-                server,
                 registries,
                 discoveredCommonRegistrars(),
                 discoveredClientRegistrars(),
@@ -88,22 +72,20 @@ public class ModDevMCP {
     }
 
     ModDevMCP(
-            ModDevMcpServer server,
             RuntimeRegistries registries,
             Supplier<? extends Collection<CommonOperationRegistrar>> commonRegistrarSupplier,
             Supplier<? extends Collection<ClientOperationRegistrar>> clientRegistrarSupplier,
             Supplier<? extends Collection<ServerOperationRegistrar>> serverRegistrarSupplier
     ) {
         LOGGER.info("Initializing ModDev MCP");
-        this.server = server;
         this.registries = registries;
-        this.api = new ModMcpApi(registries);
+        this.api = new ModDevApi(registries);
         this.commonRegistrarSupplier = commonRegistrarSupplier;
         this.clientRegistrarSupplier = clientRegistrarSupplier;
         this.serverRegistrarSupplier = serverRegistrarSupplier;
-        HotswapService hotswapService = new HotswapService(HotswapRuntimeConfig.fromSystemProperties());
+        var hotswapService = new HotswapService(HotswapRuntimeConfig.fromSystemProperties());
         hotswapService.snapshotTimestamps();
-        this.hotswapToolProvider = new HotswapToolProvider(hotswapService);
+        this.registries.registerHotswapService(hotswapService);
         registerCommonRuntime();
     }
 
@@ -130,7 +112,7 @@ public class ModDevMCP {
         var instanceSide = normalizeSide(side);
         var config = ServiceConfig.loadResolved();
         var registry = new GameInstanceRegistry(config.gameInstancesPath());
-        var bindings = new RuntimeOperationBindings(this::invokeOperationTool, this::statusSnapshot, registries.operationRegistrations());
+        var bindings = new RuntimeOperationBindings(registries, this::statusSnapshot, registries.operationRegistrations());
         var catalog = new BuiltinSkillCatalog().build(config, bindings.operationRegistry());
         var exportService = new SkillExportService(config, catalog.categories(), catalog.skillRegistry());
         var statusEndpoint = new StatusEndpoint(new ServiceStatusProvider(config));
@@ -196,34 +178,28 @@ public class ModDevMCP {
             return;
         }
         commonProvidersRegistered = true;
-        registerToolProvider(hotswapToolProvider);
-        registries.toolProviders().forEach(this::registerToolProvider);
         registerCommonRegistrarProviders();
-    }
-
-    public ModDevMcpServer server() {
-        return server;
     }
 
     public RuntimeRegistries registries() {
         return registries;
     }
 
-    public ModMcpApi api() {
+    public ModDevApi api() {
         return api;
     }
 
-    public synchronized ModDevMcpServer prepareServer() {
+    public synchronized ModDevMCP prepareServer() {
         return new ServerRuntimeBootstrap(this).prepareServer();
     }
 
-    public synchronized ModDevMcpServer prepareCommonServer() {
+    public synchronized ModDevMCP prepareCommonServer() {
         registerCommonRuntime();
         registerCommonProviders();
-        return server;
+        return this;
     }
 
-    public synchronized ModDevMcpServer prepareClientServer() {
+    public synchronized ModDevMCP prepareClientServer() {
         return new ClientRuntimeBootstrap(this).prepareClientServer();
     }
 
@@ -264,18 +240,11 @@ public class ModDevMCP {
             return;
         }
         commonRuntimeRegistered = true;
-        server.registerResourceProvider(uri -> registries.uiCaptureArtifactStore().readResource(uri));
         registries.eventPublisher().publish(new dev.vfyjxf.moddev.api.event.EventEnvelope("runtime", "bootstrap", System.currentTimeMillis(), java.util.Map.of()));
     }
 
     public RuntimeEventPublisher eventPublisher() {
         return registries.eventPublisher();
-    }
-
-    synchronized void registerToolProvider(McpToolProvider provider) {
-        if (registeredToolProviders.add(provider)) {
-            server.registerProvider(provider);
-        }
     }
 
     boolean claimClientRuntimeRegistration() {
@@ -309,46 +278,32 @@ public class ModDevMCP {
         serverProvidersRegistered = true;
         return true;
     }
+
     void registerClientRegistrarProviders() {
         var event = new RegisterClientOperationsEvent(api, registries.eventPublisher());
         clientRegistrarSupplier.get().forEach(registrar -> registrar.register(event));
     }
+
     void registerServerRegistrarProviders() {
         var event = new RegisterServerOperationsEvent(api, registries.eventPublisher());
         serverRegistrarSupplier.get().forEach(registrar -> registrar.register(event));
     }
+
     private void registerCommonRegistrarProviders() {
         var event = new RegisterCommonOperationsEvent(api, registries.eventPublisher());
         commonRegistrarSupplier.get().forEach(registrar -> registrar.register(event));
     }
 
     private static Supplier<Collection<CommonOperationRegistrar>> discoveredCommonRegistrars() {
-        return () -> new AnnotationMcpRegistrarLookup<>(CommonOperationRegistrar.class, CommonMcpRegistrar.class).findRegistrars();
+        return () -> new AnnotationRegistrarLookup<>(CommonOperationRegistrar.class, CommonRegistrar.class).findRegistrars();
     }
 
     private static Supplier<Collection<ClientOperationRegistrar>> discoveredClientRegistrars() {
-        return () -> new AnnotationMcpRegistrarLookup<>(ClientOperationRegistrar.class, ClientMcpRegistrar.class).findRegistrars();
+        return () -> new AnnotationRegistrarLookup<>(ClientOperationRegistrar.class, ClientRegistrar.class).findRegistrars();
     }
 
     private static Supplier<Collection<ServerOperationRegistrar>> discoveredServerRegistrars() {
-        return () -> new AnnotationMcpRegistrarLookup<>(ServerOperationRegistrar.class, ServerMcpRegistrar.class).findRegistrars();
-    }
-
-    private dev.vfyjxf.moddev.server.api.ToolResult invokeOperationTool(
-            String toolName,
-            String targetSide,
-            java.util.Map<String, Object> input
-    ) throws Exception {
-        var tool = server.registry().findTool(toolName, targetSide)
-                .orElseThrow(() -> new IllegalStateException("tool not available: " + toolName));
-        var arguments = new java.util.LinkedHashMap<String, Object>();
-        arguments.putAll(input);
-        if (targetSide != null) {
-            arguments.put("targetSide", targetSide);
-        }
-        var contextSide = targetSide == null ? "either" : targetSide;
-        var metadata = java.util.Map.<String, Object>of("runtimeId", contextSide + "-runtime");
-        return tool.handler().handle(new ToolCallContext(contextSide, metadata), java.util.Map.copyOf(arguments));
+        return () -> new AnnotationRegistrarLookup<>(ServerOperationRegistrar.class, ServerRegistrar.class).findRegistrars();
     }
 
     private RuntimeOperationBindings.StatusSnapshot statusSnapshot() {
@@ -419,6 +374,4 @@ public class ModDevMCP {
         }
     }
 }
-
-
 

@@ -1,6 +1,6 @@
 package dev.vfyjxf.moddev.runtime;
 
-import dev.vfyjxf.moddev.api.ModMcpApi;
+import dev.vfyjxf.moddev.api.ModDevApi;
 import dev.vfyjxf.moddev.api.runtime.DriverDescriptor;
 import dev.vfyjxf.moddev.api.runtime.UiContext;
 import dev.vfyjxf.moddev.api.runtime.UiDriver;
@@ -20,7 +20,7 @@ class RuntimeRegistriesTest {
     @Test
     void modApiRegistersUiDriverIntoRuntimeRegistry() {
         var registries = new RuntimeRegistries();
-        var api = new ModMcpApi(registries);
+        var api = new ModDevApi(registries);
 
         api.registerUiDriver(new TestUiDriver("custom-ui"));
 

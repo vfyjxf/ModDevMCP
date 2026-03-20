@@ -1,11 +1,13 @@
 package dev.vfyjxf.moddev.service.runtime;
 
+import dev.vfyjxf.moddev.runtime.RuntimeRegistries;
 import dev.vfyjxf.moddev.service.operation.OperationDefinition;
 
-import java.util.LinkedHashMap;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 final class StatusOperationHandlers {
@@ -14,9 +16,11 @@ final class StatusOperationHandlers {
     }
 
     static List<RuntimeOperationBindings.OperationBinding> operations(
-            RuntimeOperationBindings.ToolOperationInvoker toolInvoker,
+            RuntimeRegistries registries,
             RuntimeOperationBindings.StatusSnapshotProvider statusSnapshotProvider
     ) {
+        Objects.requireNonNull(registries, "registries");
+        Objects.requireNonNull(statusSnapshotProvider, "statusSnapshotProvider");
         return List.of(
                 RuntimeOperationBindings.binding(
                         new OperationDefinition(
@@ -52,7 +56,21 @@ final class StatusOperationHandlers {
                                 RuntimeOperationBindings.objectSchema(Map.of(), List.of()),
                                 Map.of("operationId", "status.live_screen", "input", Map.of())
                         ),
-                        RuntimeOperationBindings.toolHandler(toolInvoker, "moddev.ui_get_live_screen")
+                        (input, resolvedTargetSide) -> {
+                            var probe = registries.screenProbe("client")
+                                    .orElseThrow(() -> RuntimeOperationBindings.executionFailure("client screen probe unavailable"));
+                            var metrics = probe.metrics();
+                            var active = metrics.screenClass() != null && !metrics.screenClass().isBlank();
+                            return Map.of(
+                                    "active", active,
+                                    "screenClass", active ? metrics.screenClass() : "",
+                                    "modId", active ? "minecraft" : "",
+                                    "guiWidth", metrics.guiWidth(),
+                                    "guiHeight", metrics.guiHeight(),
+                                    "framebufferWidth", metrics.framebufferWidth(),
+                                    "framebufferHeight", metrics.framebufferHeight()
+                            );
+                        }
                 ),
                 RuntimeOperationBindings.binding(
                         new OperationDefinition(
@@ -68,7 +86,24 @@ final class StatusOperationHandlers {
                                 ),
                                 Map.of("operationId", "status.pause_on_lost_focus", "targetSide", "client", "input", Map.of())
                         ),
-                        RuntimeOperationBindings.toolHandler(toolInvoker, "moddev.pause_on_lost_focus")
+                        (input, resolvedTargetSide) -> {
+                            var service = registries.pauseOnLostFocusService("client")
+                                    .orElseThrow(() -> RuntimeOperationBindings.executionFailure("pause-on-lost-focus runtime unavailable"));
+                            var enabledArg = input.get("enabled");
+                            var changed = false;
+                            final boolean enabled;
+                            if (enabledArg instanceof Boolean enabledValue) {
+                                changed = service.setEnabled(enabledValue);
+                                enabled = enabledValue;
+                            } else {
+                                enabled = service.currentState();
+                            }
+                            return Map.of(
+                                    "runtimeSide", "client",
+                                    "enabled", enabled,
+                                    "changed", changed
+                            );
+                        }
                 ),
                 RuntimeOperationBindings.binding(
                         new OperationDefinition(
@@ -81,10 +116,19 @@ final class StatusOperationHandlers {
                                 RuntimeOperationBindings.objectSchema(Map.of(), List.of()),
                                 Map.of("operationId", "status.game_close", "targetSide", "client", "input", Map.of())
                         ),
-                        RuntimeOperationBindings.toolHandler(toolInvoker, "moddev.game_close")
+                        (input, resolvedTargetSide) -> {
+                            var side = resolvedTargetSide == null || resolvedTargetSide.isBlank() ? "client" : resolvedTargetSide;
+                            var gameCloser = registries.gameCloser(side)
+                                    .orElseThrow(() -> RuntimeOperationBindings.executionFailure("game closer unavailable for side " + side));
+                            if (!gameCloser.requestClose()) {
+                                throw RuntimeOperationBindings.executionFailure("game_close_rejected");
+                            }
+                            return Map.of(
+                                    "accepted", true,
+                                    "runtimeSide", side
+                            );
+                        }
                 )
         );
     }
 }
-
-

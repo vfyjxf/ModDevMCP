@@ -2,9 +2,6 @@ package dev.vfyjxf.moddev;
 
 import dev.vfyjxf.moddev.runtime.command.LiveServerCommandService;
 import dev.vfyjxf.moddev.runtime.game.LiveServerGameCloser;
-import dev.vfyjxf.moddev.runtime.tool.CommandToolProvider;
-import dev.vfyjxf.moddev.runtime.tool.GameToolProvider;
-import dev.vfyjxf.moddev.server.ModDevMcpServer;
 
 public final class ServerRuntimeBootstrap {
 
@@ -14,11 +11,11 @@ public final class ServerRuntimeBootstrap {
         this.mod = mod;
     }
 
-    public ModDevMcpServer prepareServer() {
+    public ModDevMCP prepareServer() {
         mod.prepareCommonServer();
         prepareServerRuntime();
         registerServerProviders();
-        return mod.server();
+        return mod;
     }
 
     public void prepareServerRuntime() {
@@ -30,9 +27,9 @@ public final class ServerRuntimeBootstrap {
         if (!mod.claimServerProviderRegistration()) {
             return;
         }
-        mod.registerToolProvider(GameToolProvider.serverOnly(new LiveServerGameCloser()));
-        mod.registerToolProvider(CommandToolProvider.serverOnly(new LiveServerCommandService()));
+        var registries = mod.registries();
+        registries.registerGameCloser("server", new LiveServerGameCloser());
+        registries.registerCommandService("server", new LiveServerCommandService());
         mod.registerServerRegistrarProviders();
     }
 }
-

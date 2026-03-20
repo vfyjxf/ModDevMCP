@@ -80,6 +80,50 @@ class VanillaUiCaptureAvailabilityTest {
         assertFalse(VanillaUiCaptureAvailability.supportsOffscreenSnapshot(snapshot));
     }
 
+
+    @Test
+    void offscreenCaptureRejectsPauseScreens() {
+        var snapshot = new UiSnapshot(
+                "screen",
+                "net.minecraft.client.gui.screens.PauseScreen",
+                "vanilla-screen",
+                List.of(target(
+                        "button-back-to-game",
+                        "Back to Game",
+                        Map.of("widgetClass", "net.minecraft.client.gui.components.Button")
+                )),
+                List.of(),
+                null,
+                null,
+                null,
+                null,
+                Map.of()
+        );
+
+        assertFalse(VanillaUiCaptureAvailability.supportsOffscreenSnapshot(snapshot));
+    }
+
+    @Test
+    void offscreenCaptureRejectsCustomScreens() {
+        var snapshot = new UiSnapshot(
+                "screen",
+                "dev.vfyjxf.testmod.client.TestModDebugScreen",
+                "vanilla-screen",
+                List.of(target(
+                        "button-close",
+                        "Close",
+                        Map.of("widgetClass", "net.minecraft.client.gui.components.Button")
+                )),
+                List.of(),
+                null,
+                null,
+                null,
+                null,
+                Map.of()
+        );
+
+        assertFalse(VanillaUiCaptureAvailability.supportsOffscreenSnapshot(snapshot));
+    }
     private UiTarget target(String id, String text, Map<String, Object> extensions) {
         return new UiTarget(
                 id,
@@ -95,4 +139,5 @@ class VanillaUiCaptureAvailabilityTest {
         );
     }
 }
+
 

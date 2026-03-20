@@ -92,7 +92,7 @@ final class VanillaUiCaptureSupport {
                         encodePng(image),
                         pixelWidth,
                         pixelHeight,
-                        metadata(screen, guiWidth, guiHeight, guiScale, "offscreen")
+                        metadata(screen.getClass().getName(), guiWidth, guiHeight, guiScale, "offscreen")
                 );
             }
         } finally {
@@ -102,7 +102,7 @@ final class VanillaUiCaptureSupport {
 
     private static UiCaptureImage doCaptureFramebuffer(String providerId, UiContext context) {
         var minecraft = Minecraft.getInstance();
-        var screen = requireMatchingScreen(minecraft, context);
+        var screen = resolveFramebufferScreen(minecraft, context);
         var width = Math.max(1, minecraft.getWindow().getWidth());
         var height = Math.max(1, minecraft.getWindow().getHeight());
         var guiScale = minecraft.getWindow().getGuiScale();
@@ -116,7 +116,13 @@ final class VanillaUiCaptureSupport {
                     encodePng(image),
                     width,
                     height,
-                    metadata(screen, minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight(), guiScale, "framebuffer")
+                    metadata(
+                            screen == null ? context.screenClass() : screen.getClass().getName(),
+                            minecraft.getWindow().getGuiScaledWidth(),
+                            minecraft.getWindow().getGuiScaledHeight(),
+                            guiScale,
+                            "framebuffer"
+                    )
             );
         }
     }
@@ -124,6 +130,20 @@ final class VanillaUiCaptureSupport {
     private static Screen requireMatchingScreen(Minecraft minecraft, UiContext context) {
         var screen = minecraft.screen;
         if (screen == null || !screen.getClass().getName().equals(context.screenClass())) {
+            throw new IllegalStateException("No matching live screen for " + context.screenClass());
+        }
+        return screen;
+    }
+
+    private static Screen resolveFramebufferScreen(Minecraft minecraft, UiContext context) {
+        var screen = minecraft.screen;
+        if (screen == null) {
+            if ("custom.UnknownScreen".equals(context.screenClass())) {
+                return null;
+            }
+            throw new IllegalStateException("No matching live screen for " + context.screenClass());
+        }
+        if (!screen.getClass().getName().equals(context.screenClass())) {
             throw new IllegalStateException("No matching live screen for " + context.screenClass());
         }
         return screen;
@@ -146,9 +166,9 @@ final class VanillaUiCaptureSupport {
         }
     }
 
-    private static Map<String, Object> metadata(Screen screen, int guiWidth, int guiHeight, double guiScale, String mode) {
+    private static Map<String, Object> metadata(String screenClass, int guiWidth, int guiHeight, double guiScale, String mode) {
         var metadata = new LinkedHashMap<String, Object>();
-        metadata.put("screenClass", screen.getClass().getName());
+        metadata.put("screenClass", screenClass);
         metadata.put("guiWidth", guiWidth);
         metadata.put("guiHeight", guiHeight);
         metadata.put("guiScale", guiScale);
@@ -182,4 +202,3 @@ final class VanillaUiCaptureSupport {
         }
     }
 }
-

@@ -1,7 +1,5 @@
 package dev.vfyjxf.moddev.runtime.ui;
 
-import dev.vfyjxf.moddev.server.api.McpResource;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -56,25 +54,6 @@ public final class UiCaptureArtifactStore {
 
     public Optional<UiCaptureArtifact> read(String imageRef) {
         return Optional.ofNullable(artifacts.get(imageRef));
-    }
-
-    public Optional<McpResource> readResource(String uri) {
-        var imageRef = imageRefFromUri(uri);
-        if (imageRef == null) {
-            return Optional.empty();
-        }
-        return read(imageRef).map(artifact -> new McpResource(
-                artifact.resourceUri(),
-                artifact.mimeType(),
-                "UI Capture " + artifact.imageRef(),
-                artifact.metadata(),
-                artifact.content()
-        ));
-    }
-
-    private String imageRefFromUri(String uri) {
-        var prefix = "moddev://capture/";
-        return uri != null && uri.startsWith(prefix) ? uri.substring(prefix.length()) : null;
     }
 
     private void ensureRoot() {
